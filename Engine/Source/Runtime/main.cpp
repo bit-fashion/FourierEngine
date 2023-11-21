@@ -19,7 +19,6 @@
 /* Creates on 2022/9/14. */
 #include "Window/Window.h"
 #include "Render/RendererAPI.h"
-#include <iostream>
 
 int main() {
     auto window = FourierWindow(600, 800, "FourierEngine(vulkan)");

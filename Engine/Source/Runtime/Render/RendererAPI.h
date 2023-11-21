@@ -22,6 +22,7 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 #include <Fourier.h>
+#include <unordered_map>
 
 struct FourierPhysicalDevice {
     VkPhysicalDevice handle;
@@ -41,5 +42,8 @@ private:
     std::vector<const char *> m_RequiredInstanceExtensions;
     std::vector<const char *> m_RequiredInstanceLayers;
     std::vector<FourierPhysicalDevice> m_FourierPhysicalDevices;
+    /* Map */
+    std::unordered_map<std::string, VkExtensionProperties> m_VkExtensionPropertiesSupports;
+    std::unordered_map<std::string, VkLayerProperties> m_VkLayerPropertiesSupports;
 };
 

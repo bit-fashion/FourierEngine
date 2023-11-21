@@ -22,6 +22,7 @@
 #include <iostream>
 #include <stdexcept>
 
+#define FOURIER_DEBUG
 #define FOURIER_ENGINE "FourierEngine"
 #define FOURIER_ENGINE_MAX_DEVICE_NAME_SIZE 256U
 

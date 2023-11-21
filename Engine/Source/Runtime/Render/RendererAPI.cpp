@@ -19,50 +19,60 @@
 /* Creates on 2023/11/21. */
 #include "RendererAPI.h"
 #include <GLFW/glfw3.h>
+#include <cstring>
+
+#define VK_LAYER_LUNARG_standard_validation "VK_LAYER_LUNARG_standard_validation"
 
 #define vkFourierCreate(name, ...) \
     if (vkCreate##name(__VA_ARGS__) != VK_SUCCESS) \
-        fourier::error("[FourierEngine Error] - create vulkan object handle failed!")
+        fourier::error("FourierEngine Error: create vulkan object handle failed!")
 
 /* Get required instance extensions for vulkan. */
-void FourierGetRequiredInstanceExtensions(std::vector<const char *> *p_vext) {
+void FourierGetRequiredInstanceExtensions(std::vector<const char *> &p_vext,
+                                          std::unordered_map<std::string, VkExtensionProperties> &supports) {
     /* glfw */
     unsigned int glfwExtensionCount = 0;
     const char **glfwExtensions;
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
     for (int i = 0; i < glfwExtensionCount; i++)
-        p_vext->push_back(glfwExtensions[i]);
+        p_vext.push_back(glfwExtensions[i]);
 }
 
 /* Get required instance extensions for vulkan. */
-void FourierGetRequiredInstanceLayers(std::vector<const char *> *p_vext) {
-#ifndef FOURIER_NDEBUG
-    p_vext->push_back("VK_LAYER_LUNARG_standard_validation");
+void FourierGetRequiredInstanceLayers(std::vector<const char *> &p_vext,
+                                      std::unordered_map<std::string, VkLayerProperties> &supports) {
+#ifdef FOURIER_DEBUG
+    if (supports.count(VK_LAYER_LUNARG_standard_validation) != 0)
+        p_vext.push_back(VK_LAYER_LUNARG_standard_validation);
 #endif
 }
 
 RendererAPI::RendererAPI() {
-    /* Get extensions & layers. */
-    FourierGetRequiredInstanceExtensions(&m_RequiredInstanceExtensions);
-    FourierGetRequiredInstanceLayers(&m_RequiredInstanceLayers);
-
     /* Enumerate instance available extensions. */
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, NULL);
     std::vector<VkExtensionProperties> extensions(extensionCount);
     vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, std::data(extensions));
-    std::cout << "[FourierEngine Renderer API] - Vulkan render api available extensions for instance: " << std::endl;
-    for (auto &extension : extensions)
+    std::cout << "FourierEngine Renderer API: Vulkan render api available extensions for instance: " << std::endl;
+    for (auto &extension : extensions) {
         std::cout << "    " << extension.extensionName << std::endl;
+        m_VkExtensionPropertiesSupports.insert({extension.extensionName, extension});
+    }
 
-    /* Enumerate instance available extensions. */
+    /* Enumerate instance available layers. */
     uint32_t layerCount = 0;
     vkEnumerateInstanceLayerProperties(&layerCount, NULL);
     std::vector<VkLayerProperties> layers(layerCount);
     vkEnumerateInstanceLayerProperties(&layerCount, std::data(layers));
-    std::cout << "[FourierEngine Renderer API] - Vulkan render api available layer list: " << std::endl;
-    for (auto &layer : layers)
+    std::cout << "FourierEngine Renderer API: Vulkan render api available layer list: " << std::endl;
+    for (auto &layer : layers) {
         std::cout << "    " << layer.layerName << std::endl;
+        m_VkLayerPropertiesSupports.insert({layer.layerName, layer});
+    }
+
+    /* Get extensions & layers. */
+    FourierGetRequiredInstanceExtensions(m_RequiredInstanceExtensions, m_VkExtensionPropertiesSupports);
+    FourierGetRequiredInstanceLayers(m_RequiredInstanceLayers, m_VkLayerPropertiesSupports);
 
     /** Create vulkan instance. */
     struct VkApplicationInfo applicationInfo = {};
@@ -103,16 +113,16 @@ RendererAPI::RendererAPI() {
     }
 
     if (std::size(m_FourierPhysicalDevices) == 0)
-        fourier::error("[FourierEngine Error] - cannot found physical device for support vulkan api!");
+        fourier::error("FourierEngine Error: cannot found physical device for support vulkan api!");
 
-    std::cout << "[FourierEngine Renderer API] - All physical devices supports for vulkan: " << std::endl;
+    std::cout << "FourierEngine Renderer API: All physical devices supports for vulkan: " << std::endl;
     for (auto &device : m_FourierPhysicalDevices)
         std::cout << "    " << device.deviceName << std::endl;
 
     /** Select current using physical device. */
     FourierPhysicalDevice fourierPhysicalDevice = m_FourierPhysicalDevices[0];
     m_PhysicalDevice = fourierPhysicalDevice.handle;
-    std::cout << "[FourierEngine Renderer API] - Using device: " << "<" << fourierPhysicalDevice.deviceName << ">" << std::endl;
+    std::cout << "FourierEngine Renderer API: Using device: " << "<" << fourierPhysicalDevice.deviceName << ">" << std::endl;
 }
 
 RendererAPI::~RendererAPI() {
