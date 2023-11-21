@@ -239,9 +239,7 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
     deviceQueueCreateInfo.pQueuePriorities = &queuePriority;
 
     /** Create surface of glfw. */
-    VkResult result = glfwCreateWindowSurface(m_Instance, p_window->GetWindowHandle(), VK_NULL_HANDLE, &m_Surface);
-    std::cout << "Result: " << result << std::endl;
-    if (result != VK_SUCCESS)
+    if (glfwCreateWindowSurface(m_Instance, p_window->GetWindowHandle(), VK_NULL_HANDLE, &m_Surface) != VK_SUCCESS)
         fourier::error("failed to create window surface!");
 
     /* Enumerate device extensions. */
