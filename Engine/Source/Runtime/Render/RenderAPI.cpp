@@ -21,6 +21,8 @@
 #include "RenderContext.h"
 #include <GLFW/glfw3.h>
 
+#include <iostream>
+
 #define VAPOUR_ENGINE_NAME "VapourEngine"
 
 void VapourInitRenderAPI() {
@@ -43,8 +45,12 @@ void VapourInitRenderAPI() {
     instanceCreateInfo.enabledExtensionCount = glfwExtensionCount;
     instanceCreateInfo.ppEnabledExtensionNames = glfwExtensions;
 
+    std::cout << "glfw extension: " << std::endl;
+    for (int i = 0; i < glfwExtensionCount; i++)
+        std::cout << "    " << glfwExtensions[i] << std::endl;
+
     VkInstance instance;
 
     instanceCreateInfo.enabledLayerCount = 0;
-    vkCreateInstance(&instanceCreateInfo, VK_NULL_HANDLE, &instace);
+    vkCreateInstance(&instanceCreateInfo, VK_NULL_HANDLE, &instance);
 }

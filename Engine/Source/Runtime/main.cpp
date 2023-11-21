@@ -27,7 +27,6 @@ int main() {
     VapourInitRenderAPI();
 
     while (!window.WindowShouldClose()) {
-        std::cout << "Dimension: " << window.GetWidth() << "," << window.GetHeight() << std::endl;
         VapourPollEvents();
     }
     return 0;
