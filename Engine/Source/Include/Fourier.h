@@ -19,12 +19,14 @@
 /* Creates on 2023/11/21. */
 #pragma once
 
+#include <iostream>
 #include <stdexcept>
 
 #define FOURIER_ENGINE "FourierEngine"
+#define FOURIER_ENGINE_MAX_DEVICE_NAME_SIZE 256U
 
 namespace fourier {
-    void error(const char *info) {
+    static void error(const char *info) {
         throw std::runtime_error(info);
     }
 }

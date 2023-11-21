@@ -23,13 +23,22 @@
 #include <vector>
 #include <Fourier.h>
 
-class VulkanRender {
+struct FourierPhysicalDevice {
+    VkPhysicalDevice handle;
+    char deviceName[FOURIER_ENGINE_MAX_DEVICE_NAME_SIZE];
+};
+
+class RendererAPI {
 public:
     /* Init vulkan render api. */
-    VulkanRender();
-    ~VulkanRender();
+    RendererAPI();
+    ~RendererAPI();
 private:
-    VkInstance m_Instance;
-    std::vector<const char *> m_Vext;
+    /* Handle object. */
+    VkInstance m_Instance = NULL;
+    VkPhysicalDevice m_PhysicalDevice = NULL;
+    /* Vectors. */
+    std::vector<const char *> m_RequiredInstanceExtensions;
+    std::vector<FourierPhysicalDevice> m_FourierPhysicalDevices;
 };
 
