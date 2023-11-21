@@ -34,9 +34,17 @@ void FourierGetRequiredInstanceExtensions(std::vector<const char *> *p_vext) {
         p_vext->push_back(glfwExtensions[i]);
 }
 
+/* Get required instance extensions for vulkan. */
+void FourierGetRequiredInstanceLayers(std::vector<const char *> *p_vext) {
+#ifndef FOURIER_NDEBUG
+    p_vext->push_back("VK_LAYER_LUNARG_standard_validation");
+#endif
+}
+
 RendererAPI::RendererAPI() {
-    /* Get extensions. */
+    /* Get extensions & layers. */
     FourierGetRequiredInstanceExtensions(&m_RequiredInstanceExtensions);
+    FourierGetRequiredInstanceLayers(&m_RequiredInstanceLayers);
 
     /* Enumerate instance available extensions. */
     uint32_t extensionCount = 0;
@@ -47,7 +55,16 @@ RendererAPI::RendererAPI() {
     for (auto &extension : extensions)
         std::cout << "    " << extension.extensionName << std::endl;
 
-    /* Create vulkan instance. */
+    /* Enumerate instance available extensions. */
+    uint32_t layerCount = 0;
+    vkEnumerateInstanceLayerProperties(&layerCount, NULL);
+    std::vector<VkLayerProperties> layers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, std::data(layers));
+    std::cout << "[FourierEngine Renderer API] - Vulkan render api available layer list: " << std::endl;
+    for (auto &layer : layers)
+        std::cout << "    " << layer.layerName << std::endl;
+
+    /** Create vulkan instance. */
     struct VkApplicationInfo applicationInfo = {};
     applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     applicationInfo.apiVersion = VK_VERSION_1_3;
@@ -63,10 +80,12 @@ RendererAPI::RendererAPI() {
     instanceCreateInfo.enabledExtensionCount = std::size(m_RequiredInstanceExtensions);
     instanceCreateInfo.ppEnabledExtensionNames = std::data(m_RequiredInstanceExtensions);
 
-    instanceCreateInfo.enabledLayerCount = 0;
+    instanceCreateInfo.enabledLayerCount = std::size(m_RequiredInstanceLayers);
+    instanceCreateInfo.ppEnabledLayerNames = std::data(m_RequiredInstanceLayers);
+
     vkFourierCreate(Instance, &instanceCreateInfo, VK_NULL_HANDLE, &m_Instance);
 
-    /* Enumerate physical device. */
+    /** Enumerate physical device. */
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(m_Instance, &deviceCount, VK_NULL_HANDLE);
     std::vector<VkPhysicalDevice> devices(deviceCount);
@@ -90,7 +109,7 @@ RendererAPI::RendererAPI() {
     for (auto &device : m_FourierPhysicalDevices)
         std::cout << "    " << device.deviceName << std::endl;
 
-    /* Select current using physical device. */
+    /** Select current using physical device. */
     FourierPhysicalDevice fourierPhysicalDevice = m_FourierPhysicalDevices[0];
     m_PhysicalDevice = fourierPhysicalDevice.handle;
     std::cout << "[FourierEngine Renderer API] - Using device: " << "<" << fourierPhysicalDevice.deviceName << ">" << std::endl;

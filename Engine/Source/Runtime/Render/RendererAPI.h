@@ -39,6 +39,7 @@ private:
     VkPhysicalDevice m_PhysicalDevice = NULL;
     /* Vectors. */
     std::vector<const char *> m_RequiredInstanceExtensions;
+    std::vector<const char *> m_RequiredInstanceLayers;
     std::vector<FourierPhysicalDevice> m_FourierPhysicalDevices;
 };
 
