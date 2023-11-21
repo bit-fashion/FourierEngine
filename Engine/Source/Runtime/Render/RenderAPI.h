@@ -20,4 +20,4 @@
 #pragma once
 
 /* Init render api. */
-void VapourInitRenderAPI();
+void FourierInitRenderAPI();

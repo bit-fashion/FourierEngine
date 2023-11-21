@@ -22,12 +22,12 @@
 #include <iostream>
 
 int main() {
-    auto window = VapourWindow(600, 800, "VapourEngine(vulkan)");
+    auto window = FourierWindow(600, 800, "FourierEngine(vulkan)");
 
-    VapourInitRenderAPI();
+    FourierInitRenderAPI();
 
     while (!window.WindowShouldClose()) {
-        VapourPollEvents();
+        FourierPollEvents();
     }
     return 0;
 }

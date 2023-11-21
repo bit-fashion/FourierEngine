@@ -21,15 +21,15 @@
 
 #include <GLFW/glfw3.h>
 
-class VapourWindow;
+class FourierWindow;
 
-typedef void (* FnVapourResizableWindowCallback)(VapourWindow *vapourWindow, int width, int height);
+typedef void (* FnFourierResizableWindowCallback)(FourierWindow *FourierWindow, int width, int height);
 
-class VapourWindow {
+class FourierWindow {
 public:
     /* Init and create window. */
-    VapourWindow(int width, int height, const char *title);
-    ~VapourWindow();
+    FourierWindow(int width, int height, const char *title);
+    ~FourierWindow();
     /* Support functions. */
     bool WindowShouldClose();
 
@@ -39,16 +39,16 @@ public:
     int GetHeight() const { return m_Height; }
     void SetWidth(int width) { m_Width = width; }
     void SetHeight(int height) { m_Height = height; }
-    void SetVapourResizableWindowCallback(FnVapourResizableWindowCallback fnVapourResizableWindowCallback) /* Set resizable callback. */
-      { m_FnVapourResizableWindowCallback = fnVapourResizableWindowCallback; };
+    void SetFourierResizableWindowCallback(FnFourierResizableWindowCallback fnFourierResizableWindowCallback) /* Set resizable callback. */
+      { m_FnFourierResizableWindowCallback = fnFourierResizableWindowCallback; };
 
 private:
     int m_Width;
     int m_Height;
     GLFWwindow *m_Window;
-    FnVapourResizableWindowCallback m_FnVapourResizableWindowCallback;
+    FnFourierResizableWindowCallback m_FnFourierResizableWindowCallback;
 };
 
-static void VapourPollEvents() {
+static void FourierPollEvents() {
     glfwPollEvents();
 }

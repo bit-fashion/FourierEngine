@@ -23,16 +23,16 @@
 
 #include <iostream>
 
-#define VAPOUR_ENGINE_NAME "VapourEngine"
+#define FOURIER_ENGINE_NAME "FourierEngine"
 
-void VapourInitRenderAPI() {
+void FourierInitRenderAPI() {
     struct VkApplicationInfo applicationInfo = {};
     applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     applicationInfo.apiVersion = VK_VERSION_1_3;
     applicationInfo.apiVersion = VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.pApplicationName = VAPOUR_ENGINE_NAME;
+    applicationInfo.pApplicationName = FOURIER_ENGINE_NAME;
     applicationInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.pEngineName = VAPOUR_ENGINE_NAME;
+    applicationInfo.pEngineName = FOURIER_ENGINE_NAME;
 
     struct VkInstanceCreateInfo instanceCreateInfo = {};
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;

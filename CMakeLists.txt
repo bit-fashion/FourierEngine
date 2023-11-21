@@ -18,7 +18,7 @@
 
 # Creates on 2022/9/14. #
 cmake_minimum_required(VERSION 3.26)
-project(VapourEngine)
+project(FourierEngine)
 
 set(CMAKE_CXX_STANDARD 23)
 

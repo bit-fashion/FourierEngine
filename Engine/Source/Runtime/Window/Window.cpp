@@ -20,7 +20,7 @@
 #include "Window.h"
 #include <stdexcept>
 
-VapourWindow::VapourWindow(int width, int height, const char *title) : m_Width(width), m_Height(height) {
+FourierWindow::FourierWindow(int width, int height, const char *title) : m_Width(width), m_Height(height) {
     glfwInit();
 
     glfwInitHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -30,26 +30,26 @@ VapourWindow::VapourWindow(int width, int height, const char *title) : m_Width(w
 
     if (m_Window == NULL) {
         glfwTerminate();
-        throw std::runtime_error("VapourEngine Error: create window failed, cause window pointer is NULL!");
+        throw std::runtime_error("FourierEngine Error: create window failed, cause window pointer is NULL!");
     }
 
     glfwSetWindowUserPointer(m_Window, this);
 
     /* Set resize callback. */
     glfwSetWindowSizeCallback(m_Window, [](GLFWwindow *window, int width, int height) {
-        VapourWindow *vapourWindow = ((VapourWindow *) glfwGetWindowUserPointer(window));
-        vapourWindow->SetWidth(width);
-        vapourWindow->SetHeight(height);
-        if (vapourWindow->m_FnVapourResizableWindowCallback != NULL)
-            vapourWindow->m_FnVapourResizableWindowCallback(vapourWindow, width, height);
+        FourierWindow *FourierWindow = ((FourierWindow *) glfwGetWindowUserPointer(window));
+        FourierWindow->SetWidth(width);
+        FourierWindow->SetHeight(height);
+        if (FourierWindow->m_FnFourierResizableWindowCallback != NULL)
+            FourierWindow->m_FnFourierResizableWindowCallback(FourierWindow, width, height);
     });
 }
 
-VapourWindow::~VapourWindow() {
+FourierWindow::~FourierWindow() {
     glfwTerminate();
     glfwDestroyWindow(m_Window);
 }
 
-bool VapourWindow::WindowShouldClose() {
+bool FourierWindow::WindowShouldClose() {
     return glfwWindowShouldClose(m_Window);
 }
