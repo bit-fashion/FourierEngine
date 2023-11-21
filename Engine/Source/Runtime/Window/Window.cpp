@@ -22,8 +22,8 @@
 FourierWindow::FourierWindow(int width, int height, const char *title) : m_Width(width), m_Height(height) {
     glfwInit();
 
-    glfwInitHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwInitHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     m_Window = glfwCreateWindow(width, height, title, 0, 0);
 
