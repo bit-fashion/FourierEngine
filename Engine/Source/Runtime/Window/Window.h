@@ -16,13 +16,21 @@
  *
  * ************************************************************************/
 
-/* Creates on 2022/9/14. */
-#include "Window/Window.h"
+/* Creates on 2023/11/21. */
+#pragma once
 
-int main() {
-    auto window = VapourWindow(600, 800, "VapourEngine(vulkan)");
-    while (!window.WindowShouldClose()) {
-        VapourPollEvents();
-    }
-    return 0;
+#include <GLFW/glfw3.h>
+
+class VapourWindow {
+public:
+    /* Init and create window. */
+    VapourWindow(int width, int height, const char *title);
+    /* Support functions. */
+    bool WindowShouldClose();
+private:
+    GLFWwindow *m_Window;
+};
+
+static void VapourPollEvents() {
+    glfwPollEvents();
 }

@@ -16,13 +16,5 @@
  *
  * ************************************************************************/
 
-/* Creates on 2022/9/14. */
-#include "Window/Window.h"
-
-int main() {
-    auto window = VapourWindow(600, 800, "VapourEngine(vulkan)");
-    while (!window.WindowShouldClose()) {
-        VapourPollEvents();
-    }
-    return 0;
-}
+/* Creates on 2023/11/21. */
+#include "Vulkan.h"

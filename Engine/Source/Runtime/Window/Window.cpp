@@ -16,13 +16,26 @@
  *
  * ************************************************************************/
 
-/* Creates on 2022/9/14. */
-#include "Window/Window.h"
+/* Creates on 2023/11/21. */
+#pragma once
 
-int main() {
-    auto window = VapourWindow(600, 800, "VapourEngine(vulkan)");
-    while (!window.WindowShouldClose()) {
-        VapourPollEvents();
+#include "Window.h"
+#include <stdexcept>
+
+VapourWindow::VapourWindow(int width, int height, const char *title) {
+    glfwInit();
+
+    glfwInitHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwInitHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+    m_Window = glfwCreateWindow(width, height, title, 0, 0);
+
+    if (m_Window == NULL) {
+        glfwTerminate();
+        throw std::runtime_error("Create window failed, cause window pointer is NULL!");
     }
-    return 0;
+}
+
+bool VapourWindow::WindowShouldClose() {
+    return glfwWindowShouldClose(m_Window);
 }
