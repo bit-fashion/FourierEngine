@@ -18,10 +18,33 @@
 
 /* Creates on 2023/11/21. */
 #include "RenderAPI.h"
+#include "RenderContext.h"
+#include <GLFW/glfw3.h>
 
-#include "Vulkan/VulkanRender.h"
+#define VAPOUR_ENGINE_NAME "VapourEngine"
 
-void VapourInitRenderAPI(RenderAPI api) {
-    if (api == RenderAPI::VAPOUR_RENDER_API_FOR_VULKAN)
+void VapourInitRenderAPI() {
+    struct VkApplicationInfo applicationInfo = {};
+    applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    applicationInfo.apiVersion = VK_VERSION_1_3;
+    applicationInfo.apiVersion = VK_MAKE_VERSION(1, 0, 0);
+    applicationInfo.pApplicationName = VAPOUR_ENGINE_NAME;
+    applicationInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+    applicationInfo.pEngineName = VAPOUR_ENGINE_NAME;
 
+    struct VkInstanceCreateInfo instanceCreateInfo = {};
+    instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    instanceCreateInfo.pApplicationInfo = &applicationInfo;
+
+    unsigned int glfwExtensionCount = 0;
+    const char **glfwExtensions;
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+    instanceCreateInfo.enabledExtensionCount = glfwExtensionCount;
+    instanceCreateInfo.ppEnabledExtensionNames = glfwExtensions;
+
+    VkInstance instance;
+
+    instanceCreateInfo.enabledLayerCount = 0;
+    vkCreateInstance(&instanceCreateInfo, VK_NULL_HANDLE, &instace);
 }

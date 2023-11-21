@@ -24,7 +24,7 @@
 int main() {
     auto window = VapourWindow(600, 800, "VapourEngine(vulkan)");
 
-    VapourInitRenderAPI(RenderAPI::VAPOUR_RENDER_API_FOR_VULKAN);
+    VapourInitRenderAPI();
 
     while (!window.WindowShouldClose()) {
         std::cout << "Dimension: " << window.GetWidth() << "," << window.GetHeight() << std::endl;

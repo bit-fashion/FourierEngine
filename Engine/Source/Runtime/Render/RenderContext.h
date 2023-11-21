@@ -19,5 +19,9 @@
 /* Creates on 2023/11/21. */
 #pragma once
 
-/* Init render api. */
-void VapourInitRenderAPI();
+#include <vulkan/vulkan.h>
+
+class RenderContext {
+private:
+    VkInstance m_Instance;
+};
