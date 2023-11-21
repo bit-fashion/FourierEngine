@@ -22,10 +22,27 @@ project(SportEngine)
 
 set(CMAKE_CXX_STANDARD 23)
 
-# Configure vulkan sdk and include.
-include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/Engine/Source/ThirdParty/vulkan/include")
+# Configure third party include.
+include_directories(SYSTEM
+        "${CMAKE_SOURCE_DIR}/Engine/Source/ThirdParty/vulkan/include"
+        "${CMAKE_SOURCE_DIR}/Engine/Source/ThirdParty/glfw/include"
+        "${CMAKE_SOURCE_DIR}/Engine/Source/ThirdParty/glad/include"
+        "${CMAKE_SOURCE_DIR}/Engine/Source/ThirdParty/glm"
+)
 
+# Configure link directories.
+link_directories(
+        "Engine/Source/ThirdParty/vulkan"
+        "Engine/Source/ThirdParty/glfw/lib-mingw-w64"
+)
 
 add_executable(${PROJECT_NAME}
-    "Engine/Source/Runtime/main.cpp"
+        "Engine/Source/Runtime/main.cpp"
+        # Import glad src.
+        "Engine/Source/ThirdParty/glad/src/glad.c"
+)
+
+target_link_libraries(${PROJECT_NAME}
+        vulkan-1
+        glfw3
 )

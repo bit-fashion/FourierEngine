@@ -17,8 +17,27 @@
  * ************************************************************************/
 
 /* Creates on 2022/9/14. */
-#include <vulkan/vulkan.h>
+#include <GLFW/glfw3.h>
 
 int main() {
+    glfwInit();
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    GLFWwindow *pWindow = glfwCreateWindow(600, 800, "hello vulkan ~", NULL, NULL);
+
+    if (pWindow == NULL) {
+        glfwTerminate();
+    }
+
+    while (glfwWindowShouldClose(pWindow) != true) {
+        glfwPollEvents();
+    }
+
+    glfwTerminate();
+    glfwDestroyWindow(pWindow);
+
     return 0;
 }
