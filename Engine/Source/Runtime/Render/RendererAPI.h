@@ -25,6 +25,8 @@
 #include <unordered_map>
 #include <optional>
 
+class FourierWindow;
+
 struct FourierPhysicalDevice {
     VkPhysicalDevice handle;
     char deviceName[FOURIER_ENGINE_MAX_DEVICE_NAME_SIZE];
@@ -37,16 +39,24 @@ struct QueueFamilyIndices {
     }
 };
 
+struct FourierSwapChainSupportDetails {
+    VkSurfaceCapabilitiesKHR capabilities;
+    std::vector<VkSurfaceFormatKHR> formats;
+    std::vector<VkPresentModeKHR> presentModes;
+};
+
 class RendererAPI {
 public:
     /* Init vulkan render api. */
-    RendererAPI();
+    RendererAPI(FourierWindow *p_window);
     ~RendererAPI();
 private:
     /* Handle object. */
     VkInstance m_Instance = VK_NULL_HANDLE;
     VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
     VkDevice m_Device = VK_NULL_HANDLE;
+    VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
+    VkSwapchainKHR m_SwapChain = VK_NULL_HANDLE;
     QueueFamilyIndices m_QueueFamilyIndices;
     /* Vectors. */
     std::vector<const char *> m_RequiredInstanceExtensions;

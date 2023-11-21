@@ -20,6 +20,9 @@
 #include "RendererAPI.h"
 #include <GLFW/glfw3.h>
 #include <cstring>
+#include <algorithm>
+#include <limits>
+#include "Window/Window.h"
 
 #define VK_LAYER_LUNARG_standard_validation "VK_LAYER_LUNARG_standard_validation"
 
@@ -54,6 +57,35 @@ void FourierGetRequiredDeviceExtensions(std::vector<const char *> &vec,
         vec.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 }
 
+/* Query swapchain details. */
+FourierSwapChainSupportDetails QuerySwapChainSupportDetails(VkPhysicalDevice device, VkSurfaceKHR surface) {
+    FourierSwapChainSupportDetails details;
+
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+
+    /* Find surface support formats. */
+    {
+        uint32_t formatCount;
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, VK_NULL_HANDLE);
+        if (formatCount > 0) {
+            details.formats.resize(formatCount);
+            vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, std::data(details.formats));
+        }
+    }
+
+    /* Find surface support present mode. */
+    {
+        uint32_t presentModeCount;
+        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, VK_NULL_HANDLE);
+        if (presentModeCount > 0) {
+            details.presentModes.resize(presentModeCount);
+            vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, std::data(details.presentModes));
+        }
+    }
+
+    return details;
+}
+
 /* Find queue family. */
 QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) {
     QueueFamilyIndices queueFamilyIndices;
@@ -77,7 +109,50 @@ QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) {
     return queueFamilyIndices;
 }
 
-RendererAPI::RendererAPI() {
+/* Select surface format. */
+VkSurfaceFormatKHR SelectSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats) {
+    if (std::size(formats) == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
+        return { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+
+    for (const auto& format : formats) {
+        if (format.format == VK_FORMAT_B8G8R8A8_UNORM && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+            return format;
+        }
+    }
+
+    return formats[0];
+}
+
+/* Select surface presentMode. */
+VkPresentModeKHR SelectSwapSurfacePresentMode(const std::vector<VkPresentModeKHR>& presentModes) {
+    VkPresentModeKHR bestMode = VK_PRESENT_MODE_FIFO_KHR;
+
+    for (const auto& presentMode : presentModes) {
+        if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+            return presentMode;
+        } else if (presentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+            bestMode = presentMode;
+        }
+    }
+
+    return bestMode;
+}
+
+/* Select swap chain extent. */
+VkExtent2D SelectSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, FourierWindow *p_window) {
+    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+        return capabilities.currentExtent;
+    } else {
+        VkExtent2D actualExtent = { static_cast<uint32_t>(p_window->GetWidth()), static_cast<uint32_t>(p_window->GetHeight()) };
+
+        actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
+        actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
+
+        return actualExtent;
+    }
+}
+
+RendererAPI::RendererAPI(FourierWindow *p_window) {
     /* Enumerate instance available extensions. */
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, NULL);
@@ -163,6 +238,12 @@ RendererAPI::RendererAPI() {
     float queuePriority = 1.0f;
     deviceQueueCreateInfo.pQueuePriorities = &queuePriority;
 
+    /** Create surface of glfw. */
+    VkResult result = glfwCreateWindowSurface(m_Instance, p_window->GetWindowHandle(), VK_NULL_HANDLE, &m_Surface);
+    std::cout << "Result: " << result << std::endl;
+    if (result != VK_SUCCESS)
+        fourier::error("failed to create window surface!");
+
     /* Enumerate device extensions. */
     uint32_t deviceExtensionCount = 0;
     vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, VK_NULL_HANDLE, &deviceExtensionCount, VK_NULL_HANDLE);
@@ -174,7 +255,7 @@ RendererAPI::RendererAPI() {
         m_VkDeviceExtensionPropertiesSupports.insert({extension.extensionName, extension});
     }
 
-    /* Check device is support swapchain. */
+    /* Get required extensions for device. */
     FourierGetRequiredDeviceExtensions(m_RequiredDeviceExtensions, m_VkDeviceExtensionPropertiesSupports);
 
     /** Create logical device object handle. */
@@ -188,10 +269,39 @@ RendererAPI::RendererAPI() {
     deviceCreateInfo.ppEnabledExtensionNames = std::data(m_RequiredDeviceExtensions);
     vkFourierCreate(Device, m_PhysicalDevice, &deviceCreateInfo, VK_NULL_HANDLE, &m_Device);
 
+    /** Create swap chain. */
+    FourierSwapChainSupportDetails swapChainDetails = QuerySwapChainSupportDetails(m_PhysicalDevice, m_Surface);
+
+    VkSurfaceFormatKHR surfaceFormat = SelectSwapSurfaceFormat(swapChainDetails.formats);
+    VkPresentModeKHR presentMode = SelectSwapSurfacePresentMode(swapChainDetails.presentModes);
+    VkExtent2D extent = SelectSwapExtent(swapChainDetails.capabilities, p_window);
+
+    uint32_t swapchainImageCount = swapChainDetails.capabilities.minImageCount + 1;
+    if (swapChainDetails.capabilities.maxImageCount > 0 && swapchainImageCount > swapChainDetails.capabilities.maxImageCount)
+        swapchainImageCount = swapChainDetails.capabilities.maxImageCount;
+
+    VkSwapchainCreateInfoKHR swapchainCreateInfoKhr = {};
+    swapchainCreateInfoKhr.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    swapchainCreateInfoKhr.surface = m_Surface;
+    swapchainCreateInfoKhr.minImageCount = swapchainImageCount;
+    swapchainCreateInfoKhr.imageFormat = surfaceFormat.format;
+    swapchainCreateInfoKhr.imageColorSpace = surfaceFormat.colorSpace;
+    swapchainCreateInfoKhr.imageExtent = extent;
+    swapchainCreateInfoKhr.imageArrayLayers = 1;
+    swapchainCreateInfoKhr.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    swapchainCreateInfoKhr.preTransform = swapChainDetails.capabilities.currentTransform;
+    swapchainCreateInfoKhr.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    swapchainCreateInfoKhr.presentMode = presentMode;
+    swapchainCreateInfoKhr.clipped = VK_TRUE;
+    swapchainCreateInfoKhr.oldSwapchain = VK_NULL_HANDLE;
+    vkFourierCreate(SwapchainKHR, m_Device, &swapchainCreateInfoKhr, VK_NULL_HANDLE, &m_SwapChain);
+
     std::cout << "FourierEngine Renderer API: The initialize vulkan api success! " << std::endl;
 }
 
 RendererAPI::~RendererAPI() {
+    vkDestroySwapchainKHR(m_Device, m_SwapChain, nullptr);
     vkDestroyDevice(m_Device, VK_NULL_HANDLE);
+    vkDestroySurfaceKHR(m_Instance, m_Surface, VK_NULL_HANDLE);
     vkDestroyInstance(m_Instance, VK_NULL_HANDLE);
 }

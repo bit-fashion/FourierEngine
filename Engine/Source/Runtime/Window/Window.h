@@ -42,6 +42,7 @@ public:
     void SetHeight(int height) { m_Height = height; }
     void SetFourierResizableWindowCallback(FnFourierResizableWindowCallback fnFourierResizableWindowCallback) /* Set resizable callback. */
       { m_FnFourierResizableWindowCallback = fnFourierResizableWindowCallback; };
+    GLFWwindow *GetWindowHandle() { return m_Window; };
 
 private:
     int m_Width;

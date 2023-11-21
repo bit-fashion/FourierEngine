@@ -23,7 +23,7 @@
 int main() {
     auto window = FourierWindow(600, 800, "FourierEngine(vulkan)");
 
-    RendererAPI renderer;
+    RendererAPI renderer(&window);
 
     while (!window.WindowShouldClose()) {
         FourierPollEvents();
