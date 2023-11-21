@@ -19,9 +19,12 @@
 /* Creates on 2023/11/21. */
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include <stdexcept>
 
-class RenderContext {
-private:
-    VkInstance m_Instance;
-};
+#define FOURIER_ENGINE "FourierEngine"
+
+namespace fourier {
+    void error(const char *info) {
+        throw std::runtime_error(info);
+    }
+}

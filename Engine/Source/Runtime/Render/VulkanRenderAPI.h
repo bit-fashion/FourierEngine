@@ -19,5 +19,17 @@
 /* Creates on 2023/11/21. */
 #pragma once
 
-/* Init render api. */
-void FourierInitRenderAPI();
+#include <vulkan/vulkan.h>
+#include <vector>
+#include <Fourier.h>
+
+class VulkanRender {
+public:
+    /* Init vulkan render api. */
+    VulkanRender();
+    ~VulkanRender();
+private:
+    VkInstance m_Instance;
+    std::vector<const char *> m_Vext;
+};
+

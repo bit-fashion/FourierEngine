@@ -19,6 +19,7 @@
 /* Creates on 2023/11/21. */
 #pragma once
 
+#include <Fourier.h>
 #include <GLFW/glfw3.h>
 
 class FourierWindow;

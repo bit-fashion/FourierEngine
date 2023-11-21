@@ -28,6 +28,7 @@ include_directories(SYSTEM
         "${CMAKE_SOURCE_DIR}/Engine/Source/ThirdParty/glfw/include"
         "${CMAKE_SOURCE_DIR}/Engine/Source/ThirdParty/glad/include"
         "${CMAKE_SOURCE_DIR}/Engine/Source/ThirdParty/glm"
+        "${CMAKE_SOURCE_DIR}/Engine/Source/Include"
 )
 
 include_directories(
@@ -43,7 +44,7 @@ link_directories(
 add_executable(${PROJECT_NAME}
         "Engine/Source/Runtime/main.cpp"
         "Engine/Source/Runtime/Window/Window.cpp"
-        "Engine/Source/Runtime/Render/RenderAPI.cpp"
+        "Engine/Source/Runtime/Render/VulkanRenderAPI.cpp"
         # Import glad src.
         "Engine/Source/ThirdParty/glad/src/glad.c"
 )

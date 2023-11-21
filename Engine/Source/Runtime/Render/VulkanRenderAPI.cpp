@@ -17,22 +17,17 @@
  * ************************************************************************/
 
 /* Creates on 2023/11/21. */
-#include "RenderAPI.h"
-#include "RenderContext.h"
+#include "VulkanRenderAPI.h"
 #include <GLFW/glfw3.h>
 
-#include <iostream>
-
-#define FOURIER_ENGINE_NAME "FourierEngine"
-
-void FourierInitRenderAPI() {
+VulkanRender::VulkanRender() {
     struct VkApplicationInfo applicationInfo = {};
     applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     applicationInfo.apiVersion = VK_VERSION_1_3;
     applicationInfo.apiVersion = VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.pApplicationName = FOURIER_ENGINE_NAME;
+    applicationInfo.pApplicationName = FOURIER_ENGINE;
     applicationInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.pEngineName = FOURIER_ENGINE_NAME;
+    applicationInfo.pEngineName = FOURIER_ENGINE;
 
     struct VkInstanceCreateInfo instanceCreateInfo = {};
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -42,15 +37,16 @@ void FourierInitRenderAPI() {
     const char **glfwExtensions;
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-    instanceCreateInfo.enabledExtensionCount = glfwExtensionCount;
-    instanceCreateInfo.ppEnabledExtensionNames = glfwExtensions;
-
-    std::cout << "glfw extension: " << std::endl;
     for (int i = 0; i < glfwExtensionCount; i++)
-        std::cout << "    " << glfwExtensions[i] << std::endl;
+        m_Vext.push_back(glfwExtensions[i]);
 
-    VkInstance instance;
+    instanceCreateInfo.enabledExtensionCount = std::size(m_Vext);
+    instanceCreateInfo.ppEnabledExtensionNames = std::data(m_Vext);
 
     instanceCreateInfo.enabledLayerCount = 0;
-    vkCreateInstance(&instanceCreateInfo, VK_NULL_HANDLE, &instance);
+    vkCreateInstance(&instanceCreateInfo, VK_NULL_HANDLE, &m_Instance);
+}
+
+VulkanRender::~VulkanRender() {
+    vkDestroyInstance(m_Instance, VK_NULL_HANDLE);
 }

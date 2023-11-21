@@ -18,7 +18,6 @@
 
 /* Creates on 2023/11/21. */
 #include "Window.h"
-#include <stdexcept>
 
 FourierWindow::FourierWindow(int width, int height, const char *title) : m_Width(width), m_Height(height) {
     glfwInit();
@@ -30,18 +29,18 @@ FourierWindow::FourierWindow(int width, int height, const char *title) : m_Width
 
     if (m_Window == NULL) {
         glfwTerminate();
-        throw std::runtime_error("FourierEngine Error: create window failed, cause window pointer is NULL!");
+        fourier::error("FourierEngine Error: create window failed, cause window pointer is NULL!");
     }
 
     glfwSetWindowUserPointer(m_Window, this);
 
     /* Set resize callback. */
     glfwSetWindowSizeCallback(m_Window, [](GLFWwindow *window, int width, int height) {
-        FourierWindow *FourierWindow = ((FourierWindow *) glfwGetWindowUserPointer(window));
-        FourierWindow->SetWidth(width);
-        FourierWindow->SetHeight(height);
-        if (FourierWindow->m_FnFourierResizableWindowCallback != NULL)
-            FourierWindow->m_FnFourierResizableWindowCallback(FourierWindow, width, height);
+        FourierWindow *pFourierWindow = ((FourierWindow *) glfwGetWindowUserPointer(window));
+        pFourierWindow->SetWidth(width);
+        pFourierWindow->SetHeight(height);
+        if (pFourierWindow->m_FnFourierResizableWindowCallback != NULL)
+            pFourierWindow->m_FnFourierResizableWindowCallback(pFourierWindow, width, height);
     });
 }
 
