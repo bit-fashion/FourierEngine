@@ -28,23 +28,53 @@
         fourier::error("FourierEngine Error: create vulkan object handle failed!")
 
 /* Get required instance extensions for vulkan. */
-void FourierGetRequiredInstanceExtensions(std::vector<const char *> &p_vext,
+void FourierGetRequiredInstanceExtensions(std::vector<const char *> &vec,
                                           std::unordered_map<std::string, VkExtensionProperties> &supports) {
     /* glfw */
     unsigned int glfwExtensionCount = 0;
     const char **glfwExtensions;
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
     for (int i = 0; i < glfwExtensionCount; i++)
-        p_vext.push_back(glfwExtensions[i]);
+        vec.push_back(glfwExtensions[i]);
 }
 
-/* Get required instance extensions for vulkan. */
-void FourierGetRequiredInstanceLayers(std::vector<const char *> &p_vext,
+/* Get required instance layers for vulkan. */
+void FourierGetRequiredInstanceLayers(std::vector<const char *> &vec,
                                       std::unordered_map<std::string, VkLayerProperties> &supports) {
 #ifdef FOURIER_DEBUG
     if (supports.count(VK_LAYER_LUNARG_standard_validation) != 0)
-        p_vext.push_back(VK_LAYER_LUNARG_standard_validation);
+        vec.push_back(VK_LAYER_LUNARG_standard_validation);
 #endif
+}
+
+/* Get required device extensions for vulkan. */
+void FourierGetRequiredDeviceExtensions(std::vector<const char *> &vec,
+                                      std::unordered_map<std::string, VkExtensionProperties> &supports) {
+    if (supports.count(VK_KHR_SWAPCHAIN_EXTENSION_NAME) != 0)
+        vec.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+}
+
+/* Find queue family. */
+QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) {
+    QueueFamilyIndices queueFamilyIndices;
+
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, VK_NULL_HANDLE);
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, std::data(queueFamilies));
+
+    int i = 0;
+    for (const auto &queueFamily : queueFamilies) {
+        if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            queueFamilyIndices.graphicsFamily = i;
+
+        if (queueFamilyIndices.isComplete())
+            break;
+
+        ++i;
+    }
+
+    return queueFamilyIndices;
 }
 
 RendererAPI::RendererAPI() {
@@ -56,7 +86,7 @@ RendererAPI::RendererAPI() {
     std::cout << "FourierEngine Renderer API: Vulkan render api available extensions for instance: " << std::endl;
     for (auto &extension : extensions) {
         std::cout << "    " << extension.extensionName << std::endl;
-        m_VkExtensionPropertiesSupports.insert({extension.extensionName, extension});
+        m_VkInstanceExtensionPropertiesSupports.insert({extension.extensionName, extension});
     }
 
     /* Enumerate instance available layers. */
@@ -67,12 +97,12 @@ RendererAPI::RendererAPI() {
     std::cout << "FourierEngine Renderer API: Vulkan render api available layer list: " << std::endl;
     for (auto &layer : layers) {
         std::cout << "    " << layer.layerName << std::endl;
-        m_VkLayerPropertiesSupports.insert({layer.layerName, layer});
+        m_VkInstanceLayerPropertiesSupports.insert({layer.layerName, layer});
     }
 
     /* Get extensions & layers. */
-    FourierGetRequiredInstanceExtensions(m_RequiredInstanceExtensions, m_VkExtensionPropertiesSupports);
-    FourierGetRequiredInstanceLayers(m_RequiredInstanceLayers, m_VkLayerPropertiesSupports);
+    FourierGetRequiredInstanceExtensions(m_RequiredInstanceExtensions, m_VkInstanceExtensionPropertiesSupports);
+    FourierGetRequiredInstanceLayers(m_RequiredInstanceLayers, m_VkInstanceLayerPropertiesSupports);
 
     /** Create vulkan instance. */
     struct VkApplicationInfo applicationInfo = {};
@@ -123,8 +153,45 @@ RendererAPI::RendererAPI() {
     FourierPhysicalDevice fourierPhysicalDevice = m_FourierPhysicalDevices[0];
     m_PhysicalDevice = fourierPhysicalDevice.handle;
     std::cout << "FourierEngine Renderer API: Using device: " << "<" << fourierPhysicalDevice.deviceName << ">" << std::endl;
+
+    /** Find queue for graphics family and build create device queue struct. */
+    m_QueueFamilyIndices = FindQueueFamilies(m_PhysicalDevice);
+    VkDeviceQueueCreateInfo deviceQueueCreateInfo = {};
+    deviceQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    deviceQueueCreateInfo.queueFamilyIndex = m_QueueFamilyIndices.graphicsFamily.value();
+    deviceQueueCreateInfo.queueCount = 1;
+    float queuePriority = 1.0f;
+    deviceQueueCreateInfo.pQueuePriorities = &queuePriority;
+
+    /* Enumerate device extensions. */
+    uint32_t deviceExtensionCount = 0;
+    vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, VK_NULL_HANDLE, &deviceExtensionCount, VK_NULL_HANDLE);
+    std::vector<VkExtensionProperties> deviceExtensions(deviceExtensionCount);
+    vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, VK_NULL_HANDLE, &deviceExtensionCount, std::data(deviceExtensions));
+    std::cout << "FourierEngine Renderer API: Vulkan render api logical device available extensions: " << std::endl;
+    for (auto &extension : deviceExtensions) {
+        std::cout << "    " << extension.extensionName << std::endl;
+        m_VkDeviceExtensionPropertiesSupports.insert({extension.extensionName, extension});
+    }
+
+    /* Check device is support swapchain. */
+    FourierGetRequiredDeviceExtensions(m_RequiredDeviceExtensions, m_VkDeviceExtensionPropertiesSupports);
+
+    /** Create logical device object handle. */
+    VkDeviceCreateInfo deviceCreateInfo = {};
+    deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    deviceCreateInfo.queueCreateInfoCount = 1;
+    deviceCreateInfo.pQueueCreateInfos = &deviceQueueCreateInfo;
+    VkPhysicalDeviceFeatures features = {};
+    deviceCreateInfo.pEnabledFeatures = &features;
+    deviceCreateInfo.enabledExtensionCount = std::size(m_RequiredDeviceExtensions);
+    deviceCreateInfo.ppEnabledExtensionNames = std::data(m_RequiredDeviceExtensions);
+    vkFourierCreate(Device, m_PhysicalDevice, &deviceCreateInfo, VK_NULL_HANDLE, &m_Device);
+
+    std::cout << "FourierEngine Renderer API: The initialize vulkan api success! " << std::endl;
 }
 
 RendererAPI::~RendererAPI() {
+    vkDestroyDevice(m_Device, VK_NULL_HANDLE);
     vkDestroyInstance(m_Instance, VK_NULL_HANDLE);
 }
