@@ -20,7 +20,20 @@
 #include "VulkanRenderAPI.h"
 #include <GLFW/glfw3.h>
 
+void FourierGetRequiredInstanceExtensions(std::vector<const char *> *vec) {
+    /* glfw */
+    unsigned int glfwExtensionCount = 0;
+    const char **glfwExtensions;
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    for (int i = 0; i < glfwExtensionCount; i++)
+        vec->push_back(glfwExtensions[i]);
+}
+
 VulkanRender::VulkanRender() {
+    /* Get extensions. */
+    FourierGetRequiredInstanceExtensions(&m_Vext);
+
+    /* Begin initialize vulkan. */
     struct VkApplicationInfo applicationInfo = {};
     applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     applicationInfo.apiVersion = VK_VERSION_1_3;
@@ -32,13 +45,6 @@ VulkanRender::VulkanRender() {
     struct VkInstanceCreateInfo instanceCreateInfo = {};
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instanceCreateInfo.pApplicationInfo = &applicationInfo;
-
-    unsigned int glfwExtensionCount = 0;
-    const char **glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-    for (int i = 0; i < glfwExtensionCount; i++)
-        m_Vext.push_back(glfwExtensions[i]);
 
     instanceCreateInfo.enabledExtensionCount = std::size(m_Vext);
     instanceCreateInfo.ppEnabledExtensionNames = std::data(m_Vext);
