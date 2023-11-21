@@ -21,14 +21,32 @@
 
 #include <GLFW/glfw3.h>
 
+class VapourWindow;
+
+typedef void (* FnVapourResizableWindowCallback)(VapourWindow *vapourWindow, int width, int height);
+
 class VapourWindow {
 public:
     /* Init and create window. */
     VapourWindow(int width, int height, const char *title);
+    ~VapourWindow();
     /* Support functions. */
     bool WindowShouldClose();
+
+public:
+    /* Get/Set member variables. */
+    int GetWidth() const { return m_Width; }
+    int GetHeight() const { return m_Height; }
+    void SetWidth(int width) { m_Width = width; }
+    void SetHeight(int height) { m_Height = height; }
+    void SetVapourResizableWindowCallback(FnVapourResizableWindowCallback fnVapourResizableWindowCallback) /* Set resizable callback. */
+      { m_FnVapourResizableWindowCallback = fnVapourResizableWindowCallback; };
+
 private:
+    int m_Width;
+    int m_Height;
     GLFWwindow *m_Window;
+    FnVapourResizableWindowCallback m_FnVapourResizableWindowCallback;
 };
 
 static void VapourPollEvents() {

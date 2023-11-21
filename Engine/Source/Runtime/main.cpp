@@ -18,10 +18,12 @@
 
 /* Creates on 2022/9/14. */
 #include "Window/Window.h"
+#include <iostream>
 
 int main() {
     auto window = VapourWindow(600, 800, "VapourEngine(vulkan)");
     while (!window.WindowShouldClose()) {
+        std::cout << "Dimension: " << window.GetWidth() << "," << window.GetHeight() << std::endl;
         VapourPollEvents();
     }
     return 0;

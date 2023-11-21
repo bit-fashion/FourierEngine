@@ -22,7 +22,7 @@
 #include "Window.h"
 #include <stdexcept>
 
-VapourWindow::VapourWindow(int width, int height, const char *title) {
+VapourWindow::VapourWindow(int width, int height, const char *title) : m_Width(width), m_Height(height) {
     glfwInit();
 
     glfwInitHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -32,8 +32,24 @@ VapourWindow::VapourWindow(int width, int height, const char *title) {
 
     if (m_Window == NULL) {
         glfwTerminate();
-        throw std::runtime_error("Create window failed, cause window pointer is NULL!");
+        throw std::runtime_error("VapourEngine Error: create window failed, cause window pointer is NULL!");
     }
+
+    glfwSetWindowUserPointer(m_Window, this);
+
+    /* Set resize callback. */
+    glfwSetWindowSizeCallback(m_Window, [](GLFWwindow *window, int width, int height) {
+        VapourWindow *vapourWindow = ((VapourWindow *) glfwGetWindowUserPointer(window));
+        vapourWindow->SetWidth(width);
+        vapourWindow->SetHeight(height);
+        if (vapourWindow->m_FnVapourResizableWindowCallback != NULL)
+            vapourWindow->m_FnVapourResizableWindowCallback(vapourWindow, width, height);
+    });
+}
+
+VapourWindow::~VapourWindow() {
+    glfwTerminate();
+    glfwDestroyWindow(m_Window);
 }
 
 bool VapourWindow::WindowShouldClose() {
