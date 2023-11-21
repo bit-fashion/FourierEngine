@@ -17,8 +17,6 @@
  * ************************************************************************/
 
 /* Creates on 2023/11/21. */
-#pragma once
-
 #include "Window.h"
 #include <stdexcept>
 

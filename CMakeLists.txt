@@ -42,12 +42,10 @@ link_directories(
 
 add_executable(${PROJECT_NAME}
         "Engine/Source/Runtime/main.cpp"
-        "Engine/Source/Runtime/Vulkan/Vulkan.cpp"
         "Engine/Source/Runtime/Window/Window.cpp"
+        "Engine/Source/Runtime/Render/RenderAPI.cpp"
         # Import glad src.
         "Engine/Source/ThirdParty/glad/src/glad.c"
-        Engine/Source/Runtime/Vulkan/Vulkan.h
-        Engine/Source/Runtime/Window/Window.h
 )
 
 target_link_libraries(${PROJECT_NAME}

@@ -17,4 +17,11 @@
  * ************************************************************************/
 
 /* Creates on 2023/11/21. */
-#include "Vulkan.h"
+#include "RenderAPI.h"
+
+#include "Vulkan/VulkanRender.h"
+
+void VapourInitRenderAPI(RenderAPI api) {
+    if (api == RenderAPI::VAPOUR_RENDER_API_FOR_VULKAN)
+
+}

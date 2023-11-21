@@ -18,10 +18,14 @@
 
 /* Creates on 2022/9/14. */
 #include "Window/Window.h"
+#include "Render/RenderAPI.h"
 #include <iostream>
 
 int main() {
     auto window = VapourWindow(600, 800, "VapourEngine(vulkan)");
+
+    VapourInitRenderAPI(RenderAPI::VAPOUR_RENDER_API_FOR_VULKAN);
+
     while (!window.WindowShouldClose()) {
         std::cout << "Dimension: " << window.GetWidth() << "," << window.GetHeight() << std::endl;
         VapourPollEvents();

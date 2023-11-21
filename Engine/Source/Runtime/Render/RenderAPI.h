@@ -19,4 +19,9 @@
 /* Creates on 2023/11/21. */
 #pragma once
 
-#include <vulkan/vulkan.h>
+enum RenderAPI {
+    VAPOUR_RENDER_API_FOR_VULKAN
+};
+
+/* Init render api. */
+void VapourInitRenderAPI(RenderAPI api);
