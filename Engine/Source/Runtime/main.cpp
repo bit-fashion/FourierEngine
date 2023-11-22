@@ -23,7 +23,7 @@
 #include "Utils/IOUtils.h"
 
 int main() {
-    auto window = FourierWindow(600, 800, "FourierEngine(vulkan)");
+    auto window = FourierWindow(1280, 1000, "FourierEngine(vulkan)");
     RendererAPI renderer(&window);
     /* When RenderAPI loading success that show window to screen. */
     window.ShowWindowInScreen();
