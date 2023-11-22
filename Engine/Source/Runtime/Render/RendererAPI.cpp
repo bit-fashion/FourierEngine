@@ -345,7 +345,7 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
     vkGetSwapchainImagesKHR(m_Device, m_SwapChain, &m_SwapChainImageSize, std::data(m_SwapChainImages));
 
     /** Create image views. */
-    std::vector<VkImageView> swapChainImageViews(m_SwapChainImageSize);
+    m_SwapChainImageViews.resize(m_SwapChainImageSize);
     for (uint32_t i = 0; i < m_SwapChainImageSize; i++) {
         VkImageViewCreateInfo imageViewCreateInfo = {};
         imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -361,7 +361,7 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
         imageViewCreateInfo.subresourceRange.levelCount = 1;
         imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
         imageViewCreateInfo.subresourceRange.layerCount = 1;
-        vkFourierCreate(ImageView, m_Device, &imageViewCreateInfo, VK_NULL_HANDLE, &swapChainImageViews[i]);
+        vkFourierCreate(ImageView, m_Device, &imageViewCreateInfo, VK_NULL_HANDLE, &m_SwapChainImageViews[i]);
         fourier_logger_info("FourierEngine Renderer API: Create image view for swapchain, image view index: {}", i);
     }
 
@@ -538,8 +538,8 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
 
     /* 帧缓冲区 */
     m_SwapChainFramebuffers.resize(m_SwapChainImageSize);
-    for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-        VkImageView attachments[] = { swapChainImageViews[i] };
+    for (size_t i = 0; i < m_SwapChainImageViews.size(); i++) {
+        VkImageView attachments[] = { m_SwapChainImageViews[i] };
 
         VkFramebufferCreateInfo framebufferCreateInfo = {};
         framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -647,14 +647,20 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
 RendererAPI::~RendererAPI() {
     vkDestroySemaphore(m_Device, m_ImageAvailableSemaphore, nullptr);
     vkDestroySemaphore(m_Device, m_RenderFinishedSemaphore, nullptr);
+
     vkFreeCommandBuffers(m_Device, m_CommandPool, std::size(m_CommandBuffers), std::data(m_CommandBuffers));
     vkDestroyCommandPool(m_Device, m_CommandPool, VK_NULL_HANDLE);
-    vkDestroyPipelineLayout(m_Device, m_GraphicsPipelineLayout, nullptr);
-    vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
-    vkDestroyRenderPass(m_Device, m_RenderPass, VK_NULL_HANDLE);
-    for (const auto &framebuffer : m_SwapChainFramebuffers)
+
+    for (auto &framebuffer : m_SwapChainFramebuffers)
         vkDestroyFramebuffer(m_Device, framebuffer, VK_NULL_HANDLE);
-    vkDestroyPipelineLayout(m_Device, m_GraphicsPipelineLayout, VK_NULL_HANDLE);
+
+    vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
+    vkDestroyPipelineLayout(m_Device, m_GraphicsPipelineLayout, nullptr);
+    vkDestroyRenderPass(m_Device, m_RenderPass, VK_NULL_HANDLE);
+
+    for (auto &imageView : m_SwapChainImageViews)
+        vkDestroyImageView(m_Device, imageView, VK_NULL_HANDLE);
+
     vkDestroySwapchainKHR(m_Device, m_SwapChain, VK_NULL_HANDLE);
     vkDestroyDevice(m_Device, VK_NULL_HANDLE);
     vkDestroySurfaceKHR(m_Instance, m_Surface, VK_NULL_HANDLE);
