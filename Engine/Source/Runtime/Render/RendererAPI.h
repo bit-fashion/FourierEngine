@@ -54,6 +54,11 @@ public:
     /* Init vulkan render api. */
     RendererAPI(FourierWindow *p_window);
     ~RendererAPI();
+
+public:
+    void Draw();
+    void StopAndExitDraw();
+
 private:
     /* Handle object. */
     VkInstance m_Instance = VK_NULL_HANDLE;
@@ -61,16 +66,26 @@ private:
     VkDevice m_Device = VK_NULL_HANDLE;
     VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
     VkSwapchainKHR m_SwapChain = VK_NULL_HANDLE;
+    VkPipelineLayout m_GraphicsPipelineLayout = VK_NULL_HANDLE;
     VkPipeline m_GraphicsPipeline = VK_NULL_HANDLE;
+    VkRenderPass m_RenderPass;
     VkPresentModeKHR m_SurfacePresentModeKHR;
     VkSurfaceFormatKHR m_SurfaceFormatKHR;
-    VkExtent2D m_SurfaceExtent;
     QueueFamilyIndices m_QueueFamilyIndices;
+    VkCommandPool m_CommandPool = VK_NULL_HANDLE;
+    std::vector<VkCommandBuffer> m_CommandBuffers;
+    /* semaphore */
+    VkSemaphore m_ImageAvailableSemaphore;
+    VkSemaphore m_RenderFinishedSemaphore;
     /* Queue */
-    VkQueue presentQueue;
+    VkQueue m_GraphicsQueue;
+    VkQueue m_PresentQueue;
     /* SwapChain */
     uint32_t m_SwapChainImageSize;
+    VkFormat m_SwapChainFormat;
+    VkExtent2D m_SwapChainExtent;
     std::vector<VkImage> m_SwapChainImages;
+    std::vector<VkFramebuffer> m_SwapChainFramebuffers;
     /* Vectors. */
     std::vector<const char *> m_RequiredInstanceExtensions;
     std::vector<const char *> m_RequiredInstanceLayers;

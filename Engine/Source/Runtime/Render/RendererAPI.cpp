@@ -31,11 +31,14 @@
 #define FOURIER_SHADER_MODULE_OF_VERTEX_BINARY_FILE "../Engine/Source/Binaries/vert.spv"
 #define FOURIER_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE "../Engine/Source/Binaries/frag.spv"
 
-#define VK_LAYER_LUNARG_standard_validation "VK_LAYER_LUNARG_standard_validation"
+#define VK_LAYER_KHRONOS_validation "VK_LAYER_KHRONOS_validation"
 
 #define vkFourierCreate(name, ...) \
     if (vkCreate##name(__VA_ARGS__) != VK_SUCCESS) \
         throw std::runtime_error("FourierEngine Error: create vulkan object for `{}` handle failed!")
+#define vkFourierAllocate(name, ...) \
+    if (vkAllocate##name(__VA_ARGS__) != VK_SUCCESS) \
+        throw std::runtime_error("FourierEngine Error: allocate vulkan object for `{}` handle failed!")
 
 /* Get required instance extensions for vulkan. */
 void FourierGetRequiredInstanceExtensions(std::vector<const char *> &vec,
@@ -52,8 +55,8 @@ void FourierGetRequiredInstanceExtensions(std::vector<const char *> &vec,
 void FourierGetRequiredInstanceLayers(std::vector<const char *> &vec,
                                       std::unordered_map<std::string, VkLayerProperties> &supports) {
 #ifdef FOURIER_DEBUG
-    if (supports.count(VK_LAYER_LUNARG_standard_validation) != 0)
-        vec.push_back(VK_LAYER_LUNARG_standard_validation);
+    if (supports.count(VK_LAYER_KHRONOS_validation) != 0)
+        vec.push_back(VK_LAYER_KHRONOS_validation);
 #endif
 }
 
@@ -305,14 +308,17 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
     deviceCreateInfo.ppEnabledExtensionNames = std::data(m_RequiredDeviceExtensions);
     vkFourierCreate(Device, m_PhysicalDevice, &deviceCreateInfo, VK_NULL_HANDLE, &m_Device);
 
-    vkGetDeviceQueue(m_Device, m_QueueFamilyIndices.presentFamily, 0, &presentQueue);
+    /* get graphics and present queue */
+    vkGetDeviceQueue(m_Device, m_QueueFamilyIndices.graphicsFamily, 0, &m_GraphicsQueue);
+    vkGetDeviceQueue(m_Device, m_QueueFamilyIndices.presentFamily, 0, &m_PresentQueue);
 
     /** Create swap chain. */
     FourierSwapChainSupportDetails swapChainDetails = QuerySwapChainSupportDetails(m_PhysicalDevice, m_Surface);
 
     m_SurfaceFormatKHR = SelectSwapSurfaceFormat(swapChainDetails.formats);
+    m_SwapChainFormat = m_SurfaceFormatKHR.format;
     m_SurfacePresentModeKHR = SelectSwapSurfacePresentMode(swapChainDetails.presentModes);
-    m_SurfaceExtent = SelectSwapExtent(swapChainDetails.capabilities, p_window);
+    m_SwapChainExtent = SelectSwapExtent(swapChainDetails.capabilities, p_window);
 
     uint32_t swapchainImageCount = swapChainDetails.capabilities.minImageCount + 1;
     if (swapChainDetails.capabilities.maxImageCount > 0 && swapchainImageCount > swapChainDetails.capabilities.maxImageCount)
@@ -324,7 +330,7 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
     swapchainCreateInfoKhr.minImageCount = swapchainImageCount;
     swapchainCreateInfoKhr.imageFormat = m_SurfaceFormatKHR.format;
     swapchainCreateInfoKhr.imageColorSpace = m_SurfaceFormatKHR.colorSpace;
-    swapchainCreateInfoKhr.imageExtent = m_SurfaceExtent;
+    swapchainCreateInfoKhr.imageExtent = m_SwapChainExtent;
     swapchainCreateInfoKhr.imageArrayLayers = 1;
     swapchainCreateInfoKhr.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     swapchainCreateInfoKhr.preTransform = swapChainDetails.capabilities.currentTransform;
@@ -359,6 +365,45 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
         fourier_logger_info("FourierEngine Renderer API: Create image view for swapchain, image view index: {}", i);
     }
 
+    /** Create render pass. */
+    VkAttachmentDescription colorAttachmentDescription = {};
+    colorAttachmentDescription.format = m_SwapChainFormat;
+    colorAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkAttachmentReference colorAttachmentReference = {};
+    colorAttachmentReference.attachment = 0;
+    colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkSubpassDescription subpassDescription = {};
+    subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDescription.colorAttachmentCount = 1;
+    subpassDescription.pColorAttachments = &colorAttachmentReference;
+
+    VkSubpassDependency subpassDependency = {};
+    subpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    subpassDependency.dstSubpass = 0;
+    subpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    subpassDependency.srcAccessMask = 0;
+    subpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    subpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    VkRenderPassCreateInfo renderPassCreateInfo = {};
+    renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassCreateInfo.attachmentCount = 1;
+    renderPassCreateInfo.pAttachments = &colorAttachmentDescription;
+    renderPassCreateInfo.subpassCount = 1;
+    renderPassCreateInfo.pSubpasses = &subpassDescription;
+    renderPassCreateInfo.dependencyCount = 1;
+    renderPassCreateInfo.pDependencies = &subpassDependency;
+
+    vkFourierCreate(RenderPass, m_Device, &renderPassCreateInfo, VK_NULL_HANDLE, &m_RenderPass);
+
     /** Create shader of vertex & fragment module. */
     std::cout << "FourierEngine Renderer API: Loading and create vertex shader module from: " << FOURIER_SHADER_MODULE_OF_VERTEX_BINARY_FILE << std::endl;
     VkShaderModule vertex_shader_module = LoadShaderModule(m_Device, FOURIER_SHADER_MODULE_OF_VERTEX_BINARY_FILE);
@@ -368,27 +413,294 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
     VkShaderModule fragment_shader_module = LoadShaderModule(m_Device, FOURIER_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE);
     std::cout << "FourierEngine Renderer API: Loading and create fragment shader module success!" << std::endl;
 
-    /** Create pipeline phase of shader */
-    VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo = {};
-    pipelineShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    pipelineShaderStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    pipelineShaderStageCreateInfo.module = vertex_shader_module;
-    pipelineShaderStageCreateInfo.pName = "main";
+    /** Create pipeline phase of vertex and fragment shader */
+    VkPipelineShaderStageCreateInfo pipelineVertexShaderStageCreateInfo = {};
+    pipelineVertexShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    pipelineVertexShaderStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    pipelineVertexShaderStageCreateInfo.module = vertex_shader_module;
+    pipelineVertexShaderStageCreateInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo pipelineFragmentStageCreateInfo = {};
+    pipelineFragmentStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    pipelineFragmentStageCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    pipelineFragmentStageCreateInfo.module = fragment_shader_module;
+    pipelineFragmentStageCreateInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfos[] = { pipelineVertexShaderStageCreateInfo, pipelineFragmentStageCreateInfo };
+
+    /* pipeline features */
+    VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo = {};
+    pipelineVertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    pipelineVertexInputStateCreateInfo.vertexBindingDescriptionCount = 0;
+    pipelineVertexInputStateCreateInfo.pVertexBindingDescriptions = nullptr; // Optional
+    pipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount = 0;
+    pipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions = nullptr; // Optional
+
+    VkPipelineInputAssemblyStateCreateInfo pipelineInputAssembly = {};
+    pipelineInputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    pipelineInputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    pipelineInputAssembly.primitiveRestartEnable = VK_FALSE;
+
+    VkViewport viewport;
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = (float) m_SwapChainExtent.width;
+    viewport.height = (float) m_SwapChainExtent.height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    VkRect2D scissor;
+    scissor.offset = {0, 0};
+    scissor.extent = m_SwapChainExtent;
+
+    /* 视口裁剪 */
+    VkPipelineViewportStateCreateInfo pipelineViewportStateCrateInfo = {};
+    pipelineViewportStateCrateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    pipelineViewportStateCrateInfo.viewportCount = 1;
+    pipelineViewportStateCrateInfo.pViewports = &viewport;
+    pipelineViewportStateCrateInfo.scissorCount = 1;
+    pipelineViewportStateCrateInfo.pScissors = &scissor;
+
+    /* 光栅化阶段 */
+    VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo = {};
+    pipelineRasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    pipelineRasterizationStateCreateInfo.depthClampEnable = VK_FALSE;
+    pipelineRasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
+    pipelineRasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
+    pipelineRasterizationStateCreateInfo.lineWidth = 1.0f;
+    pipelineRasterizationStateCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+    pipelineRasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    pipelineRasterizationStateCreateInfo.depthBiasEnable = VK_FALSE;
+    pipelineRasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f; // Optional
+    pipelineRasterizationStateCreateInfo.depthBiasClamp = 0.0f; // Optional
+    pipelineRasterizationStateCreateInfo.depthBiasSlopeFactor = 0.0f; // Optional
+
+    /* 多重采样 */
+    VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo = {};
+    pipelineMultisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    pipelineMultisampleStateCreateInfo.sampleShadingEnable = VK_FALSE;
+    pipelineMultisampleStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    pipelineMultisampleStateCreateInfo.minSampleShading = 1.0f; // Optional
+    pipelineMultisampleStateCreateInfo.pSampleMask = nullptr; // Optional
+    pipelineMultisampleStateCreateInfo.alphaToCoverageEnable = VK_FALSE; // Optional
+    pipelineMultisampleStateCreateInfo.alphaToOneEnable = VK_FALSE; // Optional
+
+    /* 颜色混合 */
+    VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState = {};
+    pipelineColorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    pipelineColorBlendAttachmentState.blendEnable = VK_FALSE;
+    pipelineColorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+    pipelineColorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+    pipelineColorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD; // Optional
+    pipelineColorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+    pipelineColorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+    pipelineColorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
+    pipelineColorBlendAttachmentState.blendEnable = VK_TRUE;
+    pipelineColorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    pipelineColorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    pipelineColorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+    pipelineColorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    pipelineColorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    pipelineColorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+
+    /* 帧缓冲 */
+    VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo = {};
+    pipelineColorBlendStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    pipelineColorBlendStateCreateInfo.logicOpEnable = VK_FALSE;
+    pipelineColorBlendStateCreateInfo.logicOp = VK_LOGIC_OP_COPY; // Optional
+    pipelineColorBlendStateCreateInfo.attachmentCount = 1;
+    pipelineColorBlendStateCreateInfo.pAttachments = &pipelineColorBlendAttachmentState;
+    pipelineColorBlendStateCreateInfo.blendConstants[0] = 0.0f; // Optional
+    pipelineColorBlendStateCreateInfo.blendConstants[1] = 0.0f; // Optional
+    pipelineColorBlendStateCreateInfo.blendConstants[2] = 0.0f; // Optional
+    pipelineColorBlendStateCreateInfo.blendConstants[3] = 0.0f; // Optional
+
+    /* 动态修改 */
+    VkDynamicState dynamicStates[] = {
+            VK_DYNAMIC_STATE_VIEWPORT,
+            VK_DYNAMIC_STATE_LINE_WIDTH
+    };
+
+    VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo = {};
+    pipelineDynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    pipelineDynamicStateCreateInfo.dynamicStateCount = 2;
+    pipelineDynamicStateCreateInfo.pDynamicStates = dynamicStates;
+
+    /* 管道布局 */
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = 0; // Optional
+    pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
+    pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
+    pipelineLayoutInfo.pPushConstantRanges = 0; // Optional
+
+    vkFourierCreate(PipelineLayout, m_Device, &pipelineLayoutInfo, nullptr, &m_GraphicsPipelineLayout);
+
+    /* 帧缓冲区 */
+    m_SwapChainFramebuffers.resize(m_SwapChainImageSize);
+    for (size_t i = 0; i < swapChainImageViews.size(); i++) {
+        VkImageView attachments[] = { swapChainImageViews[i] };
+
+        VkFramebufferCreateInfo framebufferCreateInfo = {};
+        framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferCreateInfo.renderPass = m_RenderPass;
+        framebufferCreateInfo.attachmentCount = 1;
+        framebufferCreateInfo.pAttachments = attachments;
+        framebufferCreateInfo.width = m_SwapChainExtent.width;
+        framebufferCreateInfo.height = m_SwapChainExtent.height;
+        framebufferCreateInfo.layers = 1;
+
+        vkFourierCreate(Framebuffer, m_Device, &framebufferCreateInfo, nullptr, &m_SwapChainFramebuffers[i]);
+    }
 
     /** Create graphics pipeline in vulkan. */
     VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {};
-    // TODO vkFourierCreate(GraphicsPipelines, m_Device, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, VK_NULL_HANDLE, &m_GraphicsPipeline);
+    graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    graphicsPipelineCreateInfo.stageCount = 2;
+    graphicsPipelineCreateInfo.pStages = pipelineShaderStageCreateInfos;
+    graphicsPipelineCreateInfo.pVertexInputState = &pipelineVertexInputStateCreateInfo;
+    graphicsPipelineCreateInfo.pInputAssemblyState = &pipelineInputAssembly;
+    graphicsPipelineCreateInfo.pViewportState = &pipelineViewportStateCrateInfo;
+    graphicsPipelineCreateInfo.pRasterizationState = &pipelineRasterizationStateCreateInfo;
+    graphicsPipelineCreateInfo.pMultisampleState = &pipelineMultisampleStateCreateInfo;
+    graphicsPipelineCreateInfo.pDepthStencilState = nullptr; // Optional
+    graphicsPipelineCreateInfo.pColorBlendState = &pipelineColorBlendStateCreateInfo;
+    graphicsPipelineCreateInfo.pDynamicState = nullptr; // Optional
+    graphicsPipelineCreateInfo.layout = m_GraphicsPipelineLayout;
+    graphicsPipelineCreateInfo.renderPass = m_RenderPass;
+    graphicsPipelineCreateInfo.subpass = 0;
+    graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
+    graphicsPipelineCreateInfo.basePipelineIndex = -1; // Optional
+
+    vkFourierCreate(GraphicsPipelines, m_Device, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, VK_NULL_HANDLE, &m_GraphicsPipeline);
 
     /** Destroy shader module. */
     vkDestroyShaderModule(m_Device, vertex_shader_module, VK_NULL_HANDLE);
     vkDestroyShaderModule(m_Device, fragment_shader_module, VK_NULL_HANDLE);
 
+    /** Create command pool. */
+    VkCommandPoolCreateInfo commandPoolCreateInfo = {};
+    commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    commandPoolCreateInfo.queueFamilyIndex = m_QueueFamilyIndices.graphicsFamily;
+    commandPoolCreateInfo.flags = 0; // Optional
+
+    vkFourierCreate(CommandPool, m_Device, &commandPoolCreateInfo, VK_NULL_HANDLE, &m_CommandPool);
+
+    /** Allocate command buffer. */
+    m_CommandBuffers.resize(m_SwapChainImageSize);
+
+    VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    commandBufferAllocateInfo.commandPool = m_CommandPool;
+    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandBufferAllocateInfo.commandBufferCount = (uint32_t) std::size(m_CommandBuffers);
+
+    vkFourierAllocate(CommandBuffers, m_Device, &commandBufferAllocateInfo, std::data(m_CommandBuffers));
+
+    /** Begin vulkan render. */
+    for (uint32_t i = 0; i < m_SwapChainImageSize; i++) {
+        /* start command buffers record. */
+        VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+        commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+        commandBufferBeginInfo.pInheritanceInfo = nullptr; // Optional
+
+        vkBeginCommandBuffer(m_CommandBuffers[i], &commandBufferBeginInfo);
+
+        /* start render pass. */
+        VkRenderPassBeginInfo renderPassBeginInfo = {};
+        renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassBeginInfo.renderPass = m_RenderPass;
+        renderPassBeginInfo.framebuffer = m_SwapChainFramebuffers[i];
+        renderPassBeginInfo.renderArea.offset = {0, 0};
+        renderPassBeginInfo.renderArea.extent = m_SwapChainExtent;
+
+        VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
+        renderPassBeginInfo.clearValueCount = 1;
+        renderPassBeginInfo.pClearValues = &clearColor;
+
+        vkCmdBeginRenderPass(m_CommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        /* bind graphics pipeline. */
+        vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
+
+        /* draw call */
+        vkCmdDraw(m_CommandBuffers[i], 3, 1, 0, 0);
+
+        /* end render pass */
+        vkCmdEndRenderPass(m_CommandBuffers[i]);
+
+        /* end command buffer record. */
+        if (vkEndCommandBuffer(m_CommandBuffers[i]) != VK_SUCCESS)
+            throw std::runtime_error("failed to record command buffer!");
+    }
+
+    /** Create semaphores. */
+    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    vkFourierCreate(Semaphore, m_Device, &semaphoreCreateInfo, VK_NULL_HANDLE, &m_ImageAvailableSemaphore);
+    vkFourierCreate(Semaphore, m_Device, &semaphoreCreateInfo, VK_NULL_HANDLE, &m_RenderFinishedSemaphore);
+
     std::cout << "FourierEngine Renderer API: The initialize vulkan api success! " << std::endl;
 }
 
 RendererAPI::~RendererAPI() {
+    vkDestroySemaphore(m_Device, m_ImageAvailableSemaphore, nullptr);
+    vkDestroySemaphore(m_Device, m_RenderFinishedSemaphore, nullptr);
+    vkFreeCommandBuffers(m_Device, m_CommandPool, std::size(m_CommandBuffers), std::data(m_CommandBuffers));
+    vkDestroyCommandPool(m_Device, m_CommandPool, VK_NULL_HANDLE);
+    vkDestroyPipelineLayout(m_Device, m_GraphicsPipelineLayout, nullptr);
+    vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
+    vkDestroyRenderPass(m_Device, m_RenderPass, VK_NULL_HANDLE);
+    for (const auto &framebuffer : m_SwapChainFramebuffers)
+        vkDestroyFramebuffer(m_Device, framebuffer, VK_NULL_HANDLE);
+    vkDestroyPipelineLayout(m_Device, m_GraphicsPipelineLayout, VK_NULL_HANDLE);
     vkDestroySwapchainKHR(m_Device, m_SwapChain, VK_NULL_HANDLE);
     vkDestroyDevice(m_Device, VK_NULL_HANDLE);
     vkDestroySurfaceKHR(m_Instance, m_Surface, VK_NULL_HANDLE);
     vkDestroyInstance(m_Instance, VK_NULL_HANDLE);
+}
+
+void RendererAPI::Draw() {
+    uint32_t imageIndex;
+    vkAcquireNextImageKHR(m_Device, m_SwapChain, std::numeric_limits<uint64_t>::max(),
+                          m_ImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+
+    VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphore };
+    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+
+    /* submit command buffer */
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = waitSemaphores;
+    submitInfo.pWaitDstStageMask = waitStages;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &m_CommandBuffers[imageIndex];
+
+    VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphore };
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+
+    if (vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+        throw std::runtime_error("failed to submit draw command buffer!");
+
+    VkPresentInfoKHR presentInfo = {};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = signalSemaphores;
+
+    VkSwapchainKHR swapChains[] = { m_SwapChain };
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = swapChains;
+    presentInfo.pImageIndices = &imageIndex;
+    presentInfo.pResults = nullptr; // Optional
+
+    vkQueuePresentKHR(m_PresentQueue, &presentInfo);
+    vkQueueWaitIdle(m_PresentQueue);
+}
+
+void RendererAPI::StopAndExitDraw() {
+    vkDeviceWaitIdle(m_Device);
 }

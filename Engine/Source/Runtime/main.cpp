@@ -30,7 +30,10 @@ int main() {
 
     while (!window.WindowShouldClose()) {
         FourierPollEvents();
+        renderer.Draw();
     }
+
+    renderer.StopAndExitDraw();
 
     return 0;
 }
