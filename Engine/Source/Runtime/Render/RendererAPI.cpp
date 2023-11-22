@@ -28,8 +28,8 @@
 #include "Window/Window.h"
 #include "Utils/IOUtils.h"
 
-#define FOURIER_SHADER_MODULE_OF_VERTEX_BINARY_FILE "../Engine/Source/Binaries/vert.spv"
-#define FOURIER_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE "../Engine/Source/Binaries/frag.spv"
+#define FOURIER_SHADER_MODULE_OF_VERTEX_BINARY_FILE "../Engine/Binaries/vert.spv"
+#define FOURIER_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE "../Engine/Binaries/frag.spv"
 
 #define VK_LAYER_KHRONOS_validation "VK_LAYER_KHRONOS_validation"
 
