@@ -22,13 +22,15 @@
 #include <cstring>
 #include <algorithm>
 #include <limits>
+#include <set>
+
 #include "Window/Window.h"
 
 #define VK_LAYER_LUNARG_standard_validation "VK_LAYER_LUNARG_standard_validation"
 
 #define vkFourierCreate(name, ...) \
     if (vkCreate##name(__VA_ARGS__) != VK_SUCCESS) \
-        fourier::error("FourierEngine Error: create vulkan object handle failed!")
+        throw std::runtime_error("FourierEngine Error: create vulkan object for `{}` handle failed!")
 
 /* Get required instance extensions for vulkan. */
 void FourierGetRequiredInstanceExtensions(std::vector<const char *> &vec,
@@ -87,7 +89,7 @@ FourierSwapChainSupportDetails QuerySwapChainSupportDetails(VkPhysicalDevice dev
 }
 
 /* Find queue family. */
-QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) {
+QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
     QueueFamilyIndices queueFamilyIndices;
 
     uint32_t queueFamilyCount = 0;
@@ -99,6 +101,11 @@ QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) {
     for (const auto &queueFamily : queueFamilies) {
         if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
             queueFamilyIndices.graphicsFamily = i;
+
+        VkBool32 supportPresentMode = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &supportPresentMode);
+        if (queueFamilyCount > 0 && supportPresentMode)
+            queueFamilyIndices.presentFamily= i;
 
         if (queueFamilyIndices.isComplete())
             break;
@@ -218,7 +225,7 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
     }
 
     if (std::size(m_FourierPhysicalDevices) == 0)
-        fourier::error("FourierEngine Error: cannot found physical device for support vulkan api!");
+        fourier_throw_error("FourierEngine Error: cannot found physical device for support vulkan api!");
 
     std::cout << "FourierEngine Renderer API: All physical devices supports for vulkan: " << std::endl;
     for (auto &device : m_FourierPhysicalDevices)
@@ -229,18 +236,9 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
     m_PhysicalDevice = fourierPhysicalDevice.handle;
     std::cout << "FourierEngine Renderer API: Using device: " << "<" << fourierPhysicalDevice.deviceName << ">" << std::endl;
 
-    /** Find queue for graphics family and build create device queue struct. */
-    m_QueueFamilyIndices = FindQueueFamilies(m_PhysicalDevice);
-    VkDeviceQueueCreateInfo deviceQueueCreateInfo = {};
-    deviceQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    deviceQueueCreateInfo.queueFamilyIndex = m_QueueFamilyIndices.graphicsFamily.value();
-    deviceQueueCreateInfo.queueCount = 1;
-    float queuePriority = 1.0f;
-    deviceQueueCreateInfo.pQueuePriorities = &queuePriority;
-
     /** Create surface of glfw. */
     if (glfwCreateWindowSurface(m_Instance, p_window->GetWindowHandle(), VK_NULL_HANDLE, &m_Surface) != VK_SUCCESS)
-        fourier::error("failed to create window surface!");
+        fourier_throw_error("failed to create window surface!");
 
     /* Enumerate device extensions. */
     uint32_t deviceExtensionCount = 0;
@@ -256,23 +254,40 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
     /* Get required extensions for device. */
     FourierGetRequiredDeviceExtensions(m_RequiredDeviceExtensions, m_VkDeviceExtensionPropertiesSupports);
 
+    /** Find queue for graphics family and build create device queue struct. */
+    m_QueueFamilyIndices = FindQueueFamilies(m_PhysicalDevice, m_Surface);
+    std::set<uint32_t> uniqueQueueFamilies = { m_QueueFamilyIndices.graphicsFamily, m_QueueFamilyIndices.presentFamily };
+
+    std::vector<VkDeviceQueueCreateInfo> deviceQueueCreateInfos;
+    float queuePriority = 1.0f;
+    for (uint32_t queueFamily : uniqueQueueFamilies) {
+        VkDeviceQueueCreateInfo deviceQueueCreateInfo = {};
+        deviceQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        deviceQueueCreateInfo.queueFamilyIndex = queueFamily;
+        deviceQueueCreateInfo.queueCount = 1;
+        deviceQueueCreateInfo.pQueuePriorities = &queuePriority;
+        deviceQueueCreateInfos.push_back(deviceQueueCreateInfo);
+    }
+
     /** Create logical device object handle. */
     VkDeviceCreateInfo deviceCreateInfo = {};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    deviceCreateInfo.queueCreateInfoCount = 1;
-    deviceCreateInfo.pQueueCreateInfos = &deviceQueueCreateInfo;
+    deviceCreateInfo.queueCreateInfoCount = std::size(deviceQueueCreateInfos);
+    deviceCreateInfo.pQueueCreateInfos = std::data(deviceQueueCreateInfos);
     VkPhysicalDeviceFeatures features = {};
     deviceCreateInfo.pEnabledFeatures = &features;
     deviceCreateInfo.enabledExtensionCount = std::size(m_RequiredDeviceExtensions);
     deviceCreateInfo.ppEnabledExtensionNames = std::data(m_RequiredDeviceExtensions);
     vkFourierCreate(Device, m_PhysicalDevice, &deviceCreateInfo, VK_NULL_HANDLE, &m_Device);
 
+    vkGetDeviceQueue(m_Device, m_QueueFamilyIndices.presentFamily, 0, &presentQueue);
+
     /** Create swap chain. */
     FourierSwapChainSupportDetails swapChainDetails = QuerySwapChainSupportDetails(m_PhysicalDevice, m_Surface);
 
-    VkSurfaceFormatKHR surfaceFormat = SelectSwapSurfaceFormat(swapChainDetails.formats);
-    VkPresentModeKHR presentMode = SelectSwapSurfacePresentMode(swapChainDetails.presentModes);
-    VkExtent2D extent = SelectSwapExtent(swapChainDetails.capabilities, p_window);
+    m_SurfaceFormatKHR = SelectSwapSurfaceFormat(swapChainDetails.formats);
+    m_SurfacePresentModeKHR = SelectSwapSurfacePresentMode(swapChainDetails.presentModes);
+    m_SurfaceExtent = SelectSwapExtent(swapChainDetails.capabilities, p_window);
 
     uint32_t swapchainImageCount = swapChainDetails.capabilities.minImageCount + 1;
     if (swapChainDetails.capabilities.maxImageCount > 0 && swapchainImageCount > swapChainDetails.capabilities.maxImageCount)
@@ -282,17 +297,46 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
     swapchainCreateInfoKhr.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     swapchainCreateInfoKhr.surface = m_Surface;
     swapchainCreateInfoKhr.minImageCount = swapchainImageCount;
-    swapchainCreateInfoKhr.imageFormat = surfaceFormat.format;
-    swapchainCreateInfoKhr.imageColorSpace = surfaceFormat.colorSpace;
-    swapchainCreateInfoKhr.imageExtent = extent;
+    swapchainCreateInfoKhr.imageFormat = m_SurfaceFormatKHR.format;
+    swapchainCreateInfoKhr.imageColorSpace = m_SurfaceFormatKHR.colorSpace;
+    swapchainCreateInfoKhr.imageExtent = m_SurfaceExtent;
     swapchainCreateInfoKhr.imageArrayLayers = 1;
     swapchainCreateInfoKhr.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     swapchainCreateInfoKhr.preTransform = swapChainDetails.capabilities.currentTransform;
     swapchainCreateInfoKhr.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    swapchainCreateInfoKhr.presentMode = presentMode;
+    swapchainCreateInfoKhr.presentMode = m_SurfacePresentModeKHR;
     swapchainCreateInfoKhr.clipped = VK_TRUE;
     swapchainCreateInfoKhr.oldSwapchain = VK_NULL_HANDLE;
     vkFourierCreate(SwapchainKHR, m_Device, &swapchainCreateInfoKhr, VK_NULL_HANDLE, &m_SwapChain);
+
+    vkGetSwapchainImagesKHR(m_Device, m_SwapChain, &m_SwapChainImageSize, VK_NULL_HANDLE);
+    m_SwapChainImages.resize(m_SwapChainImageSize);
+    vkGetSwapchainImagesKHR(m_Device, m_SwapChain, &m_SwapChainImageSize, std::data(m_SwapChainImages));
+
+    /** Create image views. */
+    std::vector<VkImageView> swapChainImageViews(m_SwapChainImageSize);
+    for (uint32_t i = 0; i < m_SwapChainImageSize; i++) {
+        VkImageViewCreateInfo imageViewCreateInfo = {};
+        imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        imageViewCreateInfo.image = m_SwapChainImages[i];
+        imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        imageViewCreateInfo.format = m_SurfaceFormatKHR.format;
+        imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+        imageViewCreateInfo.subresourceRange.levelCount = 1;
+        imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+        imageViewCreateInfo.subresourceRange.layerCount = 1;
+        vkFourierCreate(ImageView, m_Device, &imageViewCreateInfo, VK_NULL_HANDLE, &swapChainImageViews[i]);
+        fourier_logger_info("FourierEngine Renderer API: Create image view for swapchain, image view index: {}", i);
+    }
+
+    /** Create graphics pipeline in vulkan. */
+    VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {};
+    // TODO vkFourierCreate(GraphicsPipelines, m_Device, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, VK_NULL_HANDLE, &m_GraphicsPipeline);
 
     std::cout << "FourierEngine Renderer API: The initialize vulkan api success! " << std::endl;
 }

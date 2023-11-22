@@ -29,7 +29,7 @@ FourierWindow::FourierWindow(int width, int height, const char *title) : m_Width
 
     if (m_Window == NULL) {
         glfwTerminate();
-        fourier::error("FourierEngine Error: create window failed, cause window pointer is NULL!");
+        fourier_throw_error("FourierEngine Error: create window failed, cause window pointer is NULL!");
     }
 
     glfwSetWindowUserPointer(m_Window, this);

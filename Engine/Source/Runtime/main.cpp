@@ -20,13 +20,14 @@
 #include "Window/Window.h"
 #include "Render/RendererAPI.h"
 
+
 int main() {
     auto window = FourierWindow(600, 800, "FourierEngine(vulkan)");
-
     RendererAPI renderer(&window);
 
     while (!window.WindowShouldClose()) {
         FourierPollEvents();
     }
+
     return 0;
 }

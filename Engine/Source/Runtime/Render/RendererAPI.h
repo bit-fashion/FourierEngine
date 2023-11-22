@@ -33,9 +33,10 @@ struct FourierPhysicalDevice {
 };
 
 struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
+    uint32_t graphicsFamily = 0;
+    uint32_t presentFamily = 0;
     bool isComplete() const {
-        return graphicsFamily.has_value();
+        return graphicsFamily > 0 && presentFamily > 0;
     }
 };
 
@@ -45,6 +46,9 @@ struct FourierSwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
+/**
+ * Render API Interface.
+ */
 class RendererAPI {
 public:
     /* Init vulkan render api. */
@@ -57,7 +61,16 @@ private:
     VkDevice m_Device = VK_NULL_HANDLE;
     VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
     VkSwapchainKHR m_SwapChain = VK_NULL_HANDLE;
+    VkPipeline m_GraphicsPipeline = VK_NULL_HANDLE;
+    VkPresentModeKHR m_SurfacePresentModeKHR;
+    VkSurfaceFormatKHR m_SurfaceFormatKHR;
+    VkExtent2D m_SurfaceExtent;
     QueueFamilyIndices m_QueueFamilyIndices;
+    /* Queue */
+    VkQueue presentQueue;
+    /* SwapChain */
+    uint32_t m_SwapChainImageSize;
+    std::vector<VkImage> m_SwapChainImages;
     /* Vectors. */
     std::vector<const char *> m_RequiredInstanceExtensions;
     std::vector<const char *> m_RequiredInstanceLayers;

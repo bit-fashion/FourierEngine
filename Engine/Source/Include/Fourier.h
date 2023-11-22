@@ -21,13 +21,16 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <format>
 
 #define FOURIER_DEBUG
 #define FOURIER_ENGINE "FourierEngine"
 #define FOURIER_ENGINE_MAX_DEVICE_NAME_SIZE 256U
 
+#define fourier_logger_info(fmt, ...) printf("%s\n", std::format(fmt, __VA_ARGS__).c_str())
+#define fourier_logger_error(fmt, ...)
+#define fourier_throw_error(fmt, ...) throw std::runtime_error(std::format(fmt, ##__VA_ARGS__))
+
 namespace fourier {
-    static void error(const char *info) {
-        throw std::runtime_error(info);
-    }
+
 }
