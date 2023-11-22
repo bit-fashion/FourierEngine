@@ -23,8 +23,13 @@
 #include <algorithm>
 #include <limits>
 #include <set>
+#include <glm.hpp>
 
 #include "Window/Window.h"
+#include "Utils/IOUtils.h"
+
+#define FOURIER_SHADER_MODULE_OF_VERTEX_BINARY_FILE "../Engine/Source/Binaries/vert.spv"
+#define FOURIER_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE "../Engine/Source/Binaries/frag.spv"
 
 #define VK_LAYER_LUNARG_standard_validation "VK_LAYER_LUNARG_standard_validation"
 
@@ -157,6 +162,26 @@ VkExtent2D SelectSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, Fourie
 
         return actualExtent;
     }
+}
+
+VkShaderModule LoadShaderModule(VkDevice device, const char *file_path) {
+    char *buf;
+    size_t size;
+    VkShaderModule shader;
+
+    /* load shader binaries. */
+    buf = fourier_load_binaries(file_path, &size);
+
+    VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
+    shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    shaderModuleCreateInfo.codeSize = size;
+    shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(buf);
+    vkFourierCreate(ShaderModule, device, &shaderModuleCreateInfo, VK_NULL_HANDLE, &shader);
+
+    /* free binaries buf. */
+    fourier_free_binaries(buf);
+
+    return shader;
 }
 
 RendererAPI::RendererAPI(FourierWindow *p_window) {
@@ -334,15 +359,35 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
         fourier_logger_info("FourierEngine Renderer API: Create image view for swapchain, image view index: {}", i);
     }
 
+    /** Create shader of vertex & fragment module. */
+    std::cout << "FourierEngine Renderer API: Loading and create vertex shader module from: " << FOURIER_SHADER_MODULE_OF_VERTEX_BINARY_FILE << std::endl;
+    VkShaderModule vertex_shader_module = LoadShaderModule(m_Device, FOURIER_SHADER_MODULE_OF_VERTEX_BINARY_FILE);
+    std::cout << "FourierEngine Renderer API: Loading and create vertex shader module success!" << std::endl;
+
+    std::cout << "FourierEngine Renderer API: Loading and create fragment shader module from: " << FOURIER_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE << std::endl;
+    VkShaderModule fragment_shader_module = LoadShaderModule(m_Device, FOURIER_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE);
+    std::cout << "FourierEngine Renderer API: Loading and create fragment shader module success!" << std::endl;
+
+    /** Create pipeline phase of shader */
+    VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo = {};
+    pipelineShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    pipelineShaderStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    pipelineShaderStageCreateInfo.module = vertex_shader_module;
+    pipelineShaderStageCreateInfo.pName = "main";
+
     /** Create graphics pipeline in vulkan. */
     VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {};
     // TODO vkFourierCreate(GraphicsPipelines, m_Device, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, VK_NULL_HANDLE, &m_GraphicsPipeline);
+
+    /** Destroy shader module. */
+    vkDestroyShaderModule(m_Device, vertex_shader_module, VK_NULL_HANDLE);
+    vkDestroyShaderModule(m_Device, fragment_shader_module, VK_NULL_HANDLE);
 
     std::cout << "FourierEngine Renderer API: The initialize vulkan api success! " << std::endl;
 }
 
 RendererAPI::~RendererAPI() {
-    vkDestroySwapchainKHR(m_Device, m_SwapChain, nullptr);
+    vkDestroySwapchainKHR(m_Device, m_SwapChain, VK_NULL_HANDLE);
     vkDestroyDevice(m_Device, VK_NULL_HANDLE);
     vkDestroySurfaceKHR(m_Instance, m_Surface, VK_NULL_HANDLE);
     vkDestroyInstance(m_Instance, VK_NULL_HANDLE);

@@ -47,6 +47,7 @@ add_executable(${PROJECT_NAME}
         "Engine/Source/Runtime/Render/RendererAPI.cpp"
         # Import glad src.
         "Engine/Source/ThirdParty/glad/src/glad.c"
+        Engine/Source/Runtime/Utils/IOUtils.h
 )
 
 target_link_libraries(${PROJECT_NAME}
