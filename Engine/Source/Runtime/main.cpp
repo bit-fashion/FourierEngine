@@ -24,6 +24,8 @@
 int main() {
     auto window = FourierWindow(600, 800, "FourierEngine(vulkan)");
     RendererAPI renderer(&window);
+    /* When RenderAPI loading success that show window to screen. */
+    window.ShowWindowInScreen();
 
     while (!window.WindowShouldClose()) {
         FourierPollEvents();

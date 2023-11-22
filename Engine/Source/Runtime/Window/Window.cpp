@@ -42,6 +42,9 @@ FourierWindow::FourierWindow(int width, int height, const char *title) : m_Width
         if (pFourierWindow->m_FnFourierResizableWindowCallback != NULL)
             pFourierWindow->m_FnFourierResizableWindowCallback(pFourierWindow, width, height);
     });
+
+    /* Default hide window. */
+    glfwHideWindow(m_Window);
 }
 
 FourierWindow::~FourierWindow() {
@@ -51,4 +54,8 @@ FourierWindow::~FourierWindow() {
 
 bool FourierWindow::WindowShouldClose() {
     return glfwWindowShouldClose(m_Window);
+}
+
+void FourierWindow::ShowWindowInScreen() {
+    glfwShowWindow(m_Window);
 }

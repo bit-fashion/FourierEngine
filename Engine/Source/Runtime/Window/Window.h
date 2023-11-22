@@ -33,6 +33,7 @@ public:
     ~FourierWindow();
     /* Support functions. */
     bool WindowShouldClose();
+    void ShowWindowInScreen();
 
 public:
     /* Get/Set member variables. */
