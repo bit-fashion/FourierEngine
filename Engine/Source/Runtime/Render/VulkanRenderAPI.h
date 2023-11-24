@@ -27,11 +27,17 @@
 
 class FourierWindow;
 
-struct FourierPhysicalDevice {
+/**
+ * Physical device struct.
+ */
+struct PhysicalDeviceProperties {
     VkPhysicalDevice handle;
     char deviceName[FOURIER_ENGINE_MAX_DEVICE_NAME_SIZE];
 };
 
+/**
+ * Queue family indices struct.
+ */
 struct QueueFamilyIndices {
     uint32_t graphicsFamily = 0;
     uint32_t presentFamily = 0;
@@ -40,6 +46,9 @@ struct QueueFamilyIndices {
     }
 };
 
+/**
+ * SwapChain supports details struct.
+ */
 struct FourierSwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
@@ -49,15 +58,14 @@ struct FourierSwapChainSupportDetails {
 /**
  * Render API Interface.
  */
-class RendererAPI {
+class VulkanRenderAPI {
 public:
     /* Init vulkan render api. */
-    RendererAPI(FourierWindow *p_window);
-    ~RendererAPI();
+    explicit VulkanRenderAPI(FourierWindow *p_window);
+    ~VulkanRenderAPI();
 
 public:
     void Draw();
-    void StopAndExitDraw();
 
 private:
     /* Handle object. */
@@ -91,7 +99,7 @@ private:
     std::vector<const char *> m_RequiredInstanceExtensions;
     std::vector<const char *> m_RequiredInstanceLayers;
     std::vector<const char *> m_RequiredDeviceExtensions;
-    std::vector<FourierPhysicalDevice> m_FourierPhysicalDevices;
+    std::vector<PhysicalDeviceProperties> m_PhysicalDevices;
     /* Map */
     std::unordered_map<std::string, VkExtensionProperties> m_VkInstanceExtensionPropertiesSupports;
     std::unordered_map<std::string, VkLayerProperties> m_VkInstanceLayerPropertiesSupports;

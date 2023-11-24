@@ -17,7 +17,7 @@
  * ************************************************************************/
 
 /* Creates on 2023/11/21. */
-#include "RendererAPI.h"
+#include "VulkanRenderAPI.h"
 #include <GLFW/glfw3.h>
 #include <cstring>
 #include <algorithm>
@@ -39,6 +39,8 @@
 #define vkFourierAllocate(name, ...) \
     if (vkAllocate##name(__VA_ARGS__) != VK_SUCCESS) \
         throw std::runtime_error("FourierEngine Error: allocate vulkan object for `{}` handle failed!")
+#define FOURIER_LOGGER_INIT_VULKAN_API(fmt, ...) \
+  fourier_logger_info("[FOURIER ENGINE] [INIT_VULKAN_API] IF/ - {}", std::format(fmt, ##__VA_ARGS__))
 
 /* Get required instance extensions for vulkan. */
 void FourierGetRequiredInstanceExtensions(std::vector<const char *> &vec,
@@ -187,15 +189,15 @@ VkShaderModule LoadShaderModule(VkDevice device, const char *file_path) {
     return shader;
 }
 
-RendererAPI::RendererAPI(FourierWindow *p_window) {
+VulkanRenderAPI::VulkanRenderAPI(FourierWindow *p_window) {
     /* Enumerate instance available extensions. */
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, NULL);
     std::vector<VkExtensionProperties> extensions(extensionCount);
     vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, std::data(extensions));
-    std::cout << "FourierEngine Renderer API: Vulkan render api available extensions for instance: " << std::endl;
+    FOURIER_LOGGER_INIT_VULKAN_API("Vulkan render api available extensions for instance:");
     for (auto &extension : extensions) {
-        std::cout << "    " << extension.extensionName << std::endl;
+        FOURIER_LOGGER_INIT_VULKAN_API("    {}", extension.extensionName);
         m_VkInstanceExtensionPropertiesSupports.insert({extension.extensionName, extension});
     }
 
@@ -204,9 +206,9 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
     vkEnumerateInstanceLayerProperties(&layerCount, NULL);
     std::vector<VkLayerProperties> layers(layerCount);
     vkEnumerateInstanceLayerProperties(&layerCount, std::data(layers));
-    std::cout << "FourierEngine Renderer API: Vulkan render api available layer list: " << std::endl;
+    FOURIER_LOGGER_INIT_VULKAN_API("Vulkan render api available layer list: ");
     for (auto &layer : layers) {
-        std::cout << "    " << layer.layerName << std::endl;
+        FOURIER_LOGGER_INIT_VULKAN_API("    {}", layer.layerName);
         m_VkInstanceLayerPropertiesSupports.insert({layer.layerName, layer});
     }
 
@@ -229,6 +231,9 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
 
     instanceCreateInfo.enabledExtensionCount = std::size(m_RequiredInstanceExtensions);
     instanceCreateInfo.ppEnabledExtensionNames = std::data(m_RequiredInstanceExtensions);
+    FOURIER_LOGGER_INIT_VULKAN_API("Used vulkan extension for instance count: {}", std::size(m_RequiredInstanceExtensions));
+    for (const auto& name : m_RequiredInstanceExtensions)
+        FOURIER_LOGGER_INIT_VULKAN_API("    {}", name);
 
     instanceCreateInfo.enabledLayerCount = std::size(m_RequiredInstanceLayers);
     instanceCreateInfo.ppEnabledLayerNames = std::data(m_RequiredInstanceLayers);
@@ -241,28 +246,28 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(m_Instance, &deviceCount, std::data(devices));
     for (auto &device : devices) {
-        FourierPhysicalDevice fourierPhysicalDevice = {};
-        fourierPhysicalDevice.handle = device;
+        PhysicalDeviceProperties physicalDeviceProperties = {};
+        physicalDeviceProperties.handle = device;
         /* Get physical device detail properties. */
         VkPhysicalDeviceProperties properties;
         vkGetPhysicalDeviceProperties(device, &properties);
-        /* Set properties to FourierPhysicalDevice properties struct object. */
-        memcpy(fourierPhysicalDevice.deviceName, properties.deviceName, FOURIER_ENGINE_MAX_DEVICE_NAME_SIZE);
+        /* Set properties to PhysicalDeviceProperties properties struct object. */
+        memcpy(physicalDeviceProperties.deviceName, properties.deviceName, FOURIER_ENGINE_MAX_DEVICE_NAME_SIZE);
         /* Save. */
-        m_FourierPhysicalDevices.push_back(fourierPhysicalDevice);
+        m_PhysicalDevices.push_back(physicalDeviceProperties);
     }
 
-    if (std::size(m_FourierPhysicalDevices) == 0)
+    if (std::size(m_PhysicalDevices) == 0)
         fourier_throw_error("FourierEngine Error: cannot found physical device for support vulkan api!");
 
-    std::cout << "FourierEngine Renderer API: All physical devices supports for vulkan: " << std::endl;
-    for (auto &device : m_FourierPhysicalDevices)
-        std::cout << "    " << device.deviceName << std::endl;
+    FOURIER_LOGGER_INIT_VULKAN_API("All physical devices supports for vulkan: ");
+    for (auto &device : m_PhysicalDevices)
+        FOURIER_LOGGER_INIT_VULKAN_API("    {}", device.deviceName);
 
     /** Select current using physical device. */
-    FourierPhysicalDevice fourierPhysicalDevice = m_FourierPhysicalDevices[0];
+    PhysicalDeviceProperties fourierPhysicalDevice = m_PhysicalDevices[0];
     m_PhysicalDevice = fourierPhysicalDevice.handle;
-    std::cout << "FourierEngine Renderer API: Using device: " << "<" << fourierPhysicalDevice.deviceName << ">" << std::endl;
+    FOURIER_LOGGER_INIT_VULKAN_API("Using device: <{}>", fourierPhysicalDevice.deviceName);
 
     /** Create surface of glfw. */
     if (glfwCreateWindowSurface(m_Instance, p_window->GetWindowHandle(), VK_NULL_HANDLE, &m_Surface) != VK_SUCCESS)
@@ -273,9 +278,9 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
     vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, VK_NULL_HANDLE, &deviceExtensionCount, VK_NULL_HANDLE);
     std::vector<VkExtensionProperties> deviceExtensions(deviceExtensionCount);
     vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, VK_NULL_HANDLE, &deviceExtensionCount, std::data(deviceExtensions));
-    std::cout << "FourierEngine Renderer API: Vulkan render api logical device available extensions: " << std::endl;
+    FOURIER_LOGGER_INIT_VULKAN_API("Vulkan render api logical device available extensions: ");
     for (auto &extension : deviceExtensions) {
-        std::cout << "    " << extension.extensionName << std::endl;
+        FOURIER_LOGGER_INIT_VULKAN_API("    {}", extension.extensionName);
         m_VkDeviceExtensionPropertiesSupports.insert({extension.extensionName, extension});
     }
 
@@ -362,7 +367,7 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
         imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
         imageViewCreateInfo.subresourceRange.layerCount = 1;
         vkFourierCreate(ImageView, m_Device, &imageViewCreateInfo, VK_NULL_HANDLE, &m_SwapChainImageViews[i]);
-        fourier_logger_info("FourierEngine Renderer API: Create image view for swapchain, image view index: {}", i);
+        FOURIER_LOGGER_INIT_VULKAN_API("Create image view for swapchain, image view index: {}", i);
     }
 
     /** Create render pass. */
@@ -405,13 +410,13 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
     vkFourierCreate(RenderPass, m_Device, &renderPassCreateInfo, VK_NULL_HANDLE, &m_RenderPass);
 
     /** Create shader of vertex & fragment module. */
-    std::cout << "FourierEngine Renderer API: Loading and create vertex shader module from: " << FOURIER_SHADER_MODULE_OF_VERTEX_BINARY_FILE << std::endl;
+    FOURIER_LOGGER_INIT_VULKAN_API("Loading and create vertex shader module from: {}", FOURIER_SHADER_MODULE_OF_VERTEX_BINARY_FILE);
     VkShaderModule vertex_shader_module = LoadShaderModule(m_Device, FOURIER_SHADER_MODULE_OF_VERTEX_BINARY_FILE);
-    std::cout << "FourierEngine Renderer API: Loading and create vertex shader module success!" << std::endl;
+    FOURIER_LOGGER_INIT_VULKAN_API("Loading and create vertex shader module success!");
 
-    std::cout << "FourierEngine Renderer API: Loading and create fragment shader module from: " << FOURIER_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE << std::endl;
+    FOURIER_LOGGER_INIT_VULKAN_API("Loading and create fragment shader module from: {}", FOURIER_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE);
     VkShaderModule fragment_shader_module = LoadShaderModule(m_Device, FOURIER_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE);
-    std::cout << "FourierEngine Renderer API: Loading and create fragment shader module success!" << std::endl;
+    FOURIER_LOGGER_INIT_VULKAN_API("Loading and create fragment shader module success!");
 
     /** Create pipeline phase of vertex and fragment shader */
     VkPipelineShaderStageCreateInfo pipelineVertexShaderStageCreateInfo = {};
@@ -641,10 +646,10 @@ RendererAPI::RendererAPI(FourierWindow *p_window) {
     vkFourierCreate(Semaphore, m_Device, &semaphoreCreateInfo, VK_NULL_HANDLE, &m_ImageAvailableSemaphore);
     vkFourierCreate(Semaphore, m_Device, &semaphoreCreateInfo, VK_NULL_HANDLE, &m_RenderFinishedSemaphore);
 
-    std::cout << "FourierEngine Renderer API: The initialize vulkan api success! " << std::endl;
+    FOURIER_LOGGER_INIT_VULKAN_API("The initialize vulkan api success!");
 }
 
-RendererAPI::~RendererAPI() {
+VulkanRenderAPI::~VulkanRenderAPI() {
     vkDestroySemaphore(m_Device, m_ImageAvailableSemaphore, nullptr);
     vkDestroySemaphore(m_Device, m_RenderFinishedSemaphore, nullptr);
 
@@ -667,7 +672,7 @@ RendererAPI::~RendererAPI() {
     vkDestroyInstance(m_Instance, VK_NULL_HANDLE);
 }
 
-void RendererAPI::Draw() {
+void VulkanRenderAPI::Draw() {
     uint32_t imageIndex;
     vkAcquireNextImageKHR(m_Device, m_SwapChain, std::numeric_limits<uint64_t>::max(),
                           m_ImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
@@ -705,8 +710,4 @@ void RendererAPI::Draw() {
 
     vkQueuePresentKHR(m_PresentQueue, &presentInfo);
     vkQueueWaitIdle(m_PresentQueue);
-}
-
-void RendererAPI::StopAndExitDraw() {
-    vkDeviceWaitIdle(m_Device);
 }

@@ -16,22 +16,12 @@
  *
  * ************************************************************************/
 
-/* Creates on 2022/9/14. */
-#include "Window/Window.h"
-#include "Render/VulkanRenderAPI.h"
+/* Creates on 2023/11/21. */
+#pragma once
 
-#include "Utils/IOUtils.h"
+/** this macro define is used for switch debugging code. */
+#define FOURIER_DEBUG
 
-int main() {
-    auto window = FourierWindow(1280, 1000, "FourierEngine(vulkan)");
-    VulkanRenderAPI renderer(&window);
-    /* When RenderAPI loading success that show window to screen. */
-    window.ShowWindowInScreen();
-
-    while (!window.WindowShouldClose()) {
-        FourierPollEvents();
-        renderer.Draw();
-    }
-
-    return 0;
-}
+/** if define this macro, the project will be compile the demo
+ *  file of vulkan. */
+#define COMPILE_VULKAN_DEMO
