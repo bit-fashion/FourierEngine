@@ -24,6 +24,8 @@
 #include <limits>
 #include <set>
 #include <glm.hpp>
+#include <gtc/matrix_transform.hpp>
+#include <chrono>
 
 #include "Window/Window.h"
 #include "Utils/IOUtils.h"
@@ -444,6 +446,67 @@ VulkanRenderAPI::VulkanRenderAPI(FourierWindow *p_window) {
 
     VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfos[] = { pipelineVertexShaderStageCreateInfo, pipelineFragmentStageCreateInfo };
 
+    /** Descriptor set */
+    VkDescriptorSetLayoutBinding descriptorSetLayoutBinding = {};
+    descriptorSetLayoutBinding.binding = 0;
+    descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptorSetLayoutBinding.descriptorCount = 1;
+    descriptorSetLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    descriptorSetLayoutBinding.pImmutableSamplers = nullptr; // Optional
+
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
+    descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    descriptorSetLayoutCreateInfo.bindingCount = 1;
+    descriptorSetLayoutCreateInfo.pBindings = &descriptorSetLayoutBinding;
+
+    vkFourierCreate(DescriptorSetLayout, m_Device, &descriptorSetLayoutCreateInfo, VK_NULL_HANDLE, &m_DescriptorSetLayout);
+
+    /** Create and bind buffers */
+    BindVertexBuffer();
+    BindIndexBuffer();
+    BindUniformBuffer();
+
+    /** Create descriptor set pool */
+    VkDescriptorPoolSize poolSize = {};
+    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSize.descriptorCount = 1;
+
+    VkDescriptorPoolCreateInfo descriptorPoolCrateInfo = {};
+    descriptorPoolCrateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    descriptorPoolCrateInfo.poolSizeCount = 1;
+    descriptorPoolCrateInfo.pPoolSizes = &poolSize;
+    descriptorPoolCrateInfo.maxSets = 1;
+
+    vkFourierCreate(DescriptorPool, m_Device, &descriptorPoolCrateInfo, VK_NULL_HANDLE, &m_DescriptorPool);
+
+    /** Allocate descriptor set */
+    VkDescriptorSetLayout descriptorSetLayouts[] = {m_DescriptorSetLayout};
+    VkDescriptorSetAllocateInfo descriptorAllocateInfo = {};
+    descriptorAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    descriptorAllocateInfo.descriptorPool = m_DescriptorPool;
+    descriptorAllocateInfo.descriptorSetCount = 1;
+    descriptorAllocateInfo.pSetLayouts = descriptorSetLayouts;
+
+    vkAllocateDescriptorSets(m_Device, &descriptorAllocateInfo, &m_DescriptorSet);
+
+    VkDescriptorBufferInfo descriptorBufferInfo = {};
+    descriptorBufferInfo.buffer = m_UniformBuffer;
+    descriptorBufferInfo.offset = 0;
+    descriptorBufferInfo.range = sizeof(UniformBufferObject);
+
+    VkWriteDescriptorSet descriptorWrite = {};
+    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrite.dstSet = m_DescriptorSet;
+    descriptorWrite.dstBinding = 0;
+    descriptorWrite.dstArrayElement = 0;
+    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptorWrite.descriptorCount = 1;
+    descriptorWrite.pBufferInfo = &descriptorBufferInfo;
+    descriptorWrite.pImageInfo = nullptr; // Optional
+    descriptorWrite.pTexelBufferView = nullptr; // Optional
+
+    vkUpdateDescriptorSets(m_Device, 1, &descriptorWrite, 0, nullptr);
+
     /* pipeline features */
     VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo = {};
     pipelineVertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -489,7 +552,7 @@ VulkanRenderAPI::VulkanRenderAPI(FourierWindow *p_window) {
     pipelineRasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
     pipelineRasterizationStateCreateInfo.lineWidth = 1.0f;
     pipelineRasterizationStateCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-    pipelineRasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    pipelineRasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     pipelineRasterizationStateCreateInfo.depthBiasEnable = VK_FALSE;
     pipelineRasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f; // Optional
     pipelineRasterizationStateCreateInfo.depthBiasClamp = 0.0f; // Optional
@@ -549,8 +612,8 @@ VulkanRenderAPI::VulkanRenderAPI(FourierWindow *p_window) {
     /* 管道布局 */
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0; // Optional
-    pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &m_DescriptorSetLayout;
     pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
     pipelineLayoutInfo.pPushConstantRanges = 0; // Optional
 
@@ -624,10 +687,6 @@ VulkanRenderAPI::VulkanRenderAPI(FourierWindow *p_window) {
     vkFourierCreate(Semaphore, m_Device, &semaphoreCreateInfo, VK_NULL_HANDLE, &m_RenderFinishedSemaphore);
 
     FOURIER_LOGGER_INIT_VULKAN_API("The initialize vulkan api success!");
-
-    /** Bind vertex buffer */
-    BindVertexBuffer();
-    BindIndexBuffer();
 }
 
 VulkanRenderAPI::~VulkanRenderAPI() {
@@ -640,6 +699,8 @@ VulkanRenderAPI::~VulkanRenderAPI() {
     for (auto &framebuffer : m_SwapChainFramebuffers)
         vkDestroyFramebuffer(m_Device, framebuffer, VK_NULL_HANDLE);
 
+    vkDestroyDescriptorPool(m_Device, m_DescriptorPool, VK_NULL_HANDLE);
+    vkDestroyDescriptorSetLayout(m_Device, m_DescriptorSetLayout, VK_NULL_HANDLE);
     vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
     vkDestroyPipelineLayout(m_Device, m_GraphicsPipelineLayout, nullptr);
     vkDestroyRenderPass(m_Device, m_RenderPass, VK_NULL_HANDLE);
@@ -692,6 +753,10 @@ void VulkanRenderAPI::BeginRender() {
         vkCmdBindVertexBuffers(m_CommandBuffers[i], 0, 1, buffers, offsets);
         vkCmdBindIndexBuffer(m_CommandBuffers[i], m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
+        /* bind uniform buffer. */
+        vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipelineLayout, 0, 1,
+                                &m_DescriptorSet, 0, nullptr);
+
         /* draw call */
         vkCmdDrawIndexed(m_CommandBuffers[i], static_cast<uint32_t>(std::size(indices)), 1, 0, 0, 0);
 
@@ -711,6 +776,8 @@ void VulkanRenderAPI::Draw() {
 
     VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphore };
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+
+    UpdateUniformBuffer();
 
     /* submit command buffer */
     VkSubmitInfo submitInfo = {};
@@ -800,4 +867,43 @@ void VulkanRenderAPI::BindIndexBuffer() {
     vkMapMemory(m_Device, m_IndexBufferMemory, 0, bufferCreateInfo.size, 0, &data);
     memcpy(data, std::data(indices), (size_t) bufferCreateInfo.size);
     vkUnmapMemory(m_Device, m_IndexBufferMemory);
+}
+
+void VulkanRenderAPI::BindUniformBuffer() {
+    VkBufferCreateInfo bufferCreateInfo = {};
+    bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferCreateInfo.size = sizeof(struct UniformBufferObject);
+    bufferCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    vkFourierCreate(Buffer, m_Device, &bufferCreateInfo, VK_NULL_HANDLE, &m_UniformBuffer);
+
+    /** Query memory requirements. */
+    vkGetBufferMemoryRequirements(m_Device, m_UniformBuffer, &m_MemoryRequirements);
+
+    VkMemoryAllocateInfo memoryAllocInfo = {};
+    memoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memoryAllocInfo.allocationSize = m_MemoryRequirements.size;
+    memoryAllocInfo.memoryTypeIndex = FindMemoryType(m_MemoryRequirements.memoryTypeBits, m_PhysicalDevice,
+                                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    vkFourierAllocate(Memory, m_Device, &memoryAllocInfo, VK_NULL_HANDLE, &m_UniformBufferMemory);
+
+    vkBindBufferMemory(m_Device, m_UniformBuffer, m_UniformBufferMemory, 0);
+}
+
+void VulkanRenderAPI::UpdateUniformBuffer() {
+    static auto startTime = std::chrono::high_resolution_clock::now();
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.0f;
+
+    UniformBufferObject ubo = {};
+    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.proj = glm::perspective(glm::radians(45.0f), m_SwapChainExtent.width / (float) m_SwapChainExtent.height, 0.1f, 10.0f);
+    ubo.proj[1][1] *= -1;
+
+    void* data;
+    vkMapMemory(m_Device, m_UniformBufferMemory, 0, sizeof(ubo), 0, &data);
+    memcpy(data, &ubo, sizeof(ubo));
+    vkUnmapMemory(m_Device, m_UniformBufferMemory);
 }

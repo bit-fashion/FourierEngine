@@ -28,6 +28,7 @@ include_directories(SYSTEM
         "${CMAKE_SOURCE_DIR}/Engine/Source/ThirdParty/glfw/include"
         "${CMAKE_SOURCE_DIR}/Engine/Source/ThirdParty/glad/include"
         "${CMAKE_SOURCE_DIR}/Engine/Source/ThirdParty/glm"
+        "${CMAKE_SOURCE_DIR}/Engine/Source/ThirdParty/imgui"
         "${CMAKE_SOURCE_DIR}/Engine/Source/Include"
 )
 
@@ -52,4 +53,5 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
         vulkan-1
         glfw3
+        imm32
 )

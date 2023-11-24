@@ -99,6 +99,12 @@ const std::vector<uint16_t> indices = {
         0, 1, 2, 2, 3, 0
 };
 
+struct UniformBufferObject {
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 proj;
+};
+
 /**
  * Render API Interface.
  */
@@ -116,8 +122,11 @@ public:
 private:
     void BindVertexBuffer();
     void BindIndexBuffer();
+    void BindUniformBuffer();
+    void UpdateUniformBuffer();
 
 private:
+    struct UniformBufferObject ubo;
     /* Handle object. */
     VkInstance m_Instance = VK_NULL_HANDLE;
     VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
@@ -131,12 +140,17 @@ private:
     VkSurfaceFormatKHR m_SurfaceFormatKHR;
     QueueFamilyIndices m_QueueFamilyIndices;
     VkCommandPool m_CommandPool = VK_NULL_HANDLE;
+    VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
+    VkDescriptorSet m_DescriptorSet = VK_NULL_HANDLE;
     std::vector<VkCommandBuffer> m_CommandBuffers;
+    VkDescriptorSetLayout m_DescriptorSetLayout;
     /* memory */
     VkBuffer m_VertexBuffer = VK_NULL_HANDLE;
     VkDeviceMemory m_VertexBufferMemory = VK_NULL_HANDLE;
     VkBuffer m_IndexBuffer = VK_NULL_HANDLE;
     VkDeviceMemory m_IndexBufferMemory = VK_NULL_HANDLE;
+    VkBuffer m_UniformBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory m_UniformBufferMemory = VK_NULL_HANDLE;
     VkMemoryRequirements m_MemoryRequirements;
     /* semaphore */
     VkSemaphore m_ImageAvailableSemaphore;
