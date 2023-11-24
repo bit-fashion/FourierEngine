@@ -189,6 +189,17 @@ VkShaderModule LoadShaderModule(VkDevice device, const char *file_path) {
     return shader;
 }
 
+uint32_t FindMemoryType(uint32_t typeFilter, VkPhysicalDevice physicalDevice, VkMemoryPropertyFlags properties) {
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+    throw std::runtime_error("failed to find suitable memory type!");
+}
+
 VulkanRenderAPI::VulkanRenderAPI(FourierWindow *p_window) {
     /* Enumerate instance available extensions. */
     uint32_t extensionCount = 0;
@@ -436,10 +447,14 @@ VulkanRenderAPI::VulkanRenderAPI(FourierWindow *p_window) {
     /* pipeline features */
     VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo = {};
     pipelineVertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    pipelineVertexInputStateCreateInfo.vertexBindingDescriptionCount = 0;
-    pipelineVertexInputStateCreateInfo.pVertexBindingDescriptions = nullptr; // Optional
-    pipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount = 0;
-    pipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions = nullptr; // Optional
+
+    auto vertexInputBindingDescription = Vertex::GetVertexInputBindingDescription();
+    pipelineVertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
+    pipelineVertexInputStateCreateInfo.pVertexBindingDescriptions = &vertexInputBindingDescription;
+
+    auto vertexInputAttributeDescriptions = Vertex::GetVertexInputAttributeDescriptions();
+    pipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount = std::size(vertexInputAttributeDescriptions);
+    pipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions = std::data(vertexInputAttributeDescriptions);
 
     VkPipelineInputAssemblyStateCreateInfo pipelineInputAssembly = {};
     pipelineInputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -602,6 +617,44 @@ VulkanRenderAPI::VulkanRenderAPI(FourierWindow *p_window) {
 
     vkFourierAllocate(CommandBuffers, m_Device, &commandBufferAllocateInfo, std::data(m_CommandBuffers));
 
+    /** Create semaphores. */
+    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    vkFourierCreate(Semaphore, m_Device, &semaphoreCreateInfo, VK_NULL_HANDLE, &m_ImageAvailableSemaphore);
+    vkFourierCreate(Semaphore, m_Device, &semaphoreCreateInfo, VK_NULL_HANDLE, &m_RenderFinishedSemaphore);
+
+    FOURIER_LOGGER_INIT_VULKAN_API("The initialize vulkan api success!");
+
+    /** Create vertex buffer */
+    CreateVertexBuffer();
+}
+
+VulkanRenderAPI::~VulkanRenderAPI() {
+    vkDestroySemaphore(m_Device, m_ImageAvailableSemaphore, nullptr);
+    vkDestroySemaphore(m_Device, m_RenderFinishedSemaphore, nullptr);
+
+    vkFreeCommandBuffers(m_Device, m_CommandPool, std::size(m_CommandBuffers), std::data(m_CommandBuffers));
+    vkDestroyCommandPool(m_Device, m_CommandPool, VK_NULL_HANDLE);
+
+    for (auto &framebuffer : m_SwapChainFramebuffers)
+        vkDestroyFramebuffer(m_Device, framebuffer, VK_NULL_HANDLE);
+
+    vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
+    vkDestroyPipelineLayout(m_Device, m_GraphicsPipelineLayout, nullptr);
+    vkDestroyRenderPass(m_Device, m_RenderPass, VK_NULL_HANDLE);
+
+    for (auto &imageView : m_SwapChainImageViews)
+        vkDestroyImageView(m_Device, imageView, VK_NULL_HANDLE);
+
+    vkDestroyBuffer(m_Device, m_VertexBuffer, VK_NULL_HANDLE);
+    vkFreeMemory(m_Device, m_VertexBufferMemory, VK_NULL_HANDLE);
+    vkDestroySwapchainKHR(m_Device, m_SwapChain, VK_NULL_HANDLE);
+    vkDestroyDevice(m_Device, VK_NULL_HANDLE);
+    vkDestroySurfaceKHR(m_Instance, m_Surface, VK_NULL_HANDLE);
+    vkDestroyInstance(m_Instance, VK_NULL_HANDLE);
+}
+
+void VulkanRenderAPI::Draw() {
     /** Begin vulkan render. */
     for (uint32_t i = 0; i < m_SwapChainImageSize; i++) {
         /* start command buffers record. */
@@ -629,8 +682,13 @@ VulkanRenderAPI::VulkanRenderAPI(FourierWindow *p_window) {
         /* bind graphics pipeline. */
         vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
 
+        /* bind vertex buffer */
+        VkBuffer buffers[] = {m_VertexBuffer};
+        VkDeviceSize offsets[] = {0};
+        vkCmdBindVertexBuffers(m_CommandBuffers[i], 0, 1, buffers, offsets);
+
         /* draw call */
-        vkCmdDraw(m_CommandBuffers[i], 3, 1, 0, 0);
+        vkCmdDraw(m_CommandBuffers[i], std::size(triangleVertices), 1, 0, 0);
 
         /* end render pass */
         vkCmdEndRenderPass(m_CommandBuffers[i]);
@@ -640,39 +698,6 @@ VulkanRenderAPI::VulkanRenderAPI(FourierWindow *p_window) {
             throw std::runtime_error("failed to record command buffer!");
     }
 
-    /** Create semaphores. */
-    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
-    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    vkFourierCreate(Semaphore, m_Device, &semaphoreCreateInfo, VK_NULL_HANDLE, &m_ImageAvailableSemaphore);
-    vkFourierCreate(Semaphore, m_Device, &semaphoreCreateInfo, VK_NULL_HANDLE, &m_RenderFinishedSemaphore);
-
-    FOURIER_LOGGER_INIT_VULKAN_API("The initialize vulkan api success!");
-}
-
-VulkanRenderAPI::~VulkanRenderAPI() {
-    vkDestroySemaphore(m_Device, m_ImageAvailableSemaphore, nullptr);
-    vkDestroySemaphore(m_Device, m_RenderFinishedSemaphore, nullptr);
-
-    vkFreeCommandBuffers(m_Device, m_CommandPool, std::size(m_CommandBuffers), std::data(m_CommandBuffers));
-    vkDestroyCommandPool(m_Device, m_CommandPool, VK_NULL_HANDLE);
-
-    for (auto &framebuffer : m_SwapChainFramebuffers)
-        vkDestroyFramebuffer(m_Device, framebuffer, VK_NULL_HANDLE);
-
-    vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
-    vkDestroyPipelineLayout(m_Device, m_GraphicsPipelineLayout, nullptr);
-    vkDestroyRenderPass(m_Device, m_RenderPass, VK_NULL_HANDLE);
-
-    for (auto &imageView : m_SwapChainImageViews)
-        vkDestroyImageView(m_Device, imageView, VK_NULL_HANDLE);
-
-    vkDestroySwapchainKHR(m_Device, m_SwapChain, VK_NULL_HANDLE);
-    vkDestroyDevice(m_Device, VK_NULL_HANDLE);
-    vkDestroySurfaceKHR(m_Instance, m_Surface, VK_NULL_HANDLE);
-    vkDestroyInstance(m_Instance, VK_NULL_HANDLE);
-}
-
-void VulkanRenderAPI::Draw() {
     uint32_t imageIndex;
     vkAcquireNextImageKHR(m_Device, m_SwapChain, std::numeric_limits<uint64_t>::max(),
                           m_ImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
@@ -710,4 +735,32 @@ void VulkanRenderAPI::Draw() {
 
     vkQueuePresentKHR(m_PresentQueue, &presentInfo);
     vkQueueWaitIdle(m_PresentQueue);
+}
+
+void VulkanRenderAPI::CreateVertexBuffer() {
+    VkBufferCreateInfo bufferCreateInfo = {};
+    bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferCreateInfo.size = sizeof(triangleVertices[0]) * std::size(triangleVertices);
+    bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    vkFourierCreate(Buffer, m_Device, &bufferCreateInfo, VK_NULL_HANDLE, &m_VertexBuffer);
+
+    /** Query memory requirements. */
+    vkGetBufferMemoryRequirements(m_Device, m_VertexBuffer, &m_MemoryRequirements);
+
+    VkMemoryAllocateInfo memoryAllocInfo = {};
+    memoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memoryAllocInfo.allocationSize = m_MemoryRequirements.size;
+    memoryAllocInfo.memoryTypeIndex = FindMemoryType(m_MemoryRequirements.memoryTypeBits, m_PhysicalDevice,
+                                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    vkFourierAllocate(Memory, m_Device, &memoryAllocInfo, VK_NULL_HANDLE, &m_VertexBufferMemory);
+
+    vkBindBufferMemory(m_Device, m_VertexBuffer, m_VertexBufferMemory, 0);
+
+    /* 填充顶点缓冲区 */
+    void *data;
+    vkMapMemory(m_Device, m_VertexBufferMemory, 0, bufferCreateInfo.size, 0, &data);
+    memcpy(data, std::data(triangleVertices), (size_t) bufferCreateInfo.size);
+    vkUnmapMemory(m_Device, m_VertexBufferMemory);
 }

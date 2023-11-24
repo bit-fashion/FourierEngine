@@ -24,6 +24,9 @@
 #include <Fourier.h>
 #include <unordered_map>
 #include <optional>
+#include <array>
+#include <glm.hpp>
+#include <stddef.h>
 
 class FourierWindow;
 
@@ -55,6 +58,42 @@ struct FourierSwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
+struct Vertex {
+    glm::vec2 position;
+    glm::vec3 color;
+
+    static VkVertexInputBindingDescription GetVertexInputBindingDescription() {
+        VkVertexInputBindingDescription vertexInputBindingDescription = {};
+        vertexInputBindingDescription.binding = 0;
+        vertexInputBindingDescription.stride = sizeof(Vertex);
+        vertexInputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        return vertexInputBindingDescription;
+    }
+
+    static std::array<VkVertexInputAttributeDescription, 2> GetVertexInputAttributeDescriptions() {
+        std::array<VkVertexInputAttributeDescription, 2> vertexInputAttributeDescriptions = {};
+
+        vertexInputAttributeDescriptions[0].binding = 0;
+        vertexInputAttributeDescriptions[0].location = 0;
+        vertexInputAttributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+        vertexInputAttributeDescriptions[0].offset = offsetof(Vertex, position);
+
+        vertexInputAttributeDescriptions[1].binding = 0;
+        vertexInputAttributeDescriptions[1].location = 1;
+        vertexInputAttributeDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
+        vertexInputAttributeDescriptions[1].offset = offsetof(Vertex, color);
+
+        return vertexInputAttributeDescriptions;
+    }
+
+};
+
+const std::vector<Vertex> triangleVertices = {
+        {{0.0f,  -0.5f}, {1.0f, 1.0f, 1.0f}},
+        {{0.5f,  0.5f},  {0.0f, 1.0f, 0.0f}},
+        {{-0.5f, 0.5f},  {0.0f, 0.0f, 1.0f}}
+};
+
 /**
  * Render API Interface.
  */
@@ -66,6 +105,9 @@ public:
 
 public:
     void Draw();
+
+private:
+    void CreateVertexBuffer();
 
 private:
     /* Handle object. */
@@ -82,6 +124,9 @@ private:
     QueueFamilyIndices m_QueueFamilyIndices;
     VkCommandPool m_CommandPool = VK_NULL_HANDLE;
     std::vector<VkCommandBuffer> m_CommandBuffers;
+    VkBuffer m_VertexBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory m_VertexBufferMemory = VK_NULL_HANDLE;
+    VkMemoryRequirements m_MemoryRequirements;
     /* semaphore */
     VkSemaphore m_ImageAvailableSemaphore;
     VkSemaphore m_RenderFinishedSemaphore;
