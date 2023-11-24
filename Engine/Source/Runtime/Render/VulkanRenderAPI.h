@@ -88,10 +88,15 @@ struct Vertex {
 
 };
 
-const std::vector<Vertex> triangleVertices = {
-        {{0.0f,  -0.5f}, {1.0f, 1.0f, 1.0f}},
-        {{0.5f,  0.5f},  {0.0f, 1.0f, 0.0f}},
-        {{-0.5f, 0.5f},  {0.0f, 0.0f, 1.0f}}
+const std::vector<Vertex> vertices = {
+        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+};
+
+const std::vector<uint16_t> indices = {
+        0, 1, 2, 2, 3, 0
 };
 
 /**
@@ -104,10 +109,13 @@ public:
     ~VulkanRenderAPI();
 
 public:
+    void BeginRender();
     void Draw();
+    void EndRender();
 
 private:
-    void CreateVertexBuffer();
+    void BindVertexBuffer();
+    void BindIndexBuffer();
 
 private:
     /* Handle object. */
@@ -124,8 +132,11 @@ private:
     QueueFamilyIndices m_QueueFamilyIndices;
     VkCommandPool m_CommandPool = VK_NULL_HANDLE;
     std::vector<VkCommandBuffer> m_CommandBuffers;
+    /* memory */
     VkBuffer m_VertexBuffer = VK_NULL_HANDLE;
     VkDeviceMemory m_VertexBufferMemory = VK_NULL_HANDLE;
+    VkBuffer m_IndexBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory m_IndexBufferMemory = VK_NULL_HANDLE;
     VkMemoryRequirements m_MemoryRequirements;
     /* semaphore */
     VkSemaphore m_ImageAvailableSemaphore;

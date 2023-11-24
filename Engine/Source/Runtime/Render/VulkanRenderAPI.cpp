@@ -625,8 +625,9 @@ VulkanRenderAPI::VulkanRenderAPI(FourierWindow *p_window) {
 
     FOURIER_LOGGER_INIT_VULKAN_API("The initialize vulkan api success!");
 
-    /** Create vertex buffer */
-    CreateVertexBuffer();
+    /** Bind vertex buffer */
+    BindVertexBuffer();
+    BindIndexBuffer();
 }
 
 VulkanRenderAPI::~VulkanRenderAPI() {
@@ -648,13 +649,16 @@ VulkanRenderAPI::~VulkanRenderAPI() {
 
     vkDestroyBuffer(m_Device, m_VertexBuffer, VK_NULL_HANDLE);
     vkFreeMemory(m_Device, m_VertexBufferMemory, VK_NULL_HANDLE);
+    vkDestroyBuffer(m_Device, m_IndexBuffer, VK_NULL_HANDLE);
+    vkFreeMemory(m_Device, m_IndexBufferMemory, VK_NULL_HANDLE);
+
     vkDestroySwapchainKHR(m_Device, m_SwapChain, VK_NULL_HANDLE);
     vkDestroyDevice(m_Device, VK_NULL_HANDLE);
     vkDestroySurfaceKHR(m_Instance, m_Surface, VK_NULL_HANDLE);
     vkDestroyInstance(m_Instance, VK_NULL_HANDLE);
 }
 
-void VulkanRenderAPI::Draw() {
+void VulkanRenderAPI::BeginRender() {
     /** Begin vulkan render. */
     for (uint32_t i = 0; i < m_SwapChainImageSize; i++) {
         /* start command buffers record. */
@@ -686,9 +690,10 @@ void VulkanRenderAPI::Draw() {
         VkBuffer buffers[] = {m_VertexBuffer};
         VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(m_CommandBuffers[i], 0, 1, buffers, offsets);
+        vkCmdBindIndexBuffer(m_CommandBuffers[i], m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
         /* draw call */
-        vkCmdDraw(m_CommandBuffers[i], std::size(triangleVertices), 1, 0, 0);
+        vkCmdDrawIndexed(m_CommandBuffers[i], static_cast<uint32_t>(std::size(indices)), 1, 0, 0, 0);
 
         /* end render pass */
         vkCmdEndRenderPass(m_CommandBuffers[i]);
@@ -697,7 +702,9 @@ void VulkanRenderAPI::Draw() {
         if (vkEndCommandBuffer(m_CommandBuffers[i]) != VK_SUCCESS)
             throw std::runtime_error("failed to record command buffer!");
     }
+}
 
+void VulkanRenderAPI::Draw() {
     uint32_t imageIndex;
     vkAcquireNextImageKHR(m_Device, m_SwapChain, std::numeric_limits<uint64_t>::max(),
                           m_ImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
@@ -737,10 +744,12 @@ void VulkanRenderAPI::Draw() {
     vkQueueWaitIdle(m_PresentQueue);
 }
 
-void VulkanRenderAPI::CreateVertexBuffer() {
+void VulkanRenderAPI::EndRender() {}
+
+void VulkanRenderAPI::BindVertexBuffer() {
     VkBufferCreateInfo bufferCreateInfo = {};
     bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferCreateInfo.size = sizeof(triangleVertices[0]) * std::size(triangleVertices);
+    bufferCreateInfo.size = sizeof(vertices[0]) * std::size(vertices);
     bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
     bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     vkFourierCreate(Buffer, m_Device, &bufferCreateInfo, VK_NULL_HANDLE, &m_VertexBuffer);
@@ -761,6 +770,34 @@ void VulkanRenderAPI::CreateVertexBuffer() {
     /* 填充顶点缓冲区 */
     void *data;
     vkMapMemory(m_Device, m_VertexBufferMemory, 0, bufferCreateInfo.size, 0, &data);
-    memcpy(data, std::data(triangleVertices), (size_t) bufferCreateInfo.size);
+    memcpy(data, std::data(vertices), (size_t) bufferCreateInfo.size);
     vkUnmapMemory(m_Device, m_VertexBufferMemory);
+}
+
+void VulkanRenderAPI::BindIndexBuffer() {
+    VkBufferCreateInfo bufferCreateInfo = {};
+    bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferCreateInfo.size = sizeof(indices[0]) * std::size(indices);
+    bufferCreateInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    vkFourierCreate(Buffer, m_Device, &bufferCreateInfo, VK_NULL_HANDLE, &m_IndexBuffer);
+
+    /** Query memory requirements. */
+    vkGetBufferMemoryRequirements(m_Device, m_IndexBuffer, &m_MemoryRequirements);
+
+    VkMemoryAllocateInfo memoryAllocInfo = {};
+    memoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memoryAllocInfo.allocationSize = m_MemoryRequirements.size;
+    memoryAllocInfo.memoryTypeIndex = FindMemoryType(m_MemoryRequirements.memoryTypeBits, m_PhysicalDevice,
+                                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    vkFourierAllocate(Memory, m_Device, &memoryAllocInfo, VK_NULL_HANDLE, &m_IndexBufferMemory);
+
+    vkBindBufferMemory(m_Device, m_IndexBuffer, m_IndexBufferMemory, 0);
+
+    /* 填充顶点缓冲区 */
+    void *data;
+    vkMapMemory(m_Device, m_IndexBufferMemory, 0, bufferCreateInfo.size, 0, &data);
+    memcpy(data, std::data(indices), (size_t) bufferCreateInfo.size);
+    vkUnmapMemory(m_Device, m_IndexBufferMemory);
 }

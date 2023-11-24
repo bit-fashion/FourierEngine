@@ -20,8 +20,6 @@
 #include "Window/Window.h"
 #include "Render/VulkanRenderAPI.h"
 
-#include "Utils/IOUtils.h"
-
 int main() {
     auto window = FourierWindow(1280, 1000, "FourierEngine(vulkan)");
     VulkanRenderAPI renderer(&window);
@@ -30,7 +28,9 @@ int main() {
 
     while (!window.WindowShouldClose()) {
         FourierPollEvents();
+        renderer.BeginRender();
         renderer.Draw();
+        renderer.EndRender();
     }
 
     return 0;
