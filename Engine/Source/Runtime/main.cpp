@@ -17,11 +17,11 @@
  * ************************************************************************/
 
 /* Creates on 2022/9/14. */
-#include "Window/Window.h"
+#include "Window/RIVwindow.h"
 #include "Render/VulkanRenderAPI.h"
 
 int main() {
-    auto window = FourierWindow(1280, 1000, "FourierEngine(vulkan)");
+    auto window = RIVwindow(1280, 1000, "FourierEngine(vulkan)");
     VulkanRenderAPI renderer(&window);
     /* When RenderAPI loading success that show window to screen. */
     window.ShowWindowInScreen();

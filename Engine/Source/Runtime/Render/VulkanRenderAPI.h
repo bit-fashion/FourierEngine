@@ -28,7 +28,7 @@
 #include <glm.hpp>
 #include <stddef.h>
 
-class FourierWindow;
+class RIVwindow;
 
 /**
  * Physical device struct.
@@ -111,7 +111,7 @@ struct UniformBufferObject {
 class VulkanRenderAPI {
 public:
     /* Init vulkan render api. */
-    explicit VulkanRenderAPI(FourierWindow *p_window);
+    explicit VulkanRenderAPI(RIVwindow *pRIVwindow);
     ~VulkanRenderAPI();
 
 public:
@@ -122,6 +122,7 @@ public:
 private:
     void BindVertexBuffer();
     void BindIndexBuffer();
+    void BindTexture();
     void BindUniformBuffer();
     void UpdateUniformBuffer();
 

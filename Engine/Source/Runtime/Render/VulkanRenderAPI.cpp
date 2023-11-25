@@ -27,7 +27,7 @@
 #include <gtc/matrix_transform.hpp>
 #include <chrono>
 
-#include "Window/Window.h"
+#include "Window/RIVwindow.h"
 #include "Utils/IOUtils.h"
 
 #define FOURIER_SHADER_MODULE_OF_VERTEX_BINARY_FILE "../Engine/Binaries/simple_shader.vert.spv"
@@ -158,11 +158,11 @@ VkPresentModeKHR SelectSwapSurfacePresentMode(const std::vector<VkPresentModeKHR
 }
 
 /* Select swap chain extent. */
-VkExtent2D SelectSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, FourierWindow *p_window) {
+VkExtent2D SelectSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, RIVwindow *pRIVwindow) {
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
         return capabilities.currentExtent;
     } else {
-        VkExtent2D actualExtent = { static_cast<uint32_t>(p_window->GetWidth()), static_cast<uint32_t>(p_window->GetHeight()) };
+        VkExtent2D actualExtent = { static_cast<uint32_t>(pRIVwindow->GetWidth()), static_cast<uint32_t>(pRIVwindow->GetHeight()) };
 
         actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
         actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
@@ -202,7 +202,7 @@ uint32_t FindMemoryType(uint32_t typeFilter, VkPhysicalDevice physicalDevice, Vk
     throw std::runtime_error("failed to find suitable memory type!");
 }
 
-VulkanRenderAPI::VulkanRenderAPI(FourierWindow *p_window) {
+VulkanRenderAPI::VulkanRenderAPI(RIVwindow *pRIVwindow) {
     /* Enumerate instance available extensions. */
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, NULL);
@@ -283,7 +283,7 @@ VulkanRenderAPI::VulkanRenderAPI(FourierWindow *p_window) {
     FOURIER_LOGGER_INIT_VULKAN_API("Using device: <{}>", fourierPhysicalDevice.deviceName);
 
     /** Create surface of glfw. */
-    if (glfwCreateWindowSurface(m_Instance, p_window->GetWindowHandle(), VK_NULL_HANDLE, &m_Surface) != VK_SUCCESS)
+    if (glfwCreateWindowSurface(m_Instance, pRIVwindow->GetWindowHandle(), VK_NULL_HANDLE, &m_Surface) != VK_SUCCESS)
         fourier_throw_error("failed to create window surface!");
 
     /* Enumerate device extensions. */
@@ -336,7 +336,7 @@ VulkanRenderAPI::VulkanRenderAPI(FourierWindow *p_window) {
     m_SurfaceFormatKHR = SelectSwapSurfaceFormat(swapChainDetails.formats);
     m_SwapChainFormat = m_SurfaceFormatKHR.format;
     m_SurfacePresentModeKHR = SelectSwapSurfacePresentMode(swapChainDetails.presentModes);
-    m_SwapChainExtent = SelectSwapExtent(swapChainDetails.capabilities, p_window);
+    m_SwapChainExtent = SelectSwapExtent(swapChainDetails.capabilities, pRIVwindow);
 
     uint32_t swapchainImageCount = swapChainDetails.capabilities.minImageCount + 1;
     if (swapChainDetails.capabilities.maxImageCount > 0 && swapchainImageCount > swapChainDetails.capabilities.maxImageCount)

@@ -17,9 +17,9 @@
  * ************************************************************************/
 
 /* Creates on 2023/11/21. */
-#include "Window.h"
+#include "RIVwindow.h"
 
-FourierWindow::FourierWindow(int width, int height, const char *title) : m_Width(width), m_Height(height) {
+RIVwindow::RIVwindow(int width, int height, const char *title) : m_Width(width), m_Height(height) {
     glfwInit();
 
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
@@ -36,26 +36,26 @@ FourierWindow::FourierWindow(int width, int height, const char *title) : m_Width
 
     /* Set resize callback. */
     glfwSetWindowSizeCallback(m_Window, [](GLFWwindow *window, int width, int height) {
-        FourierWindow *pFourierWindow = ((FourierWindow *) glfwGetWindowUserPointer(window));
-        pFourierWindow->SetWidth(width);
-        pFourierWindow->SetHeight(height);
-        if (pFourierWindow->m_FnFourierResizableWindowCallback != NULL)
-            pFourierWindow->m_FnFourierResizableWindowCallback(pFourierWindow, width, height);
+        RIVwindow *pRIVwindow = ((RIVwindow *) glfwGetWindowUserPointer(window));
+        pRIVwindow->SetWidth(width);
+        pRIVwindow->SetHeight(height);
+        if (pRIVwindow->m_FnFourierResizableWindowCallback != NULL)
+            pRIVwindow->m_FnFourierResizableWindowCallback(pRIVwindow, width, height);
     });
 
     /* Default hide window. */
     glfwHideWindow(m_Window);
 }
 
-FourierWindow::~FourierWindow() {
+RIVwindow::~RIVwindow() {
     glfwTerminate();
     glfwDestroyWindow(m_Window);
 }
 
-bool FourierWindow::WindowShouldClose() {
+bool RIVwindow::WindowShouldClose() {
     return glfwWindowShouldClose(m_Window);
 }
 
-void FourierWindow::ShowWindowInScreen() {
+void RIVwindow::ShowWindowInScreen() {
     glfwShowWindow(m_Window);
 }

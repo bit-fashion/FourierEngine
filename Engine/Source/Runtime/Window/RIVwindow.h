@@ -22,15 +22,15 @@
 #include <Fourier.h>
 #include <GLFW/glfw3.h>
 
-class FourierWindow;
+class RIVwindow;
 
-typedef void (* FnFourierResizableWindowCallback)(FourierWindow *FourierWindow, int width, int height);
+typedef void (* PFN_RIVwindowResizableWindowCallback)(RIVwindow *pRVWidnow, int width, int height);
 
-class FourierWindow {
+class RIVwindow {
 public:
     /* Init and create window. */
-    FourierWindow(int width, int height, const char *title);
-    ~FourierWindow();
+    RIVwindow(int width, int height, const char *title);
+    ~RIVwindow();
     /* Support functions. */
     bool WindowShouldClose();
     void ShowWindowInScreen();
@@ -41,7 +41,7 @@ public:
     int GetHeight() const { return m_Height; }
     void SetWidth(int width) { m_Width = width; }
     void SetHeight(int height) { m_Height = height; }
-    void SetFourierResizableWindowCallback(FnFourierResizableWindowCallback fnFourierResizableWindowCallback) /* Set resizable callback. */
+    void SetFourierResizableWindowCallback(PFN_RIVwindowResizableWindowCallback fnFourierResizableWindowCallback) /* Set resizable callback. */
       { m_FnFourierResizableWindowCallback = fnFourierResizableWindowCallback; };
     GLFWwindow *GetWindowHandle() { return m_Window; };
 
@@ -49,7 +49,7 @@ private:
     int m_Width;
     int m_Height;
     GLFWwindow *m_Window;
-    FnFourierResizableWindowCallback m_FnFourierResizableWindowCallback;
+    PFN_RIVwindowResizableWindowCallback m_FnFourierResizableWindowCallback;
 };
 
 static void FourierPollEvents() {
