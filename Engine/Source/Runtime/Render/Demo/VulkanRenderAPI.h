@@ -29,7 +29,7 @@
 #include <stddef.h>
 #include <memory>
 
-#include "RIVdevice.h"
+#include "Render/Private/RIVdevice.h"
 
 class RIVwindow;
 

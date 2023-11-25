@@ -18,19 +18,18 @@
 
 /* Creates on 2022/9/14. */
 #include "Window/RIVwindow.h"
-#include "Render/VulkanRenderAPI.h"
+#include "Render/RivuletRenderer.h"
 
 int main() {
     auto window = RIVwindow(1280, 1000, "FourierEngine(vulkan)");
-    VulkanRenderAPI renderer(&window);
+    /* Create RIVdevice */
+    RivuletRenderer rivuletRenderer(&window);
+
     /* When RenderAPI loading success that show window to screen. */
     window.ShowWindowInScreen();
 
     while (!window.WindowShouldClose()) {
         FourierPollEvents();
-        renderer.BeginRender();
-        renderer.Draw();
-        renderer.EndRender();
     }
 
     return 0;

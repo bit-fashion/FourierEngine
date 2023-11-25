@@ -42,7 +42,7 @@
     if (vkAllocate##name(__VA_ARGS__) != VK_SUCCESS) \
         throw std::runtime_error("FourierEngine Error: allocate vulkan object for `{}` handle failed!")
 #define FOURIER_LOGGER_INIT_VULKAN_API(fmt, ...) \
-  fourier_logger_info("[FOURIER ENGINE] [INIT_VULKAN_API] IF/ - {}", std::format(fmt, ##__VA_ARGS__))
+  rivulet_logger_info("[FOURIER ENGINE] [INIT_VULKAN_API] IF/ - {}", std::format(fmt, ##__VA_ARGS__))
 
 /* Get required instance extensions for vulkan. */
 void FourierGetRequiredInstanceExtensions(std::vector<const char *> &vec,
@@ -58,7 +58,7 @@ void FourierGetRequiredInstanceExtensions(std::vector<const char *> &vec,
 /* Get required instance layers for vulkan. */
 void FourierGetRequiredInstanceLayers(std::vector<const char *> &vec,
                                       std::unordered_map<std::string, VkLayerProperties> &supports) {
-#ifdef FOURIER_DEBUG
+#ifdef RIVULET_ENABLE_DEBUG
     if (supports.count(VK_LAYER_KHRONOS_validation) != 0)
         vec.push_back(VK_LAYER_KHRONOS_validation);
 #endif
@@ -177,7 +177,7 @@ VkShaderModule LoadShaderModule(VkDevice device, const char *file_path) {
     VkShaderModule shader;
 
     /* load shader binaries. */
-    buf = fourier_load_binaries(file_path, &size);
+    buf = rivulet_load_binaries(file_path, &size);
 
     VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
     shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -186,7 +186,7 @@ VkShaderModule LoadShaderModule(VkDevice device, const char *file_path) {
     vkFourierCreate(ShaderModule, device, &shaderModuleCreateInfo, VK_NULL_HANDLE, &shader);
 
     /* free binaries buf. */
-    fourier_free_binaries(buf);
+    rivulet_free_binaries(buf);
 
     return shader;
 }
@@ -256,6 +256,9 @@ VulkanRenderAPI::VulkanRenderAPI(RIVwindow *pRIVwindow) {
     /** Create RIVdevice */
 #ifdef CREATE_RIV_DEVICE
     m_RIVdevice = std::make_unique<RIVdevice>(m_Instance, pRIVwindow);
+    RIVswapchain *pRIVswapchain;
+    m_RIVdevice->CreateRIVswapchain(pRIVswapchain);
+    m_RIVdevice->DestroyRIVswapchain(pRIVswapchain);
 #endif
 
     /** Enumerate physical device. */
@@ -276,20 +279,20 @@ VulkanRenderAPI::VulkanRenderAPI(RIVwindow *pRIVwindow) {
     }
 
     if (std::size(m_PhysicalDevices) == 0)
-        fourier_throw_error("FourierEngine Error: cannot found physical device for support vulkan api!");
+        rivulet_throw_error("FourierEngine Error: cannot found physical device for support vulkan api!");
 
     FOURIER_LOGGER_INIT_VULKAN_API("All physical devices supports for vulkan: ");
     for (auto &device : m_PhysicalDevices)
         FOURIER_LOGGER_INIT_VULKAN_API("    {}", device.deviceName);
 
     /** Select current using physical device. */
-    PhysicalDeviceProperties fourierPhysicalDevice = m_PhysicalDevices[0];
-    m_PhysicalDevice = fourierPhysicalDevice.handle;
-    FOURIER_LOGGER_INIT_VULKAN_API("Using device: <{}>", fourierPhysicalDevice.deviceName);
+    PhysicalDeviceProperties rivuletPhysicalDevice = m_PhysicalDevices[0];
+    m_PhysicalDevice = rivuletPhysicalDevice.handle;
+    FOURIER_LOGGER_INIT_VULKAN_API("Using device: <{}>", rivuletPhysicalDevice.deviceName);
 
     /** Create surface of glfw. */
     if (glfwCreateWindowSurface(m_Instance, pRIVwindow->GetWindowHandle(), VK_NULL_HANDLE, &m_Surface) != VK_SUCCESS)
-        fourier_throw_error("failed to create window surface!");
+        rivulet_throw_error("failed to create window surface!");
 
     /* Enumerate device extensions. */
     uint32_t deviceExtensionCount = 0;

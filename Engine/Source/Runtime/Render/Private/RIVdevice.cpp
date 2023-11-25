@@ -57,19 +57,13 @@ RIVQueueFamilyIndices RIVdevice::FindQueueFamilyIndices() {
     return queueFamilyIndices;
 }
 
-RIVdevice::RIVdevice(VkInstance instance, RIVwindow *pRIVwindow)
-  : m_Instance(instance), m_RIVwindow(pRIVwindow) {
+RIVdevice::RIVdevice(VkInstance instance, VkSurfaceKHR surface, RIVwindow *pRIVwindow)
+  : m_Instance(instance), m_Surface(surface), m_RIVwindow(pRIVwindow) {
 
     /* 选择一个牛逼的 GPU 设备 */
     std::vector<RIVGPU> vGPU;
     RIVGETGPU(m_Instance, &vGPU);
     m_RIVGPU = vGPU[0];
-
-    /* 创建 Surface 接口对象 */
-    if (glfwCreateWindowSurface(m_Instance, pRIVwindow->GetWindowHandle(),VK_NULL_HANDLE,
-                                &m_Surface) != VK_SUCCESS) {
-        throw std::runtime_error("Create glfw surface failed!");
-    }
 
     /* 获取设备支持的所有扩展列表 */
     uint32_t deviceExtensionCount = 0;
@@ -113,6 +107,13 @@ RIVdevice::RIVdevice(VkInstance instance, RIVwindow *pRIVwindow)
 }
 
 RIVdevice::~RIVdevice() {
-    vkDestroySurfaceKHR(m_Instance, m_Surface, VK_NULL_HANDLE);
     vkDestroyDevice(m_Device, VK_NULL_HANDLE);
+}
+
+RIVswapchain *RIVdevice::CreateRIVswapchain() {
+    return new RIVswapchain(this, m_RIVwindow->GetWidth(), m_RIVwindow->GetHeight());
+}
+
+void RIVdevice::DestroyRIVswapchain(RIVswapchain *pRIVswapchain) {
+    delete pRIVswapchain;
 }

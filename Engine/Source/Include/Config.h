@@ -20,7 +20,7 @@
 #pragma once
 
 /** this macro define is used for switch debugging code. */
-#define FOURIER_DEBUG
+#define RIVULET_ENABLE_DEBUG
 
 /** if define this macro, the project will be compile the demo
  *  file of vulkan. */

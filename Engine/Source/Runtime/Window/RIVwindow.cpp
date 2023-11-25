@@ -29,7 +29,7 @@ RIVwindow::RIVwindow(int width, int height, const char *title) : m_Width(width),
 
     if (m_Window == NULL) {
         glfwTerminate();
-        fourier_throw_error("FourierEngine Error: create window failed, cause window pointer is NULL!");
+        rivulet_throw_error("FourierEngine Error: create window failed, cause window pointer is NULL!");
     }
 
     glfwSetWindowUserPointer(m_Window, this);

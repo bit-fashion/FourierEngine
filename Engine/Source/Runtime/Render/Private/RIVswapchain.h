@@ -16,29 +16,36 @@
  *
  * ************************************************************************/
 
-/* Creates on 2022/11/23. */
+/* Creates on 2023/11/21. */
 #pragma once
 
-#include <malloc.h>
-#include <fstream>
+#include <vulkan/vulkan.h>
 #include <vector>
-#include <Fourier.h>
 
-static char *rivulet_load_binaries(const char *file_path, size_t *size) {
-    std::ifstream file(file_path, std::ios::ate | std::ios::binary);
-    if (!file.is_open())
-        rivulet_throw_error("Error: open {} file failed!", file_path);
-    *size = file.tellg();
-    file.seekg(0);
+class RIVdevice;
 
-    /* malloc buffer */
-    char *buf = (char *) malloc(*size);
-    file.read(buf, *size);
-    file.close();
+struct RIVSwapchainSupportedDetails {
+    VkSurfaceCapabilitiesKHR capabilities;
+    std::vector<VkSurfaceFormatKHR> formats;
+    std::vector<VkPresentModeKHR> presentModes;
+};
 
-    return buf;
-}
+/**
+ * 交换链
+ */
+class RIVswapchain {
+public:
+    RIVswapchain(RIVdevice *pRIVdevice, int width, int height);
+    ~RIVswapchain();
 
-static void rivulet_free_binaries(char *binaries) {
-    free(binaries);
-}
+private:
+    RIVSwapchainSupportedDetails QueryRIVSwapchainSupportedDetails();
+
+private:
+    VkSwapchainKHR m_Swapchain;
+    RIVdevice *m_RIVdevice;
+    VkSurfaceFormatKHR m_SurfaceFormatKHR;
+    VkFormat m_SwapChainFormat;
+    VkPresentModeKHR m_SurfacePresentModeKHR;
+    VkExtent2D m_SwapChainExtent;
+};

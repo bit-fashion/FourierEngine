@@ -23,8 +23,9 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <Fourier.h>
 
-#define CREATE_RIV_DEVICE
+#include "RIVswapchain.h"
 
 #define vkRIVCreate(name, ...) \
     if (vkCreate##name(__VA_ARGS__) != VK_SUCCESS) \
@@ -33,7 +34,7 @@
     if (vkAllocate##name(__VA_ARGS__) != VK_SUCCESS) \
         throw std::runtime_error("FourierEngine Error: allocate vulkan object for `{}` handle failed!")
 #define RIV_RENDERER_LOGGER_INFO(fmt, ...) \
-  fourier_logger_info("[RIVULET ENGINE] [INIT_VULKAN_API] IF/ - {}", std::format(fmt, ##__VA_ARGS__))
+  rivulet_logger_info("[RIVULET ENGINE] [INIT_VULKAN_API] IF/ - {}", std::format(fmt, ##__VA_ARGS__))
 
 class RIVwindow;
 
@@ -74,19 +75,24 @@ static void RIVGETGPU(VkInstance instance, std::vector<RIVGPU> *pRIVGPU) {
 class RIVdevice {
 public:
     /* init and destroy function */
-    explicit RIVdevice(VkInstance instance, RIVwindow *pRIVwindow);
+    explicit RIVdevice(VkInstance instance, VkSurfaceKHR surface, RIVwindow *pRIVwindow);
     ~RIVdevice();
 
 public:
     /* public function */
+    RIVswapchain *CreateRIVswapchain();
+    void DestroyRIVswapchain(RIVswapchain *pRIVswapchain);
 
 public:
+    /* Handle */
+    VkSurfaceKHR RIVHSurface() { return m_Surface; }
+    VkDevice RIVHDevice() { return m_Device; }
+    VkPhysicalDevice RIVHPhysicalDevice() const { return m_RIVGPU.device; }
+    VkQueue RIVHGraphicsQueue() { return m_GraphicsQueue; }
+    VkQueue RIVHPresentQueue() { return m_PresentQueue; }
+
     /* GET */
-    VkSurfaceKHR GetSurface() { return m_Surface; }
-    VkDevice GetDevice() { return m_Device; }
-    VkPhysicalDevice GetPhysicalDevice() { return m_RIVGPU.device; }
-    VkQueue GetGraphicsQueue() { return m_GraphicsQueue; }
-    VkQueue GetPresentQueue() { return m_PresentQueue; }
+    RIVwindow *GetRIVwindow() { return m_RIVwindow; }
 
 private:
     RIVQueueFamilyIndices FindQueueFamilyIndices();

@@ -46,8 +46,9 @@ link_directories(
 add_executable(${PROJECT_NAME}
         "Engine/Source/Runtime/main.cpp"
         "Engine/Source/Runtime/Window/RIVwindow.cpp"
-        "Engine/Source/Runtime/Render/VulkanRenderAPI.cpp"
-        "Engine/Source/Runtime/Render/RIVdevice.cpp"
+        "Engine/Source/Runtime/Render/Private/RivuletRenderer.cpp"
+        "Engine/Source/Runtime/Render/Private/RIVdevice.cpp"
+        "Engine/Source/Runtime/Render/Private/RIVswapchain.cpp"
 )
 
 target_link_libraries(${PROJECT_NAME}
