@@ -47,6 +47,7 @@ add_executable(${PROJECT_NAME}
         "Engine/Source/Runtime/main.cpp"
         "Engine/Source/Runtime/Window/RIVwindow.cpp"
         "Engine/Source/Runtime/Render/VulkanRenderAPI.cpp"
+        "Engine/Source/Runtime/Render/RIVdevice.cpp"
 )
 
 target_link_libraries(${PROJECT_NAME}

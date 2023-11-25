@@ -27,6 +27,9 @@
 #include <array>
 #include <glm.hpp>
 #include <stddef.h>
+#include <memory>
+
+#include "RIVdevice.h"
 
 class RIVwindow;
 
@@ -127,6 +130,7 @@ private:
     void UpdateUniformBuffer();
 
 private:
+    std::unique_ptr<RIVdevice> m_RIVdevice;
     struct UniformBufferObject ubo;
     /* Handle object. */
     VkInstance m_Instance = VK_NULL_HANDLE;

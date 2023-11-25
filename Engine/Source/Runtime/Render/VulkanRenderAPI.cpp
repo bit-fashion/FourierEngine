@@ -253,6 +253,11 @@ VulkanRenderAPI::VulkanRenderAPI(RIVwindow *pRIVwindow) {
 
     vkFourierCreate(Instance, &instanceCreateInfo, VK_NULL_HANDLE, &m_Instance);
 
+    /** Create RIVdevice */
+#ifdef CREATE_RIV_DEVICE
+    m_RIVdevice = std::make_unique<RIVdevice>(m_Instance, pRIVwindow);
+#endif
+
     /** Enumerate physical device. */
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(m_Instance, &deviceCount, VK_NULL_HANDLE);
