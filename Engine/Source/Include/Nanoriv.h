@@ -19,33 +19,17 @@
 /* Creates on 2023/11/21. */
 #pragma once
 
-#include <vulkan/vulkan.h>
-#include <vector>
+#include <iostream>
+#include <stdexcept>
+#include <format>
+#include <memory>
 
-class RIVdevice;
+#include "NRIVCNF.h"
 
-struct RIVSwapchainSupportedDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-};
+#define NANORIV_ENGINE_NAME "NanorivEngine"
 
-/**
- * 交换链
- */
-class RIVswapchain {
-public:
-    RIVswapchain(RIVdevice *pRIVdevice, int width, int height);
-    ~RIVswapchain();
+#define NRIVINFO(fmt, ...) printf("%s\n", std::format(fmt, __VA_ARGS__).c_str())
+#define NRIVERROR(fmt, ...) throw std::runtime_error(std::format(fmt, ##__VA_ARGS__))
+#define NRIVTHROW(fmt, ...) throw std::runtime_error(std::format(fmt, ##__VA_ARGS__))
 
-private:
-    RIVSwapchainSupportedDetails QueryRIVSwapchainSupportedDetails();
-
-private:
-    VkSwapchainKHR m_Swapchain;
-    RIVdevice *m_RIVdevice;
-    VkSurfaceFormatKHR m_SurfaceFormatKHR;
-    VkFormat m_SwapChainFormat;
-    VkPresentModeKHR m_SurfacePresentModeKHR;
-    VkExtent2D m_SwapChainExtent;
-};
+#define NRIVFREE(ptr) (ptr = nullptr)

@@ -19,18 +19,5 @@
 /* Creates on 2023/11/21. */
 #pragma once
 
-#include <iostream>
-#include <stdexcept>
-#include <format>
-#include "Config.h"
-
-#define FOURIER_ENGINE "FourierEngine"
-#define FOURIER_ENGINE_MAX_DEVICE_NAME_SIZE 256U
-
-#define rivulet_logger_info(fmt, ...) printf("%s\n", std::format(fmt, __VA_ARGS__).c_str())
-#define rivulet_logger_error(fmt, ...)
-#define rivulet_throw_error(fmt, ...) throw std::runtime_error(std::format(fmt, ##__VA_ARGS__))
-
-namespace rivulet {
-
-}
+/** this macro define is used for switch debugging code. */
+#define NRIV_ENGINE_CONFIG_ENABLE_DEBUG

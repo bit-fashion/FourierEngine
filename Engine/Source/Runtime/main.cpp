@@ -17,19 +17,24 @@
  * ************************************************************************/
 
 /* Creates on 2022/9/14. */
-#include "Window/RIVwindow.h"
-#include "Render/RivuletRenderer.h"
+#include "Window/NRIVwindow.h"
+
+ #include "Render/NRIVRenderer.h"
+//#include "Render/Demo/VulkanRenderAPI.h"
 
 int main() {
-    auto window = RIVwindow(1280, 1000, "FourierEngine(vulkan)");
-    /* Create RIVdevice */
-    RivuletRenderer rivuletRenderer(&window);
-
+    auto window = NRIVwindow(1280, 1000, "NE-1");
+    /* Create NRIVRenderer */
+     std::unique_ptr<NRIVRenderer> pNRIVRenderer = std::make_unique<NRIVRenderer>(&window);
     /* When RenderAPI loading success that show window to screen. */
+//     VulkanRenderAPI vulkanRenderApi(&window);
     window.ShowWindowInScreen();
 
     while (!window.WindowShouldClose()) {
-        FourierPollEvents();
+        NRIVPollEvents();
+//        vulkanRenderApi.BeginRender();
+//        vulkanRenderApi.Draw();
+//        vulkanRenderApi.EndRender();
     }
 
     return 0;

@@ -22,12 +22,12 @@
 #include <malloc.h>
 #include <fstream>
 #include <vector>
-#include <Fourier.h>
+#include <Nanoriv.h>
 
-static char *rivulet_load_binaries(const char *file_path, size_t *size) {
+static char *niv_load_binaries(const char *file_path, size_t *size) {
     std::ifstream file(file_path, std::ios::ate | std::ios::binary);
     if (!file.is_open())
-        rivulet_throw_error("Error: open {} file failed!", file_path);
+        NRIVERROR("Error: open {} file failed!", file_path);
     *size = file.tellg();
     file.seekg(0);
 
@@ -39,6 +39,6 @@ static char *rivulet_load_binaries(const char *file_path, size_t *size) {
     return buf;
 }
 
-static void rivulet_free_binaries(char *binaries) {
+static void niv_free_binaries(char *binaries) {
     free(binaries);
 }

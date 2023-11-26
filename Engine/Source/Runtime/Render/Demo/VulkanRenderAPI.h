@@ -21,7 +21,7 @@
 
 #include <vulkan/vulkan.h>
 #include <vector>
-#include <Fourier.h>
+#include <Nanoriv.h>
 #include <unordered_map>
 #include <optional>
 #include <array>
@@ -29,16 +29,14 @@
 #include <stddef.h>
 #include <memory>
 
-#include "Render/Private/RIVdevice.h"
-
-class RIVwindow;
+class NRIVwindow;
 
 /**
  * Physical device struct.
  */
 struct PhysicalDeviceProperties {
     VkPhysicalDevice handle;
-    char deviceName[FOURIER_ENGINE_MAX_DEVICE_NAME_SIZE];
+    char deviceName[255];
 };
 
 /**
@@ -114,7 +112,7 @@ struct UniformBufferObject {
 class VulkanRenderAPI {
 public:
     /* Init vulkan render api. */
-    explicit VulkanRenderAPI(RIVwindow *pRIVwindow);
+    explicit VulkanRenderAPI(NRIVwindow *pRIVwindow);
     ~VulkanRenderAPI();
 
 public:
@@ -130,7 +128,6 @@ private:
     void UpdateUniformBuffer();
 
 private:
-    std::unique_ptr<RIVdevice> m_RIVdevice;
     struct UniformBufferObject ubo;
     /* Handle object. */
     VkInstance m_Instance = VK_NULL_HANDLE;

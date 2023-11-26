@@ -18,7 +18,7 @@
 
 # Creates on 2022/9/14. #
 cmake_minimum_required(VERSION 3.26)
-project(FourierEngine)
+project(NanorivEngine)
 
 set(CMAKE_CXX_STANDARD 23)
 
@@ -45,10 +45,9 @@ link_directories(
 
 add_executable(${PROJECT_NAME}
         "Engine/Source/Runtime/main.cpp"
-        "Engine/Source/Runtime/Window/RIVwindow.cpp"
-        "Engine/Source/Runtime/Render/Private/RivuletRenderer.cpp"
-        "Engine/Source/Runtime/Render/Private/RIVdevice.cpp"
-        "Engine/Source/Runtime/Render/Private/RIVswapchain.cpp"
+        "Engine/Source/Runtime/Window/NRIVwindow.cpp"
+        "Engine/Source/Runtime/Render/NRIVRenderer.cpp"
+        "Engine/Source/Runtime/Render/Demo/VulkanRenderAPI.cpp"
 )
 
 target_link_libraries(${PROJECT_NAME}

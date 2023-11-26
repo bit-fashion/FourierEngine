@@ -19,18 +19,18 @@
 /* Creates on 2023/11/21. */
 #pragma once
 
-#include <Fourier.h>
+#include <Nanoriv.h>
 #include <GLFW/glfw3.h>
 
-class RIVwindow;
+class NRIVwindow;
 
-typedef void (* PFN_RIVwindowResizableWindowCallback)(RIVwindow *pRVWidnow, int width, int height);
+typedef void (* PFN_RIVwindowResizableWindowCallback)(NRIVwindow *pRVWidnow, int width, int height);
 
-class RIVwindow {
+class NRIVwindow {
 public:
     /* Init and create window. */
-    RIVwindow(int width, int height, const char *title);
-    ~RIVwindow();
+    NRIVwindow(int width, int height, const char *title);
+    ~NRIVwindow();
     /* Support functions. */
     bool WindowShouldClose();
     void ShowWindowInScreen();
@@ -52,6 +52,6 @@ private:
     PFN_RIVwindowResizableWindowCallback m_FnFourierResizableWindowCallback;
 };
 
-static void FourierPollEvents() {
+static void NRIVPollEvents() {
     glfwPollEvents();
 }

@@ -27,11 +27,11 @@
 #include <gtc/matrix_transform.hpp>
 #include <chrono>
 
-#include "Window/RIVwindow.h"
+#include "Window/NRIVwindow.h"
 #include "Utils/IOUtils.h"
 
-#define FOURIER_SHADER_MODULE_OF_VERTEX_BINARY_FILE "../Engine/Binaries/simple_shader.vert.spv"
-#define FOURIER_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE "../Engine/Binaries/simple_shader.frag.spv"
+#define NRIV_SHADER_MODULE_OF_VERTEX_BINARY_FILE "../Engine/Binaries/simple_shader.vert.spv"
+#define NRIV_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE "../Engine/Binaries/simple_shader.frag.spv"
 
 #define VK_LAYER_KHRONOS_validation "VK_LAYER_KHRONOS_validation"
 
@@ -41,8 +41,8 @@
 #define vkFourierAllocate(name, ...) \
     if (vkAllocate##name(__VA_ARGS__) != VK_SUCCESS) \
         throw std::runtime_error("FourierEngine Error: allocate vulkan object for `{}` handle failed!")
-#define FOURIER_LOGGER_INIT_VULKAN_API(fmt, ...) \
-  rivulet_logger_info("[FOURIER ENGINE] [INIT_VULKAN_API] IF/ - {}", std::format(fmt, ##__VA_ARGS__))
+#define NRIV_LOGGER_INIT_VULKAN_API(fmt, ...) \
+  NRIVINFO("[NANORIV ENGINE] [INIT_VULKAN_API] IF/ - {}", fmt, ##__VA_ARGS__)
 
 /* Get required instance extensions for vulkan. */
 void FourierGetRequiredInstanceExtensions(std::vector<const char *> &vec,
@@ -158,7 +158,7 @@ VkPresentModeKHR SelectSwapSurfacePresentMode(const std::vector<VkPresentModeKHR
 }
 
 /* Select swap chain extent. */
-VkExtent2D SelectSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, RIVwindow *pRIVwindow) {
+VkExtent2D SelectSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, NRIVwindow *pRIVwindow) {
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
         return capabilities.currentExtent;
     } else {
@@ -177,7 +177,7 @@ VkShaderModule LoadShaderModule(VkDevice device, const char *file_path) {
     VkShaderModule shader;
 
     /* load shader binaries. */
-    buf = rivulet_load_binaries(file_path, &size);
+    buf = niv_load_binaries(file_path, &size);
 
     VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
     shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -186,7 +186,7 @@ VkShaderModule LoadShaderModule(VkDevice device, const char *file_path) {
     vkFourierCreate(ShaderModule, device, &shaderModuleCreateInfo, VK_NULL_HANDLE, &shader);
 
     /* free binaries buf. */
-    rivulet_free_binaries(buf);
+    niv_free_binaries(buf);
 
     return shader;
 }
@@ -202,15 +202,15 @@ uint32_t FindMemoryType(uint32_t typeFilter, VkPhysicalDevice physicalDevice, Vk
     throw std::runtime_error("failed to find suitable memory type!");
 }
 
-VulkanRenderAPI::VulkanRenderAPI(RIVwindow *pRIVwindow) {
+VulkanRenderAPI::VulkanRenderAPI(NRIVwindow *pRIVwindow) {
     /* Enumerate instance available extensions. */
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, NULL);
     std::vector<VkExtensionProperties> extensions(extensionCount);
     vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, std::data(extensions));
-    FOURIER_LOGGER_INIT_VULKAN_API("Vulkan render api available extensions for instance:");
+    NRIV_LOGGER_INIT_VULKAN_API("Vulkan render api available extensions for instance:");
     for (auto &extension : extensions) {
-        FOURIER_LOGGER_INIT_VULKAN_API("    {}", extension.extensionName);
+        NRIV_LOGGER_INIT_VULKAN_API("    {}", extension.extensionName);
         m_VkInstanceExtensionPropertiesSupports.insert({extension.extensionName, extension});
     }
 
@@ -219,9 +219,9 @@ VulkanRenderAPI::VulkanRenderAPI(RIVwindow *pRIVwindow) {
     vkEnumerateInstanceLayerProperties(&layerCount, NULL);
     std::vector<VkLayerProperties> layers(layerCount);
     vkEnumerateInstanceLayerProperties(&layerCount, std::data(layers));
-    FOURIER_LOGGER_INIT_VULKAN_API("Vulkan render api available layer list: ");
+    NRIV_LOGGER_INIT_VULKAN_API("Vulkan render api available layer list: ");
     for (auto &layer : layers) {
-        FOURIER_LOGGER_INIT_VULKAN_API("    {}", layer.layerName);
+        NRIV_LOGGER_INIT_VULKAN_API("    {}", layer.layerName);
         m_VkInstanceLayerPropertiesSupports.insert({layer.layerName, layer});
     }
 
@@ -234,9 +234,9 @@ VulkanRenderAPI::VulkanRenderAPI(RIVwindow *pRIVwindow) {
     applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     applicationInfo.apiVersion = VK_VERSION_1_3;
     applicationInfo.apiVersion = VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.pApplicationName = FOURIER_ENGINE;
+    applicationInfo.pApplicationName = NANORIV_ENGINE_NAME;
     applicationInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.pEngineName = FOURIER_ENGINE;
+    applicationInfo.pEngineName = NANORIV_ENGINE_NAME;
 
     struct VkInstanceCreateInfo instanceCreateInfo = {};
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -244,9 +244,9 @@ VulkanRenderAPI::VulkanRenderAPI(RIVwindow *pRIVwindow) {
 
     instanceCreateInfo.enabledExtensionCount = std::size(m_RequiredInstanceExtensions);
     instanceCreateInfo.ppEnabledExtensionNames = std::data(m_RequiredInstanceExtensions);
-    FOURIER_LOGGER_INIT_VULKAN_API("Used vulkan extension for instance count: {}", std::size(m_RequiredInstanceExtensions));
+    NRIV_LOGGER_INIT_VULKAN_API("Used vulkan extension for instance count: {}", std::size(m_RequiredInstanceExtensions));
     for (const auto& name : m_RequiredInstanceExtensions)
-        FOURIER_LOGGER_INIT_VULKAN_API("    {}", name);
+        NRIV_LOGGER_INIT_VULKAN_API("    {}", name);
 
     instanceCreateInfo.enabledLayerCount = std::size(m_RequiredInstanceLayers);
     instanceCreateInfo.ppEnabledLayerNames = std::data(m_RequiredInstanceLayers);
@@ -273,35 +273,35 @@ VulkanRenderAPI::VulkanRenderAPI(RIVwindow *pRIVwindow) {
         VkPhysicalDeviceProperties properties;
         vkGetPhysicalDeviceProperties(device, &properties);
         /* Set properties to PhysicalDeviceProperties properties struct object. */
-        memcpy(physicalDeviceProperties.deviceName, properties.deviceName, FOURIER_ENGINE_MAX_DEVICE_NAME_SIZE);
+        memcpy(physicalDeviceProperties.deviceName, properties.deviceName, 255);
         /* Save. */
         m_PhysicalDevices.push_back(physicalDeviceProperties);
     }
 
     if (std::size(m_PhysicalDevices) == 0)
-        rivulet_throw_error("FourierEngine Error: cannot found physical device for support vulkan api!");
+        NRIVERROR("FourierEngine Error: cannot found physical device for support vulkan api!");
 
-    FOURIER_LOGGER_INIT_VULKAN_API("All physical devices supports for vulkan: ");
+    NRIV_LOGGER_INIT_VULKAN_API("All physical devices supports for vulkan: ");
     for (auto &device : m_PhysicalDevices)
-        FOURIER_LOGGER_INIT_VULKAN_API("    {}", device.deviceName);
+        NRIV_LOGGER_INIT_VULKAN_API("    {}", device.deviceName);
 
     /** Select current using physical device. */
     PhysicalDeviceProperties rivuletPhysicalDevice = m_PhysicalDevices[0];
     m_PhysicalDevice = rivuletPhysicalDevice.handle;
-    FOURIER_LOGGER_INIT_VULKAN_API("Using device: <{}>", rivuletPhysicalDevice.deviceName);
+    NRIV_LOGGER_INIT_VULKAN_API("Using device: <{}>", rivuletPhysicalDevice.deviceName);
 
     /** Create surface of glfw. */
     if (glfwCreateWindowSurface(m_Instance, pRIVwindow->GetWindowHandle(), VK_NULL_HANDLE, &m_Surface) != VK_SUCCESS)
-        rivulet_throw_error("failed to create window surface!");
+        NRIVERROR("failed to create window surface!");
 
     /* Enumerate device extensions. */
     uint32_t deviceExtensionCount = 0;
     vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, VK_NULL_HANDLE, &deviceExtensionCount, VK_NULL_HANDLE);
     std::vector<VkExtensionProperties> deviceExtensions(deviceExtensionCount);
     vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, VK_NULL_HANDLE, &deviceExtensionCount, std::data(deviceExtensions));
-    FOURIER_LOGGER_INIT_VULKAN_API("Vulkan render api logical device available extensions: ");
+    NRIV_LOGGER_INIT_VULKAN_API("Vulkan render api logical device available extensions: ");
     for (auto &extension : deviceExtensions) {
-        FOURIER_LOGGER_INIT_VULKAN_API("    {}", extension.extensionName);
+        NRIV_LOGGER_INIT_VULKAN_API("    {}", extension.extensionName);
         m_VkDeviceExtensionPropertiesSupports.insert({extension.extensionName, extension});
     }
 
@@ -388,7 +388,7 @@ VulkanRenderAPI::VulkanRenderAPI(RIVwindow *pRIVwindow) {
         imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
         imageViewCreateInfo.subresourceRange.layerCount = 1;
         vkFourierCreate(ImageView, m_Device, &imageViewCreateInfo, VK_NULL_HANDLE, &m_SwapChainImageViews[i]);
-        FOURIER_LOGGER_INIT_VULKAN_API("Create image view for swapchain, image view index: {}", i);
+        NRIV_LOGGER_INIT_VULKAN_API("Create image view for swapchain, image view index: {}", i);
     }
 
     /** Create render pass. */
@@ -431,13 +431,13 @@ VulkanRenderAPI::VulkanRenderAPI(RIVwindow *pRIVwindow) {
     vkFourierCreate(RenderPass, m_Device, &renderPassCreateInfo, VK_NULL_HANDLE, &m_RenderPass);
 
     /** Create shader of vertex & fragment module. */
-    FOURIER_LOGGER_INIT_VULKAN_API("Loading and create vertex shader module from: {}", FOURIER_SHADER_MODULE_OF_VERTEX_BINARY_FILE);
-    VkShaderModule vertex_shader_module = LoadShaderModule(m_Device, FOURIER_SHADER_MODULE_OF_VERTEX_BINARY_FILE);
-    FOURIER_LOGGER_INIT_VULKAN_API("Loading and create vertex shader module success!");
+    NRIV_LOGGER_INIT_VULKAN_API("Loading and create vertex shader module from: {}", NRIV_SHADER_MODULE_OF_VERTEX_BINARY_FILE);
+    VkShaderModule vertex_shader_module = LoadShaderModule(m_Device, NRIV_SHADER_MODULE_OF_VERTEX_BINARY_FILE);
+    NRIV_LOGGER_INIT_VULKAN_API("Loading and create vertex shader module success!");
 
-    FOURIER_LOGGER_INIT_VULKAN_API("Loading and create fragment shader module from: {}", FOURIER_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE);
-    VkShaderModule fragment_shader_module = LoadShaderModule(m_Device, FOURIER_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE);
-    FOURIER_LOGGER_INIT_VULKAN_API("Loading and create fragment shader module success!");
+    NRIV_LOGGER_INIT_VULKAN_API("Loading and create fragment shader module from: {}", NRIV_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE);
+    VkShaderModule fragment_shader_module = LoadShaderModule(m_Device, NRIV_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE);
+    NRIV_LOGGER_INIT_VULKAN_API("Loading and create fragment shader module success!");
 
     /** Create pipeline phase of vertex and fragment shader */
     VkPipelineShaderStageCreateInfo pipelineVertexShaderStageCreateInfo = {};
@@ -694,7 +694,7 @@ VulkanRenderAPI::VulkanRenderAPI(RIVwindow *pRIVwindow) {
     vkFourierCreate(Semaphore, m_Device, &semaphoreCreateInfo, VK_NULL_HANDLE, &m_ImageAvailableSemaphore);
     vkFourierCreate(Semaphore, m_Device, &semaphoreCreateInfo, VK_NULL_HANDLE, &m_RenderFinishedSemaphore);
 
-    FOURIER_LOGGER_INIT_VULKAN_API("The initialize vulkan api success!");
+    NRIV_LOGGER_INIT_VULKAN_API("The initialize vulkan api success!");
 }
 
 VulkanRenderAPI::~VulkanRenderAPI() {
