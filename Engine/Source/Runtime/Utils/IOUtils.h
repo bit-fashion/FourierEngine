@@ -22,12 +22,12 @@
 #include <malloc.h>
 #include <fstream>
 #include <vector>
-#include <Nanoriv.h>
+#include <NEDEF.h>
 
-static char *niv_load_binaries(const char *file_path, size_t *size) {
+static char *vrrt_load_file(const char *file_path, size_t *size) {
     std::ifstream file(file_path, std::ios::ate | std::ios::binary);
     if (!file.is_open())
-        NRIVERROR("Error: open {} file failed!", file_path);
+        VRRT_LOGGER_ERROR("Error: open {} file failed!", file_path);
     *size = file.tellg();
     file.seekg(0);
 
@@ -39,6 +39,6 @@ static char *niv_load_binaries(const char *file_path, size_t *size) {
     return buf;
 }
 
-static void niv_free_binaries(char *binaries) {
+static void vrrt_free_buffer(char *binaries) {
     free(binaries);
 }

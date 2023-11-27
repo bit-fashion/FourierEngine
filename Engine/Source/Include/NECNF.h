@@ -20,4 +20,4 @@
 #pragma once
 
 /** this macro define is used for switch debugging code. */
-#define NRIV_ENGINE_CONFIG_ENABLE_DEBUG
+#define VRRT_ENGINE_CONFIG_ENABLE_DEBUG

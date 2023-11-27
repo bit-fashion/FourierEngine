@@ -27,7 +27,7 @@
 #include <gtc/matrix_transform.hpp>
 #include <chrono>
 
-#include "Window/NRIVwindow.h"
+#include "Window/VRRTwindow.h"
 #include "Utils/IOUtils.h"
 
 #define NRIV_SHADER_MODULE_OF_VERTEX_BINARY_FILE "../Engine/Binaries/simple_shader.vert.spv"
@@ -42,7 +42,7 @@
     if (vkAllocate##name(__VA_ARGS__) != VK_SUCCESS) \
         throw std::runtime_error("FourierEngine Error: allocate vulkan object for `{}` handle failed!")
 #define NRIV_LOGGER_INIT_VULKAN_API(fmt, ...) \
-  NRIVINFO("[NANORIV ENGINE] [INIT_VULKAN_API] IF/ - {}", fmt, ##__VA_ARGS__)
+  VRRT_LOGGER_INFO("[NANORIV ENGINE] [INIT_VULKAN_API] IF/ - {}", fmt, ##__VA_ARGS__)
 
 /* Get required instance extensions for vulkan. */
 void FourierGetRequiredInstanceExtensions(std::vector<const char *> &vec,
@@ -158,7 +158,7 @@ VkPresentModeKHR SelectSwapSurfacePresentMode(const std::vector<VkPresentModeKHR
 }
 
 /* Select swap chain extent. */
-VkExtent2D SelectSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, NRIVwindow *pRIVwindow) {
+VkExtent2D SelectSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, VRRTwindow *pRIVwindow) {
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
         return capabilities.currentExtent;
     } else {
@@ -177,7 +177,7 @@ VkShaderModule LoadShaderModule(VkDevice device, const char *file_path) {
     VkShaderModule shader;
 
     /* load shader binaries. */
-    buf = niv_load_binaries(file_path, &size);
+    buf = vrrt_load_file(file_path, &size);
 
     VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
     shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -186,7 +186,7 @@ VkShaderModule LoadShaderModule(VkDevice device, const char *file_path) {
     vkFourierCreate(ShaderModule, device, &shaderModuleCreateInfo, VK_NULL_HANDLE, &shader);
 
     /* free binaries buf. */
-    niv_free_binaries(buf);
+    vrrt_free_buffer(buf);
 
     return shader;
 }
@@ -202,7 +202,7 @@ uint32_t FindMemoryType(uint32_t typeFilter, VkPhysicalDevice physicalDevice, Vk
     throw std::runtime_error("failed to find suitable memory type!");
 }
 
-VulkanRenderAPI::VulkanRenderAPI(NRIVwindow *pRIVwindow) {
+VulkanRenderAPI::VulkanRenderAPI(VRRTwindow *pRIVwindow) {
     /* Enumerate instance available extensions. */
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, NULL);
@@ -234,9 +234,9 @@ VulkanRenderAPI::VulkanRenderAPI(NRIVwindow *pRIVwindow) {
     applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     applicationInfo.apiVersion = VK_VERSION_1_3;
     applicationInfo.apiVersion = VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.pApplicationName = NANORIV_ENGINE_NAME;
+    applicationInfo.pApplicationName = VRRT_ENGINE_NAME;
     applicationInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.pEngineName = NANORIV_ENGINE_NAME;
+    applicationInfo.pEngineName = VRRT_ENGINE_NAME;
 
     struct VkInstanceCreateInfo instanceCreateInfo = {};
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -279,7 +279,7 @@ VulkanRenderAPI::VulkanRenderAPI(NRIVwindow *pRIVwindow) {
     }
 
     if (std::size(m_PhysicalDevices) == 0)
-        NRIVERROR("FourierEngine Error: cannot found physical device for support vulkan api!");
+        VRRT_THROW_ERROR("FourierEngine Error: cannot found physical device for support vulkan api!");
 
     NRIV_LOGGER_INIT_VULKAN_API("All physical devices supports for vulkan: ");
     for (auto &device : m_PhysicalDevices)
@@ -292,7 +292,7 @@ VulkanRenderAPI::VulkanRenderAPI(NRIVwindow *pRIVwindow) {
 
     /** Create surface of glfw. */
     if (glfwCreateWindowSurface(m_Instance, pRIVwindow->GetWindowHandle(), VK_NULL_HANDLE, &m_Surface) != VK_SUCCESS)
-        NRIVERROR("failed to create window surface!");
+        VRRT_THROW_ERROR("failed to create window surface!");
 
     /* Enumerate device extensions. */
     uint32_t deviceExtensionCount = 0;

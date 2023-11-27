@@ -19,18 +19,18 @@
 /* Creates on 2023/11/21. */
 #pragma once
 
-#include <Nanoriv.h>
+#include <NEDEF.h>
 #include <GLFW/glfw3.h>
 
-class NRIVwindow;
+class VRRTwindow;
 
-typedef void (* PFN_RIVwindowResizableWindowCallback)(NRIVwindow *pRVWidnow, int width, int height);
+typedef void (* PFN_RIVwindowResizableWindowCallback)(VRRTwindow *pRVWidnow, int width, int height);
 
-class NRIVwindow {
+class VRRTwindow {
 public:
     /* Init and create window. */
-    NRIVwindow(int width, int height, const char *title);
-    ~NRIVwindow();
+    VRRTwindow(int width, int height, const char *title);
+    ~VRRTwindow();
     /* Support functions. */
     bool WindowShouldClose();
     void ShowWindowInScreen();

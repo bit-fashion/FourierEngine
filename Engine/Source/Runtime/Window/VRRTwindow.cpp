@@ -17,9 +17,9 @@
  * ************************************************************************/
 
 /* Creates on 2023/11/21. */
-#include "NRIVwindow.h"
+#include "VRRTwindow.h"
 
-NRIVwindow::NRIVwindow(int width, int height, const char *title) : m_Width(width), m_Height(height) {
+VRRTwindow::VRRTwindow(int width, int height, const char *title) : m_Width(width), m_Height(height) {
     glfwInit();
 
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
@@ -29,14 +29,14 @@ NRIVwindow::NRIVwindow(int width, int height, const char *title) : m_Width(width
 
     if (m_Window == NULL) {
         glfwTerminate();
-        NRIVERROR("NanorivEngine Error: create window failed, cause window pointer is NULL!");
+        VRRT_THROW_ERROR("NanorivEngine Error: create window failed, cause window pointer is NULL!");
     }
 
     glfwSetWindowUserPointer(m_Window, this);
 
     /* Set resize callback. */
     glfwSetWindowSizeCallback(m_Window, [](GLFWwindow *window, int width, int height) {
-        NRIVwindow *pRIVwindow = ((NRIVwindow *) glfwGetWindowUserPointer(window));
+        VRRTwindow *pRIVwindow = ((VRRTwindow *) glfwGetWindowUserPointer(window));
         pRIVwindow->SetWidth(width);
         pRIVwindow->SetHeight(height);
         if (pRIVwindow->m_FnFourierResizableWindowCallback != NULL)
@@ -47,15 +47,15 @@ NRIVwindow::NRIVwindow(int width, int height, const char *title) : m_Width(width
     glfwHideWindow(m_Window);
 }
 
-NRIVwindow::~NRIVwindow() {
+VRRTwindow::~VRRTwindow() {
     glfwTerminate();
     glfwDestroyWindow(m_Window);
 }
 
-bool NRIVwindow::WindowShouldClose() {
+bool VRRTwindow::WindowShouldClose() {
     return glfwWindowShouldClose(m_Window);
 }
 
-void NRIVwindow::ShowWindowInScreen() {
+void VRRTwindow::ShowWindowInScreen() {
     glfwShowWindow(m_Window);
 }

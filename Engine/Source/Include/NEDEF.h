@@ -24,12 +24,12 @@
 #include <format>
 #include <memory>
 
-#include "NRIVCNF.h"
+#include "NECNF.h"
 
-#define NANORIV_ENGINE_NAME "NanorivEngine"
+#define VRRT_ENGINE_NAME "NanorivEngine"
 
-#define NRIVINFO(fmt, ...) printf("%s\n", std::format(fmt, __VA_ARGS__).c_str())
-#define NRIVERROR(fmt, ...) throw std::runtime_error(std::format(fmt, ##__VA_ARGS__))
-#define NRIVTHROW(fmt, ...) throw std::runtime_error(std::format(fmt, ##__VA_ARGS__))
+#define VRRT_LOGGER_INFO(fmt, ...) printf("%s\n", std::format(fmt, __VA_ARGS__).c_str())
+#define VRRT_LOGGER_ERROR(fmt, ...) throw std::runtime_error(std::format(fmt, ##__VA_ARGS__))
+#define VRRT_THROW_ERROR(fmt, ...) throw std::runtime_error(std::format(fmt, ##__VA_ARGS__))
 
-#define NRIVFREE(ptr) (ptr = nullptr)
+#define VRRT_FREE_POINTER(ptr) (ptr = nullptr)

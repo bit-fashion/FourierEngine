@@ -21,7 +21,7 @@
 
 #include <vulkan/vulkan.h>
 #include <vector>
-#include <Nanoriv.h>
+#include <NEDEF.h>
 #include <unordered_map>
 #include <optional>
 #include <array>
@@ -29,7 +29,7 @@
 #include <stddef.h>
 #include <memory>
 
-class NRIVwindow;
+class VRRTwindow;
 
 /**
  * Physical device struct.
@@ -112,7 +112,7 @@ struct UniformBufferObject {
 class VulkanRenderAPI {
 public:
     /* Init vulkan render api. */
-    explicit VulkanRenderAPI(NRIVwindow *pRIVwindow);
+    explicit VulkanRenderAPI(VRRTwindow *pRIVwindow);
     ~VulkanRenderAPI();
 
 public:

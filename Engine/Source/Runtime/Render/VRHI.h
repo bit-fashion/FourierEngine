@@ -22,41 +22,41 @@
 #include <vulkan/vulkan.h>
 #include <memory>
 #include <vector>
-#include <Nanoriv.h>
+#include <NEDEF.h>
 #include <unordered_map>
 
-class NRIVwindow;
+class VRRTwindow;
 
 #define VK_LAYER_KHRONOS_validation "VK_LAYER_KHRONOS_validation"
 
-#define vkNRIVCreate(name, ...) \
+#define vkVRHICreate(name, ...) \
     if (vkCreate##name(__VA_ARGS__) != VK_SUCCESS) \
-        NRIVERROR("[NANORIV ENGINE] [INIT_VULKAN_API] ERR/ - Create [{}] handle failed!", #name)
-#define NRIV_LOGGER_VULKAN_API_INFO(fmt, ...) \
-  NRIVINFO("[NANORIV ENGINE] [INIT_VULKAN_API] IF/ - {}", fmt, ##__VA_ARGS__)
+        VRRT_THROW_ERROR("[NANORIV ENGINE] [INIT_VULKAN_API] ERR/ - Create [{}] handle failed!", #name)
+#define VRHI_LOGGER_VULKAN_API_INFO(fmt, ...) \
+  VRRT_LOGGER_INFO("[NANORIV ENGINE] [INIT_VULKAN_API] IF/ - {}", fmt, ##__VA_ARGS__)
 
 /** GPU 设备信息 */
-struct NRIVGPU {
+struct RHIGPU {
     VkPhysicalDevice device;
     VkPhysicalDeviceProperties properties;
     VkPhysicalDeviceFeatures features;
 };
 
 /** 队列族 */
-struct RIVQueueFamilyIndices {
+struct RHIQueueFamilyIndices {
     uint32_t graphicsQueueFamily = 0;
     uint32_t presentQueueFamily = 0;
 };
 
 /** 查询所有物理设备 */
-static void RIVGETGPU(VkInstance instance, std::vector<NRIVGPU> *pRIVGPU) {
+static void RHIGETGPU(VkInstance instance, std::vector<RHIGPU> *pRIVGPU) {
     uint32_t count = 0;
     vkEnumeratePhysicalDevices(instance, &count, VK_NULL_HANDLE);
     std::vector<VkPhysicalDevice> devices(count);
     vkEnumeratePhysicalDevices(instance, &count, std::data(devices));
 
     for (const auto &device: devices) {
-        NRIVGPU gpu;
+        RHIGPU gpu;
         gpu.device = device;
         /* 查询物理设备信息 */
         vkGetPhysicalDeviceProperties(device, &gpu.properties);
@@ -69,42 +69,42 @@ static void RIVGETGPU(VkInstance instance, std::vector<NRIVGPU> *pRIVGPU) {
 /**
  * 渲染设备（GPU）
  */
-class NRIVDevice {
+class VRHIDevice {
 public:
     /* init and destroy function */
-    explicit NRIVDevice(VkInstance instance, VkSurfaceKHR surface, NRIVwindow *pNRIVwindow);
-    ~NRIVDevice();
+    explicit VRHIDevice(VkInstance instance, VkSurfaceKHR surface, VRRTwindow *pVRRTwidnow);
+    ~VRHIDevice();
 
 private:
-    RIVQueueFamilyIndices FindQueueFamilyIndices();
+    RHIQueueFamilyIndices FindQueueFamilyIndices();
 
 private:
     VkInstance m_Instance = VK_NULL_HANDLE;
     VkDevice m_Device = VK_NULL_HANDLE;
     VkSurfaceKHR m_SurfaceKHR = VK_NULL_HANDLE;
-    NRIVGPU m_NRIVGPU = {};
-    NRIVwindow *m_NRIVwindow;
+    RHIGPU m_RHIGPU = {};
+    VRRTwindow *m_NRIVwindow;
     /* 队列族 */
-    RIVQueueFamilyIndices m_RIVQueueFamilyIndices;
+    RHIQueueFamilyIndices m_RHIQueueFamilyIndices;
     VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
     VkQueue m_PresentQueue = VK_NULL_HANDLE;
     /* 设备支持的扩展列表 */
     std::unordered_map<std::string, VkExtensionProperties> m_DeviceSupportedExtensions;
 };
 
-class NRIVRenderer {
+class VRHI {
 public:
-    explicit NRIVRenderer(NRIVwindow *pNRIVwindow);
-    ~NRIVRenderer();
+    explicit VRHI(VRRTwindow *pVRRTwidnow);
+    ~VRHI();
 
 private:
-    void InitNRIVRenderer();
+    void Init_Vulkan_Impl();
 
 private:
     VkInstance m_Instance = VK_NULL_HANDLE;
     VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
-    NRIVwindow *m_NRIVwindow;
-    std::unique_ptr<NRIVDevice> m_NRIVDevice = NULL;
+    VRRTwindow *m_NRIVwindow;
+    std::unique_ptr<VRHIDevice> m_VRHIDevice = NULL;
     /* Vectors. */
     std::vector<const char *> m_RequiredInstanceExtensions;
     std::vector<const char *> m_RequiredInstanceLayers;

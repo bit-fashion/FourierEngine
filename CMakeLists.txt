@@ -18,7 +18,7 @@
 
 # Creates on 2022/9/14. #
 cmake_minimum_required(VERSION 3.26)
-project(NanorivEngine)
+project(VerirrtEngine)
 
 set(CMAKE_CXX_STANDARD 23)
 
@@ -45,8 +45,8 @@ link_directories(
 
 add_executable(${PROJECT_NAME}
         "Engine/Source/Runtime/main.cpp"
-        "Engine/Source/Runtime/Window/NRIVwindow.cpp"
-        "Engine/Source/Runtime/Render/NRIVRenderer.cpp"
+        "Engine/Source/Runtime/Window/VRRTwindow.cpp"
+        "Engine/Source/Runtime/Render/VRHI.cpp"
         "Engine/Source/Runtime/Render/Demo/VulkanRenderAPI.cpp"
 )
 

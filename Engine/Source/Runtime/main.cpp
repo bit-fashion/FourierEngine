@@ -17,15 +17,15 @@
  * ************************************************************************/
 
 /* Creates on 2022/9/14. */
-#include "Window/NRIVwindow.h"
+#include "Window/VRRTwindow.h"
 
- #include "Render/NRIVRenderer.h"
+ #include "Render/VRHI.h"
 //#include "Render/Demo/VulkanRenderAPI.h"
 
 int main() {
-    auto window = NRIVwindow(1280, 1000, "NE-1");
-    /* Create NRIVRenderer */
-     std::unique_ptr<NRIVRenderer> pNRIVRenderer = std::make_unique<NRIVRenderer>(&window);
+    auto window = VRRTwindow(1280, 1000, "NE-1");
+    /* Create VRHI */
+     std::unique_ptr<VRHI> pVRHI = std::make_unique<VRHI>(&window);
     /* When RenderAPI loading success that show window to screen. */
 //     VulkanRenderAPI vulkanRenderApi(&window);
     window.ShowWindowInScreen();
