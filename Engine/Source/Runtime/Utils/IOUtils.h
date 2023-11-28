@@ -22,7 +22,7 @@
 #include <malloc.h>
 #include <fstream>
 #include <vector>
-#include <NEDEF.h>
+#include <VRRT.h>
 
 static char *vrrt_load_file(const char *file_path, size_t *size) {
     std::ifstream file(file_path, std::ios::ate | std::ios::binary);

@@ -24,13 +24,13 @@ set(CMAKE_CXX_STANDARD 23)
 
 # Configure third party include of system.
 include_directories(SYSTEM
-        "${CMAKE_SOURCE_DIR}/Engine/Source/Include"
-        "${CMAKE_SOURCE_DIR}/Engine/Source/ThirdParty"
-        "${CMAKE_SOURCE_DIR}/Engine/Source/ThirdParty/vulkan/include"
-        "${CMAKE_SOURCE_DIR}/Engine/Source/ThirdParty/glfw/include"
-        "${CMAKE_SOURCE_DIR}/Engine/Source/ThirdParty/glad/include"
-        "${CMAKE_SOURCE_DIR}/Engine/Source/ThirdParty/glm"
-        "${CMAKE_SOURCE_DIR}/Engine/Source/ThirdParty/imgui"
+        "${PROJECT_SOURCE_DIR}/Engine/Source/Include"
+        "${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty"
+        "${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty/vulkan/include"
+        "${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty/glfw/include"
+        "${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty/glad/include"
+        "${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty/glm"
+        "${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty/imgui"
 )
 
 include_directories(
@@ -46,8 +46,7 @@ link_directories(
 add_executable(${PROJECT_NAME}
         "Engine/Source/Runtime/main.cpp"
         "Engine/Source/Runtime/Window/VRRTwindow.cpp"
-        "Engine/Source/Runtime/Render/VRHI.cpp"
-        "Engine/Source/Runtime/Render/Demo/VulkanRenderAPI.cpp"
+        "Engine/Source/Runtime/Render/VKRHI.cpp"
 )
 
 target_link_libraries(${PROJECT_NAME}

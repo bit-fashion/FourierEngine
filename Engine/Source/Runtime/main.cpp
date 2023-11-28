@@ -10,7 +10,7 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, e1ither express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
@@ -19,22 +19,22 @@
 /* Creates on 2022/9/14. */
 #include "Window/VRRTwindow.h"
 
- #include "Render/VRHI.h"
+ #include "Render/VKRHI.h"
 //#include "Render/Demo/VulkanRenderAPI.h"
 
 int main() {
     auto window = VRRTwindow(1280, 1000, "NE-1");
-    /* Create VRHI */
-     std::unique_ptr<VRHI> pVRHI = std::make_unique<VRHI>(&window);
-    /* When RenderAPI loading success that show window to screen. */
-//     VulkanRenderAPI vulkanRenderApi(&window);
+    /* Create VKRHI */
+     std::unique_ptr<VKRHI> pVKRHI = std::make_unique<VKRHI>(&window);
     window.ShowWindowInScreen();
 
     while (!window.WindowShouldClose()) {
         NRIVPollEvents();
-//        vulkanRenderApi.BeginRender();
-//        vulkanRenderApi.Draw();
-//        vulkanRenderApi.EndRender();
+        pVKRHI->BeginRender();
+        {
+            pVKRHI->Draw();
+        }
+        pVKRHI->EndRender();
     }
 
     return 0;

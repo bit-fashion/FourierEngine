@@ -29,7 +29,7 @@ VRRTwindow::VRRTwindow(int width, int height, const char *title) : m_Width(width
 
     if (m_Window == NULL) {
         glfwTerminate();
-        VRRT_THROW_ERROR("NanorivEngine Error: create window failed, cause window pointer is NULL!");
+        VRRT_THROW_ERROR("VerirrtEngine Error: create window failed, cause window pointer is NULL!");
     }
 
     glfwSetWindowUserPointer(m_Window, this);
