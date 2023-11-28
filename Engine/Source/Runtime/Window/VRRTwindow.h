@@ -24,7 +24,7 @@
 
 class VRRTwindow;
 
-typedef void (* PFN_RIVwindowResizableWindowCallback)(VRRTwindow *pRVWidnow, int width, int height);
+typedef void (* PFN_VRRTwindowResizableWindowCallback)(VRRTwindow *pVRRTwindow, int width, int height);
 
 class VRRTwindow {
 public:
@@ -41,15 +41,18 @@ public:
     int GetHeight() const { return m_Height; }
     void SetWidth(int width) { m_Width = width; }
     void SetHeight(int height) { m_Height = height; }
-    void SetFourierResizableWindowCallback(PFN_RIVwindowResizableWindowCallback fnFourierResizableWindowCallback) /* Set resizable callback. */
-      { m_FnFourierResizableWindowCallback = fnFourierResizableWindowCallback; };
+    void SetWindowUserPointer(void *pointer) { m_UserPointer = pointer; }
+    void *GetWindowUserPointer() { return m_UserPointer; }
+    void SetVRRTwindowResizableWindowCallback(PFN_VRRTwindowResizableWindowCallback fnVRRTwindowResizableWindowCallback) /* Set resizable callback. */
+      { m_FnVRRTResizableWindowCallback = fnVRRTwindowResizableWindowCallback; };
     GLFWwindow *GetWindowHandle() { return m_Window; };
 
 private:
     int m_Width;
     int m_Height;
     GLFWwindow *m_Window;
-    PFN_RIVwindowResizableWindowCallback m_FnFourierResizableWindowCallback;
+    void *m_UserPointer = NULL;
+    PFN_VRRTwindowResizableWindowCallback m_FnVRRTResizableWindowCallback = NULL;
 };
 
 static void NRIVPollEvents() {

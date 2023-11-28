@@ -17,7 +17,7 @@
  * ************************************************************************/
 
 /* Creates on 2022/11/23. */
-#include "VKRHI.h"
+#include "VRHI.h"
 
 #include "Window/VRRTwindow.h"
 #include "Utils/IOUtils.h"
@@ -26,7 +26,7 @@
 #define VRRT_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE "../Engine/Binaries/simple_shader.frag.spv"
 
 /* Get required instance extensions for vulkan. */
-void VKRHIGetRequiredInstanceExtensions(std::vector<const char *> &vec,
+void VRHIGetRequiredInstanceExtensions(std::vector<const char *> &vec,
                                           std::unordered_map<std::string, VkExtensionProperties> &supports) {
     /* glfw */
     unsigned int glfwExtensionCount = 0;
@@ -37,7 +37,7 @@ void VKRHIGetRequiredInstanceExtensions(std::vector<const char *> &vec,
 }
 
 /* Get required instance layers for vulkan. */
-void VKRHIGetRequiredInstanceLayers(std::vector<const char *> &vec,
+void VRHIGetRequiredInstanceLayers(std::vector<const char *> &vec,
                                       std::unordered_map<std::string, VkLayerProperties> &supports) {
 #ifdef VRRT_ENGINE_CONFIG_ENABLE_DEBUG
     if (supports.count(VK_LAYER_KHRONOS_validation) != 0)
@@ -48,19 +48,19 @@ void VKRHIGetRequiredInstanceLayers(std::vector<const char *> &vec,
 /**
  * 获取设备必须启用的扩展列表
  */
-static void VKRHIGetRequiredEnableDeviceExtensions(std::unordered_map<std::string, VkExtensionProperties> &supports,
+static void VRHIGetRequiredEnableDeviceExtensions(std::unordered_map<std::string, VkExtensionProperties> &supports,
                                                  std::vector<const char *> *pRequired) {
     if (supports.count(VK_KHR_SWAPCHAIN_EXTENSION_NAME) != 0)
         pRequired->push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 }
 
-VKRHIQueueFamilyIndices _VKRHIDevice::FindQueueFamilyIndices() {
-    VKRHIQueueFamilyIndices queueFamilyIndices;
+VRHIQueueFamilyIndices VRHIdevice::FindQueueFamilyIndices() {
+    VRHIQueueFamilyIndices queueFamilyIndices;
 
     uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(m_VKRHIGPU.device, &queueFamilyCount, VK_NULL_HANDLE);
+    vkGetPhysicalDeviceQueueFamilyProperties(mVRHIGPU.device, &queueFamilyCount, VK_NULL_HANDLE);
     std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(m_VKRHIGPU.device, &queueFamilyCount, std::data(queueFamilies));
+    vkGetPhysicalDeviceQueueFamilyProperties(mVRHIGPU.device, &queueFamilyCount, std::data(queueFamilies));
 
     int index = 0;
     for (const auto &queueFamily : queueFamilies) {
@@ -68,7 +68,7 @@ VKRHIQueueFamilyIndices _VKRHIDevice::FindQueueFamilyIndices() {
             queueFamilyIndices.graphicsQueueFamily = index;
 
         VkBool32 isPresentMode = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(m_VKRHIGPU.device, index, m_SurfaceKHR, &isPresentMode);
+        vkGetPhysicalDeviceSurfaceSupportKHR(mVRHIGPU.device, index, mSurfaceKHR, &isPresentMode);
         if (queueFamilyCount > 0 && isPresentMode)
             queueFamilyIndices.presentQueueFamily= index;
 
@@ -82,8 +82,8 @@ VKRHIQueueFamilyIndices _VKRHIDevice::FindQueueFamilyIndices() {
 }
 
 /* Query swapchain details. */
-VKRHISwapChainSupportDetails QuerySwapChainSupportDetails(VkPhysicalDevice device, VkSurfaceKHR surface) {
-    VKRHISwapChainSupportDetails details;
+VRHISwapChainSupportDetails QuerySwapChainSupportDetails(VkPhysicalDevice device, VkSurfaceKHR surface) {
+    VRHISwapChainSupportDetails details;
 
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
 
@@ -173,19 +173,30 @@ VkShaderModule LoadShaderModule(VkDevice device, const char *file_path) {
     return shader;
 }
 
+uint32_t FindMemoryType(uint32_t typeFilter, VkPhysicalDevice physicalDevice, VkMemoryPropertyFlags properties) {
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+    throw std::runtime_error("failed to find suitable memory type!");
+}
+
 // ----------------------------------------------------------------------------
 // Pipeline
 // ----------------------------------------------------------------------------
 
-_VKRHIPipeline::_VKRHIPipeline(VKRHIDevice device, VKRHISwapchain swapchain, const char *vertex_shader_path, const char *fragment_shader_path)
-  : m_VKRHIDevice(device), m_Swapchain(swapchain){
+VRHIpipeline::VRHIpipeline(VRHIdevice *device, VRHIswapchain *swapchain, const char *vertex_shader_path, const char *fragment_shader_path)
+  : mVRHIdevice(device), mSwapchain(swapchain){
     /** Create shader of vertex & fragment module. */
     VRRT_LOGGER_INFO("Loading and create vertex shader module from: {}", vertex_shader_path);
-    VkShaderModule vertex_shader_module = LoadShaderModule(m_VKRHIDevice->GetDeviceHandle(), vertex_shader_path);
+    VkShaderModule vertex_shader_module = LoadShaderModule(mVRHIdevice->GetDeviceHandle(), vertex_shader_path);
     VRRT_LOGGER_INFO("Loading and create vertex shader module success!");
 
     VRRT_LOGGER_INFO("Loading and create fragment shader module from: {}", fragment_shader_path);
-    VkShaderModule fragment_shader_module = LoadShaderModule(m_VKRHIDevice->GetDeviceHandle(), fragment_shader_path);
+    VkShaderModule fragment_shader_module = LoadShaderModule(mVRHIdevice->GetDeviceHandle(), fragment_shader_path);
     VRRT_LOGGER_INFO("Loading and create fragment shader module success!");
 
     /** Create pipeline phase of vertex and fragment shader */
@@ -307,7 +318,7 @@ _VKRHIPipeline::_VKRHIPipeline(VKRHIDevice device, VKRHISwapchain swapchain, con
     pipelineLayoutInfo.setLayoutCount = 0;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
 
-    vkVRRTCreate(PipelineLayout, m_VKRHIDevice->GetDeviceHandle(), &pipelineLayoutInfo, nullptr, &m_PipelineLayout);
+    vkVRRTCreate(PipelineLayout, mVRHIdevice->GetDeviceHandle(), &pipelineLayoutInfo, nullptr, &mPipelineLayout);
 
     /** Create graphics pipeline in vulkan. */
     VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {};
@@ -322,41 +333,41 @@ _VKRHIPipeline::_VKRHIPipeline(VKRHIDevice device, VKRHISwapchain swapchain, con
     graphicsPipelineCreateInfo.pDepthStencilState = nullptr; // Optional
     graphicsPipelineCreateInfo.pColorBlendState = &pipelineColorBlendStateCreateInfo;
     graphicsPipelineCreateInfo.pDynamicState = nullptr; // Optional
-    graphicsPipelineCreateInfo.layout = m_PipelineLayout;
-    graphicsPipelineCreateInfo.renderPass = m_Swapchain->GetRenderPassHandle();
+    graphicsPipelineCreateInfo.layout = mPipelineLayout;
+    graphicsPipelineCreateInfo.renderPass = mSwapchain->GetRenderPassHandle();
     graphicsPipelineCreateInfo.subpass = 0;
     graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
     graphicsPipelineCreateInfo.basePipelineIndex = -1; // Optional
 
-    vkVRRTCreate(GraphicsPipelines, m_VKRHIDevice->GetDeviceHandle(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, VK_NULL_HANDLE, &m_Pipeline);
+    vkVRRTCreate(GraphicsPipelines, mVRHIdevice->GetDeviceHandle(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, VK_NULL_HANDLE, &mPipeline);
 
     /* 销毁着色器模块 */
-    vkDestroyShaderModule(m_VKRHIDevice->GetDeviceHandle(), vertex_shader_module, VK_NULL_HANDLE);
-    vkDestroyShaderModule(m_VKRHIDevice->GetDeviceHandle(), fragment_shader_module, VK_NULL_HANDLE);
+    vkDestroyShaderModule(mVRHIdevice->GetDeviceHandle(), vertex_shader_module, VK_NULL_HANDLE);
+    vkDestroyShaderModule(mVRHIdevice->GetDeviceHandle(), fragment_shader_module, VK_NULL_HANDLE);
 }
 
-_VKRHIPipeline::~_VKRHIPipeline() {
-    vkDestroyPipelineLayout(m_VKRHIDevice->GetDeviceHandle(), m_PipelineLayout, VK_NULL_HANDLE);
-    vkDestroyPipeline(m_VKRHIDevice->GetDeviceHandle(), m_Pipeline, VK_NULL_HANDLE);
+VRHIpipeline::~VRHIpipeline() {
+    vkDestroyPipelineLayout(mVRHIdevice->GetDeviceHandle(), mPipelineLayout, VK_NULL_HANDLE);
+    vkDestroyPipeline(mVRHIdevice->GetDeviceHandle(), mPipeline, VK_NULL_HANDLE);
 }
 
 // ----------------------------------------------------------------------------
 // Swapchain
 // ----------------------------------------------------------------------------
 
-_VKRHISwapchain::_VKRHISwapchain(VKRHIDevice device, VRRTwindow *pVRRTwindow, VkSurfaceKHR surface)
-  : m_VKRHIDevice(device), m_VRRTwindow(pVRRTwindow), m_Surface(surface) {
+VRHIswapchain::VRHIswapchain(VRHIdevice *device, VRRTwindow *pVRRTwindow, VkSurfaceKHR surface)
+  : mVRHIdevice(device), mVRRTwindow(pVRRTwindow), mSurface(surface) {
     /* 查询交换链支持 */
-    VKRHISwapChainSupportDetails swapChainDetails = QuerySwapChainSupportDetails(m_VKRHIDevice->GetPhysicalDeviceHandle(), m_Surface);
+    mSwapChainDetails = QuerySwapChainSupportDetails(mVRHIdevice->GetPhysicalDeviceHandle(), mSurface);
 
-    m_SurfaceFormatKHR = SelectSwapSurfaceFormat(swapChainDetails.formats);
-    m_SwapchainFormat = m_SurfaceFormatKHR.format;
-    m_SwapchainPresentModeKHR = SelectSwapSurfacePresentMode(swapChainDetails.presentModes);
-    m_SwapchainExtent = SelectSwapExtent(swapChainDetails.capabilities, pVRRTwindow);
+    mSurfaceFormatKHR = SelectSwapSurfaceFormat(mSwapChainDetails.formats);
+    mSwapchainFormat = mSurfaceFormatKHR.format;
+    mSwapchainPresentModeKHR = SelectSwapSurfacePresentMode(mSwapChainDetails.presentModes);
+    mSwapchainExtent = SelectSwapExtent(mSwapChainDetails.capabilities, mVRRTwindow);
 
     /** Create render pass. */
     VkAttachmentDescription colorAttachmentDescription = {};
-    colorAttachmentDescription.format = m_SwapchainFormat;
+    colorAttachmentDescription.format = mSwapchainFormat;
     colorAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
     colorAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -391,41 +402,55 @@ _VKRHISwapchain::_VKRHISwapchain(VKRHIDevice device, VRRTwindow *pVRRTwindow, Vk
     renderPassCreateInfo.dependencyCount = 1;
     renderPassCreateInfo.pDependencies = &subpassDependency;
 
-    vkVRRTCreate(RenderPass, m_VKRHIDevice->GetDeviceHandle(), &renderPassCreateInfo, VK_NULL_HANDLE, &m_RenderPass);
+    vkVRRTCreate(RenderPass, mVRHIdevice->GetDeviceHandle(), &renderPassCreateInfo, VK_NULL_HANDLE, &mRenderPass);
 
+    /* 创建交换链 */
+    CreateSwapchain();
+}
+
+VRHIswapchain::~VRHIswapchain() {
+    CleanupSwapchain();
+}
+
+VkResult VRHIswapchain::AcquireNextImage(VkSemaphore semaphore, uint32_t *pIndex) {
+    return vkAcquireNextImageKHR(mVRHIdevice->GetDeviceHandle(), mSwapchain, std::numeric_limits<uint64_t>::max(),
+                          semaphore, VK_NULL_HANDLE, pIndex);
+}
+
+void VRHIswapchain::CreateSwapchain() {
     /* 设置三重缓冲 */
-    m_SwapchainImageCount = swapChainDetails.capabilities.minImageCount + 1;
-    if (swapChainDetails.capabilities.maxImageCount > 0 && m_SwapchainImageCount > swapChainDetails.capabilities.maxImageCount)
-        m_SwapchainImageCount = swapChainDetails.capabilities.maxImageCount;
+    mSwapchainImageCount = mSwapChainDetails.capabilities.minImageCount + 1;
+    if (mSwapChainDetails.capabilities.maxImageCount > 0 && mSwapchainImageCount > mSwapChainDetails.capabilities.maxImageCount)
+        mSwapchainImageCount = mSwapChainDetails.capabilities.maxImageCount;
 
     VkSwapchainCreateInfoKHR swapchainCreateInfoKhr = {};
     swapchainCreateInfoKhr.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    swapchainCreateInfoKhr.surface = m_Surface;
-    swapchainCreateInfoKhr.minImageCount = m_SwapchainImageCount;
-    swapchainCreateInfoKhr.imageFormat = m_SurfaceFormatKHR.format;
-    swapchainCreateInfoKhr.imageColorSpace = m_SurfaceFormatKHR.colorSpace;
-    swapchainCreateInfoKhr.imageExtent = m_SwapchainExtent;
+    swapchainCreateInfoKhr.surface = mSurface;
+    swapchainCreateInfoKhr.minImageCount = mSwapchainImageCount;
+    swapchainCreateInfoKhr.imageFormat = mSurfaceFormatKHR.format;
+    swapchainCreateInfoKhr.imageColorSpace = mSurfaceFormatKHR.colorSpace;
+    swapchainCreateInfoKhr.imageExtent = mSwapchainExtent;
     swapchainCreateInfoKhr.imageArrayLayers = 1;
     swapchainCreateInfoKhr.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    swapchainCreateInfoKhr.preTransform = swapChainDetails.capabilities.currentTransform;
+    swapchainCreateInfoKhr.preTransform = mSwapChainDetails.capabilities.currentTransform;
     swapchainCreateInfoKhr.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    swapchainCreateInfoKhr.presentMode = m_SwapchainPresentModeKHR;
+    swapchainCreateInfoKhr.presentMode = mSwapchainPresentModeKHR;
     swapchainCreateInfoKhr.clipped = VK_TRUE;
     swapchainCreateInfoKhr.oldSwapchain = VK_NULL_HANDLE;
-    vkVRRTCreate(SwapchainKHR, m_VKRHIDevice->GetDeviceHandle(), &swapchainCreateInfoKhr, VK_NULL_HANDLE, &m_Swapchain);
+    vkVRRTCreate(SwapchainKHR, mVRHIdevice->GetDeviceHandle(), &swapchainCreateInfoKhr, VK_NULL_HANDLE, &mSwapchain);
 
-    vkGetSwapchainImagesKHR(m_VKRHIDevice->GetDeviceHandle(), m_Swapchain, &m_SwapchainImageCount, VK_NULL_HANDLE);
-    m_SwapchainImages.resize(m_SwapchainImageCount);
-    vkGetSwapchainImagesKHR(m_VKRHIDevice->GetDeviceHandle(), m_Swapchain, &m_SwapchainImageCount, std::data(m_SwapchainImages));
+    vkGetSwapchainImagesKHR(mVRHIdevice->GetDeviceHandle(), mSwapchain, &mSwapchainImageCount, VK_NULL_HANDLE);
+    mSwapchainImages.resize(mSwapchainImageCount);
+    vkGetSwapchainImagesKHR(mVRHIdevice->GetDeviceHandle(), mSwapchain, &mSwapchainImageCount, std::data(mSwapchainImages));
 
     /** Create image views. */
-    m_SwapchainImageViews.resize(m_SwapchainImageCount);
-    for (uint32_t i = 0; i < m_SwapchainImageCount; i++) {
+    mSwapchainImageViews.resize(mSwapchainImageCount);
+    for (uint32_t i = 0; i < mSwapchainImageCount; i++) {
         VkImageViewCreateInfo imageViewCreateInfo = {};
         imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        imageViewCreateInfo.image = m_SwapchainImages[i];
+        imageViewCreateInfo.image = mSwapchainImages[i];
         imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        imageViewCreateInfo.format = m_SurfaceFormatKHR.format;
+        imageViewCreateInfo.format = mSurfaceFormatKHR.format;
         imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
         imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
         imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -435,63 +460,58 @@ _VKRHISwapchain::_VKRHISwapchain(VKRHIDevice device, VRRTwindow *pVRRTwindow, Vk
         imageViewCreateInfo.subresourceRange.levelCount = 1;
         imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
         imageViewCreateInfo.subresourceRange.layerCount = 1;
-        vkVRRTCreate(ImageView, m_VKRHIDevice->GetDeviceHandle(), &imageViewCreateInfo, VK_NULL_HANDLE, &m_SwapchainImageViews[i]);
+        vkVRRTCreate(ImageView, mVRHIdevice->GetDeviceHandle(), &imageViewCreateInfo, VK_NULL_HANDLE, &mSwapchainImageViews[i]);
     }
 
     /* 帧缓冲区 */
-    m_SwapchainFramebuffers.resize(m_SwapchainImageCount);
-    for (size_t i = 0; i < m_SwapchainImageCount; i++) {
-        VkImageView attachments[] = { m_SwapchainImageViews[i] };
+    mSwapchainFramebuffers.resize(mSwapchainImageCount);
+    for (size_t i = 0; i < mSwapchainImageCount; i++) {
+        VkImageView attachments[] = { mSwapchainImageViews[i] };
 
         VkFramebufferCreateInfo framebufferCreateInfo = {};
         framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferCreateInfo.renderPass = m_RenderPass;
+        framebufferCreateInfo.renderPass = mRenderPass;
         framebufferCreateInfo.attachmentCount = 1;
         framebufferCreateInfo.pAttachments = attachments;
-        framebufferCreateInfo.width = m_SwapchainExtent.width;
-        framebufferCreateInfo.height = m_SwapchainExtent.height;
+        framebufferCreateInfo.width = mSwapchainExtent.width;
+        framebufferCreateInfo.height = mSwapchainExtent.height;
         framebufferCreateInfo.layers = 1;
 
-        vkVRRTCreate(Framebuffer, m_VKRHIDevice->GetDeviceHandle(), &framebufferCreateInfo, nullptr, &m_SwapchainFramebuffers[i]);
+        vkVRRTCreate(Framebuffer, mVRHIdevice->GetDeviceHandle(), &framebufferCreateInfo, nullptr, &mSwapchainFramebuffers[i]);
     }
 }
 
-_VKRHISwapchain::~_VKRHISwapchain() {
-    vkDestroyRenderPass(m_VKRHIDevice->GetDeviceHandle(), m_RenderPass, VK_NULL_HANDLE);
-    for (const auto &imageView: m_SwapchainImageViews)
-        vkDestroyImageView(m_VKRHIDevice->GetDeviceHandle(), imageView, VK_NULL_HANDLE);
-    for (const auto &framebuffer: m_SwapchainFramebuffers)
-        vkDestroyFramebuffer(m_VKRHIDevice->GetDeviceHandle(), framebuffer, VK_NULL_HANDLE);
-    vkDestroySwapchainKHR(m_VKRHIDevice->GetDeviceHandle(), m_Swapchain, VK_NULL_HANDLE);
-}
-
-void _VKRHISwapchain::AcquireNextImage(VkSemaphore semaphore, uint32_t *pIndex) {
-    vkAcquireNextImageKHR(m_VKRHIDevice->GetDeviceHandle(), m_Swapchain, std::numeric_limits<uint64_t>::max(),
-                          semaphore, VK_NULL_HANDLE, pIndex);
+void VRHIswapchain::CleanupSwapchain() {
+    vkDestroyRenderPass(mVRHIdevice->GetDeviceHandle(), mRenderPass, VK_NULL_HANDLE);
+    for (const auto &imageView: mSwapchainImageViews)
+        vkDestroyImageView(mVRHIdevice->GetDeviceHandle(), imageView, VK_NULL_HANDLE);
+    for (const auto &framebuffer: mSwapchainFramebuffers)
+        vkDestroyFramebuffer(mVRHIdevice->GetDeviceHandle(), framebuffer, VK_NULL_HANDLE);
+    vkDestroySwapchainKHR(mVRHIdevice->GetDeviceHandle(), mSwapchain, VK_NULL_HANDLE);
 }
 
 // ----------------------------------------------------------------------------
 // Device
 // ----------------------------------------------------------------------------
 
-_VKRHIDevice::_VKRHIDevice(VkInstance instance, VkSurfaceKHR surface, VRRTwindow *pVRRTwindow)
-  : m_Instance(instance), m_SurfaceKHR(surface), m_VRRTwindow(pVRRTwindow) {
+VRHIdevice::VRHIdevice(VkInstance instance, VkSurfaceKHR surface, VRRTwindow *pVRRTwindow)
+  : mInstance(instance), mSurfaceKHR(surface), mVRRTwindow(pVRRTwindow) {
     /* 选择一个牛逼的 GPU 设备 */
-    std::vector<VKRHIGPU> vGPU;
-    VKRHIGETGPU(m_Instance, &vGPU);
-    m_VKRHIGPU = vGPU[0];
+    std::vector<VRHIGPU> vGPU;
+    VRHIGETGPU(mInstance, &vGPU);
+    mVRHIGPU = vGPU[0];
 
     /* 获取设备支持的所有扩展列表 */
     uint32_t deviceExtensionCount = 0;
-    vkEnumerateDeviceExtensionProperties(m_VKRHIGPU.device, VK_NULL_HANDLE, &deviceExtensionCount, VK_NULL_HANDLE);
+    vkEnumerateDeviceExtensionProperties(mVRHIGPU.device, VK_NULL_HANDLE, &deviceExtensionCount, VK_NULL_HANDLE);
     std::vector<VkExtensionProperties> deviceExtensions(deviceExtensionCount);
-    vkEnumerateDeviceExtensionProperties(m_VKRHIGPU.device, VK_NULL_HANDLE, &deviceExtensionCount, std::data(deviceExtensions));
+    vkEnumerateDeviceExtensionProperties(mVRHIGPU.device, VK_NULL_HANDLE, &deviceExtensionCount, std::data(deviceExtensions));
     for (auto &extension : deviceExtensions)
-        m_DeviceSupportedExtensions.insert({extension.extensionName, extension});
+        mDeviceSupportedExtensions.insert({extension.extensionName, extension});
 
     /* 查询设备支持的队列 */
-    m_VKRHIQueueFamilyIndices = FindQueueFamilyIndices();
-    std::vector<uint32_t> uniqueQueueFamilies = {m_VKRHIQueueFamilyIndices.graphicsQueueFamily, m_VKRHIQueueFamilyIndices.presentQueueFamily};
+    mVRHIQueueFamilyIndices = FindQueueFamilyIndices();
+    std::vector<uint32_t> uniqueQueueFamilies = {mVRHIQueueFamilyIndices.graphicsQueueFamily, mVRHIQueueFamilyIndices.presentQueueFamily};
     std::vector<VkDeviceQueueCreateInfo> deviceQueueCreateInfos;
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -512,77 +532,115 @@ _VKRHIDevice::_VKRHIDevice(VkInstance instance, VkSurfaceKHR surface, VRRTwindow
     deviceCreateInfo.pEnabledFeatures = &features;
     /* 选择设备启用扩展 */
     std::vector<const char *> vRequiredEnableExtension;
-    VKRHIGetRequiredEnableDeviceExtensions(m_DeviceSupportedExtensions, &vRequiredEnableExtension);
+    VRHIGetRequiredEnableDeviceExtensions(mDeviceSupportedExtensions, &vRequiredEnableExtension);
     deviceCreateInfo.enabledExtensionCount = std::size(vRequiredEnableExtension);
     deviceCreateInfo.ppEnabledExtensionNames = std::data(vRequiredEnableExtension);
-    vkVRRTCreate(Device, m_VKRHIGPU.device, &deviceCreateInfo, nullptr, &m_Device);
+    vkVRRTCreate(Device, mVRHIGPU.device, &deviceCreateInfo, nullptr, &mDevice);
 
     /* 获取队列 */
-    vkGetDeviceQueue(m_Device, m_VKRHIQueueFamilyIndices.graphicsQueueFamily, 0, &m_GraphicsQueue);
-    vkGetDeviceQueue(m_Device, m_VKRHIQueueFamilyIndices.presentQueueFamily, 0, &m_PresentQueue);
+    vkGetDeviceQueue(mDevice, mVRHIQueueFamilyIndices.graphicsQueueFamily, 0, &mGraphicsQueue);
+    vkGetDeviceQueue(mDevice, mVRHIQueueFamilyIndices.presentQueueFamily, 0, &mPresentQueue);
 
     /* init */
     InitAllocateDescriptorSet();
     InitCommandPool();
 }
 
-_VKRHIDevice::~_VKRHIDevice() {
-    vkDestroyDescriptorPool(m_Device, m_DescriptorPool, VK_NULL_HANDLE);
-    vkDestroyDescriptorSetLayout(m_Device, m_DescriptorSetLayout, VK_NULL_HANDLE);
-    vkDestroyCommandPool(m_Device, m_CommandPool, VK_NULL_HANDLE);
-    vkDestroyDevice(m_Device, VK_NULL_HANDLE);
+VRHIdevice::~VRHIdevice() {
+    vkDestroyDescriptorPool(mDevice, mDescriptorPool, VK_NULL_HANDLE);
+    vkDestroyDescriptorSetLayout(mDevice, mDescriptorSetLayout, VK_NULL_HANDLE);
+    vkDestroyCommandPool(mDevice, mCommandPool, VK_NULL_HANDLE);
+    vkDestroyDevice(mDevice, VK_NULL_HANDLE);
 }
 
-void _VKRHIDevice::CreateSwapchain(VKRHISwapchain *pSwapchain) {
-    *pSwapchain = new _VKRHISwapchain(this, m_VRRTwindow, m_SurfaceKHR);
+void VRHIdevice::CreateSwapchain(VRHIswapchain **pSwapchain) {
+    *pSwapchain = new VRHIswapchain(this, mVRRTwindow, mSurfaceKHR);
 }
 
-void _VKRHIDevice::DestroySwapchain(VKRHISwapchain swapchain) {
+void VRHIdevice::DestroySwapchain(VRHIswapchain *swapchain) {
     delete swapchain;
 }
 
-void _VKRHIDevice::AllocateDescriptorSet(uint32_t count, VkDescriptorSet *pDescriptorSet) {
+void VRHIdevice::AllocateDescriptorSet(uint32_t count, VkDescriptorSet *pDescriptorSet) {
     /** Allocate descriptor set */
-    VkDescriptorSetLayout descriptorSetLayouts[] = {m_DescriptorSetLayout};
+    VkDescriptorSetLayout descriptorSetLayouts[] = {mDescriptorSetLayout};
     VkDescriptorSetAllocateInfo descriptorAllocateInfo = {};
     descriptorAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    descriptorAllocateInfo.descriptorPool = m_DescriptorPool;
+    descriptorAllocateInfo.descriptorPool = mDescriptorPool;
     descriptorAllocateInfo.descriptorSetCount = count;
     descriptorAllocateInfo.pSetLayouts = descriptorSetLayouts;
-    vkAllocateDescriptorSets(m_Device, &descriptorAllocateInfo, pDescriptorSet);
+    vkAllocateDescriptorSets(mDevice, &descriptorAllocateInfo, pDescriptorSet);
 }
 
-void _VKRHIDevice::FreeDescriptorSet(uint32_t count, VkDescriptorSet *pDescriptorSet) {
-    vkFreeDescriptorSets(m_Device, m_DescriptorPool, count, pDescriptorSet);
+void VRHIdevice::FreeDescriptorSet(uint32_t count, VkDescriptorSet *pDescriptorSet) {
+    vkFreeDescriptorSets(mDevice, mDescriptorPool, count, pDescriptorSet);
 }
 
-void _VKRHIDevice::AllocateCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer) {
+void VRHIdevice::AllocateCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer) {
     /** Allocate command buffer. */
     VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
     commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    commandBufferAllocateInfo.commandPool = m_CommandPool;
+    commandBufferAllocateInfo.commandPool = mCommandPool;
     commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     commandBufferAllocateInfo.commandBufferCount = (uint32_t) count;
 
-    vkVRRTAllocate(CommandBuffers, m_Device, &commandBufferAllocateInfo, pCommandBuffer);
+    vkVRRTAllocate(CommandBuffers, mDevice, &commandBufferAllocateInfo, pCommandBuffer);
 }
 
-void _VKRHIDevice::FreeCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer) {
-    vkFreeCommandBuffers(m_Device, m_CommandPool, count, pCommandBuffer);
+void VRHIdevice::FreeCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer) {
+    vkFreeCommandBuffers(mDevice, mCommandPool, count, pCommandBuffer);
 }
 
-void _VKRHIDevice::CreateSemaphore(VkSemaphore *pSemaphore) {
+void VRHIdevice::CreateSemaphore(VkSemaphore *pSemaphore) {
     /** Create semaphores. */
     VkSemaphoreCreateInfo semaphoreCreateInfo = {};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    vkVRRTCreate(Semaphore, m_Device, &semaphoreCreateInfo, VK_NULL_HANDLE, pSemaphore);
+    vkVRRTCreate(Semaphore, mDevice, &semaphoreCreateInfo, VK_NULL_HANDLE, pSemaphore);
 }
 
-void _VKRHIDevice::DestroySemaphore(VkSemaphore semaphore) {
-    vkDestroySemaphore(m_Device, semaphore, VK_NULL_HANDLE);
+void VRHIdevice::DestroySemaphore(VkSemaphore semaphore) {
+    vkDestroySemaphore(mDevice, semaphore, VK_NULL_HANDLE);
 }
 
-void _VKRHIDevice::InitAllocateDescriptorSet() {
+void VRHIdevice::AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VRHIbuffer *buffer) {
+    VkBufferCreateInfo bufferCreateInfo = {};
+    bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferCreateInfo.size = size;
+    bufferCreateInfo.usage = usage;
+    bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    vkVRRTCreate(Buffer, mDevice, &bufferCreateInfo, VK_NULL_HANDLE, &buffer->buffer);
+
+    /** Query memory requirements. */
+    VkMemoryRequirements memoryRequirements;
+    vkGetBufferMemoryRequirements(mDevice, buffer->buffer, &memoryRequirements);
+
+    VkMemoryAllocateInfo memoryAllocInfo = {};
+    memoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memoryAllocInfo.allocationSize = memoryRequirements.size;
+    memoryAllocInfo.memoryTypeIndex = FindMemoryType(memoryRequirements.memoryTypeBits, mVRHIGPU.device,properties);
+
+    vkVRRTAllocate(Memory, mDevice, &memoryAllocInfo, VK_NULL_HANDLE, &buffer->memory);
+    vkBindBufferMemory(mDevice, buffer->buffer, buffer->memory, 0);
+}
+
+void VRHIdevice::FreeBuffer(VRHIbuffer buffer) {
+    vkFreeMemory(mDevice, buffer.memory, VK_NULL_HANDLE);
+    vkDestroyBuffer(mDevice, buffer.buffer, VK_NULL_HANDLE);
+}
+
+void VRHIdevice::MapMemory(VRHIbuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void **ppData) {
+    vkMapMemory(mDevice, buffer.memory, offset, size, flags, ppData);
+}
+
+void VRHIdevice::UnmapMemory(VRHIbuffer buffer) {
+    vkUnmapMemory(mDevice, buffer.memory);
+}
+
+void VRHIdevice::WaitIdle() {
+    vkDeviceWaitIdle(mDevice);
+}
+
+void VRHIdevice::InitAllocateDescriptorSet() {
     /** Descriptor set layout */
     VkDescriptorSetLayoutBinding descriptorSetLayoutBinding = {};
     descriptorSetLayoutBinding.binding = 0;
@@ -596,7 +654,7 @@ void _VKRHIDevice::InitAllocateDescriptorSet() {
     descriptorSetLayoutCreateInfo.bindingCount = 1;
     descriptorSetLayoutCreateInfo.pBindings = &descriptorSetLayoutBinding;
 
-    vkVRRTCreate(DescriptorSetLayout, m_Device, &descriptorSetLayoutCreateInfo, VK_NULL_HANDLE, &m_DescriptorSetLayout);
+    vkVRRTCreate(DescriptorSetLayout, mDevice, &descriptorSetLayoutCreateInfo, VK_NULL_HANDLE, &mDescriptorSetLayout);
 
     /** Create descriptor set pool */
     VkDescriptorPoolSize poolSize = {};
@@ -609,24 +667,24 @@ void _VKRHIDevice::InitAllocateDescriptorSet() {
     descriptorPoolCrateInfo.pPoolSizes = &poolSize;
     descriptorPoolCrateInfo.maxSets = 1;
 
-    vkVRRTCreate(DescriptorPool, m_Device, &descriptorPoolCrateInfo, VK_NULL_HANDLE, &m_DescriptorPool);
+    vkVRRTCreate(DescriptorPool, mDevice, &descriptorPoolCrateInfo, VK_NULL_HANDLE, &mDescriptorPool);
 }
 
-void _VKRHIDevice::InitCommandPool() {
+void VRHIdevice::InitCommandPool() {
     /** Create command pool. */
     VkCommandPoolCreateInfo commandPoolCreateInfo = {};
     commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    commandPoolCreateInfo.queueFamilyIndex = m_VKRHIQueueFamilyIndices.graphicsQueueFamily;
+    commandPoolCreateInfo.queueFamilyIndex = mVRHIQueueFamilyIndices.graphicsQueueFamily;
     commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-    vkVRRTCreate(CommandPool, m_Device, &commandPoolCreateInfo, VK_NULL_HANDLE, &m_CommandPool);
+    vkVRRTCreate(CommandPool, mDevice, &commandPoolCreateInfo, VK_NULL_HANDLE, &mCommandPool);
 }
 
 // ----------------------------------------------------------------------------
-// VKRHI
+// VRHI
 // ----------------------------------------------------------------------------
 
-VKRHI::VKRHI(VRRTwindow *pVRRTwindow) : m_VRRTwindow(pVRRTwindow) {
+VRHI::VRHI(VRRTwindow *pVRRTwindow) : mVRRTwindow(pVRRTwindow) {
     /* Enumerate instance available extensions. */
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, NULL);
@@ -635,7 +693,7 @@ VKRHI::VKRHI(VRRTwindow *pVRRTwindow) : m_VRRTwindow(pVRRTwindow) {
     VRRT_LOGGER_INFO("Vulkan render api available extensions for instance:");
     for (auto &extension : extensions) {
         VRRT_LOGGER_INFO("    {}", extension.extensionName);
-        m_VkInstanceExtensionPropertiesSupports.insert({extension.extensionName, extension});
+        mVkInstanceExtensionPropertiesSupports.insert({extension.extensionName, extension});
     }
 
     /* Enumerate instance available layers. */
@@ -646,12 +704,12 @@ VKRHI::VKRHI(VRRTwindow *pVRRTwindow) : m_VRRTwindow(pVRRTwindow) {
     VRRT_LOGGER_INFO("Vulkan render api available layer list: ");
     for (auto &layer : layers) {
         VRRT_LOGGER_INFO("    {}", layer.layerName);
-        m_VkInstanceLayerPropertiesSupports.insert({layer.layerName, layer});
+        mVkInstanceLayerPropertiesSupports.insert({layer.layerName, layer});
     }
 
     /* Get extensions & layers. */
-    VKRHIGetRequiredInstanceExtensions(m_RequiredInstanceExtensions, m_VkInstanceExtensionPropertiesSupports);
-    VKRHIGetRequiredInstanceLayers(m_RequiredInstanceLayers, m_VkInstanceLayerPropertiesSupports);
+    VRHIGetRequiredInstanceExtensions(mRequiredInstanceExtensions, mVkInstanceExtensionPropertiesSupports);
+    VRHIGetRequiredInstanceLayers(mRequiredInstanceLayers, mVkInstanceLayerPropertiesSupports);
 
     /** Create vulkan instance. */
     struct VkApplicationInfo applicationInfo = {};
@@ -666,20 +724,20 @@ VKRHI::VKRHI(VRRTwindow *pVRRTwindow) : m_VRRTwindow(pVRRTwindow) {
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instanceCreateInfo.pApplicationInfo = &applicationInfo;
 
-    instanceCreateInfo.enabledExtensionCount = std::size(m_RequiredInstanceExtensions);
-    instanceCreateInfo.ppEnabledExtensionNames = std::data(m_RequiredInstanceExtensions);
-    VRRT_LOGGER_INFO("Used vulkan extension for instance count: {}", std::size(m_RequiredInstanceExtensions));
-    for (const auto& name : m_RequiredInstanceExtensions)
+    instanceCreateInfo.enabledExtensionCount = std::size(mRequiredInstanceExtensions);
+    instanceCreateInfo.ppEnabledExtensionNames = std::data(mRequiredInstanceExtensions);
+    VRRT_LOGGER_INFO("Used vulkan extension for instance count: {}", std::size(mRequiredInstanceExtensions));
+    for (const auto& name : mRequiredInstanceExtensions)
         VRRT_LOGGER_INFO("    {}", name);
 
-    instanceCreateInfo.enabledLayerCount = std::size(m_RequiredInstanceLayers);
-    instanceCreateInfo.ppEnabledLayerNames = std::data(m_RequiredInstanceLayers);
+    instanceCreateInfo.enabledLayerCount = std::size(mRequiredInstanceLayers);
+    instanceCreateInfo.ppEnabledLayerNames = std::data(mRequiredInstanceLayers);
 
-    vkVRRTCreate(Instance, &instanceCreateInfo, VK_NULL_HANDLE, &m_Instance);
+    vkVRRTCreate(Instance, &instanceCreateInfo, VK_NULL_HANDLE, &mInstance);
 
     /** 创建 Surface 接口对象 */
-    if (glfwCreateWindowSurface(m_Instance, pVRRTwindow->GetWindowHandle(),VK_NULL_HANDLE,
-                                &m_Surface) != VK_SUCCESS) {
+    if (glfwCreateWindowSurface(mInstance, pVRRTwindow->GetWindowHandle(),VK_NULL_HANDLE,
+                                &mSurface) != VK_SUCCESS) {
         VRRT_LOGGER_INFO("Create glfw surface failed!");
     }
 
@@ -687,29 +745,52 @@ VKRHI::VKRHI(VRRTwindow *pVRRTwindow) : m_VRRTwindow(pVRRTwindow) {
     Init_Vulkan_Impl();
 }
 
-VKRHI::~VKRHI() {
-    m_VKRHIDevice->DestroySemaphore(m_ImageAvailableSemaphore);
-    m_VKRHIDevice->DestroySemaphore(m_RenderFinishedSemaphore);
-    VRRT_FREE_POINTER(m_VKRHIPipeline);
-    m_VKRHIDevice->DestroySwapchain(m_Swapchain);
-    VRRT_FREE_POINTER(m_VKRHIDevice);
-    vkDestroySurfaceKHR(m_Instance, m_Surface, VK_NULL_HANDLE);
-    vkDestroyInstance(m_Instance, VK_NULL_HANDLE);
+VRHI::~VRHI() {
+    mVRHIdevice->DestroySemaphore(mImageAvailableSemaphore);
+    mVRHIdevice->DestroySemaphore(mRenderFinishedSemaphore);
+    CleanupSwapchain();
+    VRRT_FREE_POINTER(mVRHIdevice);
+    vkDestroySurfaceKHR(mInstance, mSurface, VK_NULL_HANDLE);
+    vkDestroyInstance(mInstance, VK_NULL_HANDLE);
 }
 
-void VKRHI::Init_Vulkan_Impl() {
-    m_VKRHIDevice = std::make_unique<_VKRHIDevice>(m_Instance, m_Surface, m_VRRTwindow);
-    m_VKRHIDevice->CreateSwapchain(&m_Swapchain);
-    m_VKRHIPipeline = std::make_unique<_VKRHIPipeline>(m_VKRHIDevice.get(), m_Swapchain,
+void VRHI::Init_Vulkan_Impl() {
+    mVRHIdevice = std::make_unique<VRHIdevice>(mInstance, mSurface, mVRRTwindow);
+    CreateSwapchain();
+    mCommandBuffers.resize(mSwapchain->GetImageCount());
+    mVRHIdevice->AllocateCommandBuffer(std::size(mCommandBuffers), std::data(mCommandBuffers));
+    mVRHIdevice->CreateSemaphore(&mImageAvailableSemaphore);
+    mVRHIdevice->CreateSemaphore(&mRenderFinishedSemaphore);
+    /* 设置监听窗口变化回调 */
+    mVRRTwindow->SetWindowUserPointer(this);
+    mVRRTwindow->SetVRRTwindowResizableWindowCallback([](VRRTwindow *pVRRTwindow, int width, int height) {
+        VRHI *pVRHI = (VRHI *) pVRRTwindow->GetWindowUserPointer();
+        pVRHI->RecreateSwapchain();
+    });
+
+}
+
+void VRHI::CleanupSwapchain() {
+    VRRT_FREE_POINTER(mVRHIpipeline);
+    mVRHIdevice->DestroySwapchain(mSwapchain);
+}
+
+void VRHI::CreateSwapchain() {
+    mVRHIdevice->CreateSwapchain(&mSwapchain);
+    mVRHIpipeline = std::make_unique<VRHIpipeline>(mVRHIdevice.get(), mSwapchain,
                                                    VRRT_SHADER_MODULE_OF_VERTEX_BINARY_FILE,
                                                    VRRT_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE);
-    m_CommandBuffers.resize(m_Swapchain->GetImageCount());
-    m_VKRHIDevice->AllocateCommandBuffer(std::size(m_CommandBuffers), std::data(m_CommandBuffers));
-    m_VKRHIDevice->CreateSemaphore(&m_ImageAvailableSemaphore);
-    m_VKRHIDevice->CreateSemaphore(&m_RenderFinishedSemaphore);
 }
 
-void VKRHI::RecordCommandBuffer(uint32_t index, VkCommandBuffer commandBuffer) {
+void VRHI::RecreateSwapchain() {
+    mVRHIdevice->WaitIdle();
+    CleanupSwapchain();
+    CreateSwapchain();
+    mVRHIdevice->FreeCommandBuffer(std::size(mCommandBuffers), std::data(mCommandBuffers));
+    mVRHIdevice->AllocateCommandBuffer(std::size(mCommandBuffers), std::data(mCommandBuffers));
+}
+
+void VRHI::RecordCommandBuffer(uint32_t index, VkCommandBuffer commandBuffer) {
     /* start command buffers record. */
     VkCommandBufferBeginInfo commandBufferBeginInfo = {};
     commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -720,10 +801,10 @@ void VKRHI::RecordCommandBuffer(uint32_t index, VkCommandBuffer commandBuffer) {
         /* start render pass. */
         VkRenderPassBeginInfo renderPassBeginInfo = {};
         renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassBeginInfo.renderPass = m_Swapchain->GetRenderPassHandle();
-        renderPassBeginInfo.framebuffer = m_Swapchain->GetFramebuffer(index);
+        renderPassBeginInfo.renderPass = mSwapchain->GetRenderPassHandle();
+        renderPassBeginInfo.framebuffer = mSwapchain->GetFramebuffer(index);
         renderPassBeginInfo.renderArea.offset = {0, 0};
-        renderPassBeginInfo.renderArea.extent = m_Swapchain->GetExtent2D();
+        renderPassBeginInfo.renderArea.extent = mSwapchain->GetExtent2D();
 
         VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
         renderPassBeginInfo.clearValueCount = 1;
@@ -732,7 +813,7 @@ void VKRHI::RecordCommandBuffer(uint32_t index, VkCommandBuffer commandBuffer) {
         {
             /* bind graphics pipeline. */
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                              m_VKRHIPipeline->GetPipelineHandle());
+                              mVRHIpipeline->GetPipelineHandle());
             /* draw call */
             vkCmdDraw(commandBuffer, 3, 1, 0, 0);
         }
@@ -744,19 +825,19 @@ void VKRHI::RecordCommandBuffer(uint32_t index, VkCommandBuffer commandBuffer) {
         throw std::runtime_error("failed to record command buffer!");
 }
 
-void VKRHI::BeginRender() {
+void VRHI::BeginRender() {
 
 }
 
-void VKRHI::Draw() {
+void VRHI::Draw() {
     uint32_t imageIndex;
-    m_Swapchain->AcquireNextImage(m_ImageAvailableSemaphore, &imageIndex);
+    mSwapchain->AcquireNextImage(mImageAvailableSemaphore, &imageIndex);
 
-    auto commandBuffer = m_CommandBuffers[imageIndex];
+    auto commandBuffer = mCommandBuffers[imageIndex];
     vkResetCommandBuffer(commandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
     RecordCommandBuffer(imageIndex, commandBuffer);
 
-    VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphore };
+    VkSemaphore waitSemaphores[] = { mImageAvailableSemaphore };
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
     /* submit command buffer */
@@ -767,13 +848,13 @@ void VKRHI::Draw() {
     submitInfo.pWaitSemaphores = waitSemaphores;
     submitInfo.pWaitDstStageMask = waitStages;
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &m_CommandBuffers[imageIndex];
+    submitInfo.pCommandBuffers = &mCommandBuffers[imageIndex];
 
-    VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphore };
+    VkSemaphore signalSemaphores[] = { mRenderFinishedSemaphore };
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    if (vkQueueSubmit(m_VKRHIDevice->GetGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+    if (vkQueueSubmit(mVRHIdevice->GetGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
         throw std::runtime_error("failed to submit draw command buffer!");
 
     VkPresentInfoKHR presentInfo = {};
@@ -781,16 +862,16 @@ void VKRHI::Draw() {
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphores;
 
-    VkSwapchainKHR swapChains[] = { m_Swapchain->GetSwapchainKHRHandle() };
+    VkSwapchainKHR swapChains[] = { mSwapchain->GetSwapchainKHRHandle() };
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
     presentInfo.pImageIndices = &imageIndex;
     presentInfo.pResults = nullptr; // Optional
 
-    vkQueuePresentKHR(m_VKRHIDevice->GetPresentQueue(), &presentInfo);
-    vkQueueWaitIdle(m_VKRHIDevice->GetPresentQueue());
+    vkQueuePresentKHR(mVRHIdevice->GetPresentQueue(), &presentInfo);
+    vkQueueWaitIdle(mVRHIdevice->GetPresentQueue());
 }
 
-void VKRHI::EndRender() {
+void VRHI::EndRender() {
 
 }

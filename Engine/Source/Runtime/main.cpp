@@ -19,22 +19,22 @@
 /* Creates on 2022/9/14. */
 #include "Window/VRRTwindow.h"
 
- #include "Render/VKRHI.h"
+ #include "Render/VRHI.h"
 //#include "Render/Demo/VulkanRenderAPI.h"
 
 int main() {
     auto window = VRRTwindow(1280, 1000, "NE-1");
-    /* Create VKRHI */
-     std::unique_ptr<VKRHI> pVKRHI = std::make_unique<VKRHI>(&window);
+    /* Create VRHI */
+     std::unique_ptr<VRHI> pVRHI = std::make_unique<VRHI>(&window);
     window.ShowWindowInScreen();
 
     while (!window.WindowShouldClose()) {
         NRIVPollEvents();
-        pVKRHI->BeginRender();
+        pVRHI->BeginRender();
         {
-            pVKRHI->Draw();
+            pVRHI->Draw();
         }
-        pVKRHI->EndRender();
+        pVRHI->EndRender();
     }
 
     return 0;

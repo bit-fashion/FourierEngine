@@ -22,7 +22,7 @@
 VRRTwindow::VRRTwindow(int width, int height, const char *title) : m_Width(width), m_Height(height) {
     glfwInit();
 
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     m_Window = glfwCreateWindow(width, height, title, 0, 0);
@@ -39,8 +39,8 @@ VRRTwindow::VRRTwindow(int width, int height, const char *title) : m_Width(width
         VRRTwindow *pRIVwindow = ((VRRTwindow *) glfwGetWindowUserPointer(window));
         pRIVwindow->SetWidth(width);
         pRIVwindow->SetHeight(height);
-        if (pRIVwindow->m_FnFourierResizableWindowCallback != NULL)
-            pRIVwindow->m_FnFourierResizableWindowCallback(pRIVwindow, width, height);
+        if (pRIVwindow->m_FnVRRTResizableWindowCallback != NULL)
+            pRIVwindow->m_FnVRRTResizableWindowCallback(pRIVwindow, width, height);
     });
 
     /* Default hide window. */
