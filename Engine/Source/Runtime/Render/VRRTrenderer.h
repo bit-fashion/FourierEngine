@@ -198,10 +198,10 @@ private:
 /**
  * 渲染硬件接口
  */
-class VRHI {
+class VRRTrenderer {
 public:
-    explicit VRHI(VRRTwindow *pVRRTwidnow);
-    ~VRHI();
+    explicit VRRTrenderer(VRRTwindow *pVRRTwidnow);
+    ~VRRTrenderer();
 
     void BeginRender();
     void Draw();
@@ -216,6 +216,7 @@ private:
     void EndRecordCommandBuffer();
     void BeginRenderPass(VkRenderPass renderPass);
     void EndRenderPass();
+    void SubmitCommandBuffer();
 
 private:
     VkInstance mInstance = VK_NULL_HANDLE;

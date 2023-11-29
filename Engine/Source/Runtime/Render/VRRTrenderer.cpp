@@ -17,7 +17,7 @@
  * ************************************************************************/
 
 /* Creates on 2022/11/23. */
-#include "VRHI.h"
+#include "VRRTrenderer.h"
 
 #include "Window/VRRTwindow.h"
 #include "Utils/IOUtils.h"
@@ -681,10 +681,10 @@ void VRHIdevice::InitCommandPool() {
 }
 
 // ----------------------------------------------------------------------------
-// VRHI
+// VRRTrenderer
 // ----------------------------------------------------------------------------
 
-VRHI::VRHI(VRRTwindow *pVRRTwindow) : mVRRTwindow(pVRRTwindow) {
+VRRTrenderer::VRRTrenderer(VRRTwindow *pVRRTwindow) : mVRRTwindow(pVRRTwindow) {
     /* Enumerate instance available extensions. */
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, NULL);
@@ -745,7 +745,7 @@ VRHI::VRHI(VRRTwindow *pVRRTwindow) : mVRRTwindow(pVRRTwindow) {
     Init_Vulkan_Impl();
 }
 
-VRHI::~VRHI() {
+VRRTrenderer::~VRRTrenderer() {
     mVRHIdevice->DestroySemaphore(mImageAvailableSemaphore);
     mVRHIdevice->DestroySemaphore(mRenderFinishedSemaphore);
     CleanupSwapchain();
@@ -754,7 +754,7 @@ VRHI::~VRHI() {
     vkDestroyInstance(mInstance, VK_NULL_HANDLE);
 }
 
-void VRHI::Init_Vulkan_Impl() {
+void VRRTrenderer::Init_Vulkan_Impl() {
     mVRHIdevice = std::make_unique<VRHIdevice>(mInstance, mSurface, mVRRTwindow);
     CreateSwapchain();
     mCommandBuffers.resize(mSwapchain->GetImageCount());
@@ -764,25 +764,25 @@ void VRHI::Init_Vulkan_Impl() {
     /* 设置监听窗口变化回调 */
     mVRRTwindow->SetWindowUserPointer(this);
     mVRRTwindow->SetVRRTwindowResizableWindowCallback([](VRRTwindow *pVRRTwindow, int width, int height) {
-        VRHI *pVRHI = (VRHI *) pVRRTwindow->GetWindowUserPointer();
+        VRRTrenderer *pVRHI = (VRRTrenderer *) pVRRTwindow->GetWindowUserPointer();
         pVRHI->RecreateSwapchain();
     });
 
 }
 
-void VRHI::CleanupSwapchain() {
+void VRRTrenderer::CleanupSwapchain() {
     VRRT_FREE_POINTER(mVRHIpipeline);
     mVRHIdevice->DestroySwapchain(mSwapchain);
 }
 
-void VRHI::CreateSwapchain() {
+void VRRTrenderer::CreateSwapchain() {
     mVRHIdevice->CreateSwapchain(&mSwapchain);
     mVRHIpipeline = std::make_unique<VRHIpipeline>(mVRHIdevice.get(), mSwapchain,
                                                    VRRT_SHADER_MODULE_OF_VERTEX_BINARY_FILE,
                                                    VRRT_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE);
 }
 
-void VRHI::RecreateSwapchain() {
+void VRRTrenderer::RecreateSwapchain() {
     mVRHIdevice->WaitIdle();
     CleanupSwapchain();
     CreateSwapchain();
@@ -790,7 +790,7 @@ void VRHI::RecreateSwapchain() {
     mVRHIdevice->AllocateCommandBuffer(std::size(mCommandBuffers), std::data(mCommandBuffers));
 }
 
-void VRHI::BeginRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t index) {
+void VRRTrenderer::BeginRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t index) {
     mCurrentContextCommandBuffer = commandBuffer;
     mCurrentContextImageIndex = index;
     /* start command buffers record. */
@@ -802,13 +802,13 @@ void VRHI::BeginRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t inde
     vkBeginCommandBuffer(mCurrentContextCommandBuffer, &commandBufferBeginInfo);
 }
 
-void VRHI::EndRecordCommandBuffer() {
+void VRRTrenderer::EndRecordCommandBuffer() {
     /* end command buffer record. */
     if (vkEndCommandBuffer(mCurrentContextCommandBuffer) != VK_SUCCESS)
         throw std::runtime_error("failed to record command buffer!");
 }
 
-void VRHI::BeginRenderPass(VkRenderPass renderPass) {
+void VRRTrenderer::BeginRenderPass(VkRenderPass renderPass) {
     mCurrentContextRenderPass = renderPass;
     /* start render pass. */
     VkRenderPassBeginInfo renderPassBeginInfo = {};
@@ -822,40 +822,21 @@ void VRHI::BeginRenderPass(VkRenderPass renderPass) {
     renderPassBeginInfo.clearValueCount = 1;
     renderPassBeginInfo.pClearValues = &clearColor;
     vkCmdBeginRenderPass(mCurrentContextCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-    {
-        /* bind graphics pipeline. */
-        vkCmdBindPipeline(mCurrentContextCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          mVRHIpipeline->GetPipeline());
-        /* draw call */
-        vkCmdDraw(mCurrentContextCommandBuffer, 3, 1, 0, 0);
-    }
 }
 
-void VRHI::EndRenderPass() {
+void VRRTrenderer::EndRenderPass() {
     /* end render pass */
     vkCmdEndRenderPass(mCurrentContextCommandBuffer);
 }
 
-void VRHI::BeginRender() {
+void VRRTrenderer::BeginRender() {
     uint32_t index;
     mSwapchain->AcquireNextImage(mImageAvailableSemaphore, &index);
-
     BeginRecordCommandBuffer(mCommandBuffers[index], index);
     BeginRenderPass(mSwapchain->GetRenderPass());
 }
 
-void VRHI::Draw() {
-    /* bind graphics pipeline. */
-    vkCmdBindPipeline(mCurrentContextCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      mVRHIpipeline->GetPipeline());
-    /* draw call */
-    vkCmdDraw(mCurrentContextCommandBuffer, 3, 1, 0, 0);
-}
-
-void VRHI::EndRender() {
-    EndRenderPass();
-    EndRecordCommandBuffer();
-
+void VRRTrenderer::SubmitCommandBuffer() {
     VkSemaphore waitSemaphores[] = { mImageAvailableSemaphore };
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
@@ -889,4 +870,19 @@ void VRHI::EndRender() {
 
     vkQueuePresentKHR(mVRHIdevice->GetPresentQueue(), &presentInfo);
     vkQueueWaitIdle(mVRHIdevice->GetPresentQueue());
+}
+
+void VRRTrenderer::Draw() {
+    /* bind graphics pipeline. */
+    vkCmdBindPipeline(mCurrentContextCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                      mVRHIpipeline->GetPipeline());
+    /* draw call */
+    vkCmdDraw(mCurrentContextCommandBuffer, 3, 1, 0, 0);
+}
+
+void VRRTrenderer::EndRender() {
+    EndRenderPass();
+    EndRecordCommandBuffer();
+    /* final submit */
+    SubmitCommandBuffer();
 }
