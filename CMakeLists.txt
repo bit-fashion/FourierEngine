@@ -44,7 +44,7 @@ link_directories(
 )
 
 add_executable(${PROJECT_NAME}
-        "Engine/Source/Runtime/main.cpp"
+        "Engine/Source/Runtime/Main.cpp"
         "Engine/Source/Runtime/Window/VRRTwindow.cpp"
         "Engine/Source/Runtime/Render/VRRTrenderer.cpp"
 )
