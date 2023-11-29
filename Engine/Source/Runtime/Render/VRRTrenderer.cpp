@@ -217,10 +217,14 @@ VRHIpipeline::VRHIpipeline(VRHIdevice *device, VRHIswapchain *swapchain, const c
     /* pipeline features */
     VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo = {};
     pipelineVertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    pipelineVertexInputStateCreateInfo.vertexBindingDescriptionCount = 0;
-    pipelineVertexInputStateCreateInfo.pVertexBindingDescriptions = nullptr;
-    pipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount = 0;
-    pipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions = nullptr;
+
+    VkVertexInputBindingDescription vertexInputBindingDescription = VRHIpipeline::VRHIGetVertexInputBindingDescription();
+    pipelineVertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
+    pipelineVertexInputStateCreateInfo.pVertexBindingDescriptions = &vertexInputBindingDescription;
+
+    std::array<VkVertexInputAttributeDescription, 2> vertexInputAttributeDescriptions = VRHIpipeline::VRHIGetVertexInputAttributeDescriptionArray();
+    pipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount = std::size(vertexInputAttributeDescriptions);
+    pipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions = std::data(vertexInputAttributeDescriptions);
 
     VkPipelineInputAssemblyStateCreateInfo pipelineInputAssembly = {};
     pipelineInputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -349,6 +353,10 @@ VRHIpipeline::VRHIpipeline(VRHIdevice *device, VRHIswapchain *swapchain, const c
 VRHIpipeline::~VRHIpipeline() {
     vkDestroyPipelineLayout(mVRHIdevice->GetDeviceHandle(), mPipelineLayout, VK_NULL_HANDLE);
     vkDestroyPipeline(mVRHIdevice->GetDeviceHandle(), mPipeline, VK_NULL_HANDLE);
+}
+
+void VRHIpipeline::Bind(VkCommandBuffer commandBuffer) {
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
 }
 
 // ----------------------------------------------------------------------------
@@ -606,6 +614,7 @@ void VRHIdevice::AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkM
     VkBufferCreateInfo bufferCreateInfo = {};
     bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferCreateInfo.size = size;
+    buffer->size = bufferCreateInfo.size;
     bufferCreateInfo.usage = usage;
     bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     vkVRRTCreate(Buffer, mDevice, &bufferCreateInfo, VK_NULL_HANDLE, &buffer->buffer);
@@ -746,6 +755,7 @@ VRRTrenderer::VRRTrenderer(VRRTwindow *pVRRTwindow) : mVRRTwindow(pVRRTwindow) {
 }
 
 VRRTrenderer::~VRRTrenderer() {
+    mVRHIdevice->FreeBuffer(mVertexBuffer);
     mVRHIdevice->DestroySemaphore(mImageAvailableSemaphore);
     mVRHIdevice->DestroySemaphore(mRenderFinishedSemaphore);
     CleanupSwapchain();
@@ -767,7 +777,13 @@ void VRRTrenderer::Init_Vulkan_Impl() {
         VRRTrenderer *pVRHI = (VRRTrenderer *) pVRRTwindow->GetWindowUserPointer();
         pVRHI->RecreateSwapchain();
     });
-
+    /* 创建缓冲区 */
+    mVRHIdevice->AllocateBuffer(sizeof(mVertices[0]) * std::size(mVertices), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &mVertexBuffer);
+    void *data;
+    mVRHIdevice->MapMemory(mVertexBuffer, 0, mVertexBuffer.size, 0, &data);
+    memcpy(data, std::data(mVertices), static_cast<VkDeviceSize>(mVertexBuffer.size));
+    mVRHIdevice->UnmapMemory(mVertexBuffer);
 }
 
 void VRRTrenderer::CleanupSwapchain() {
@@ -874,8 +890,11 @@ void VRRTrenderer::SubmitCommandBuffer() {
 
 void VRRTrenderer::Draw() {
     /* bind graphics pipeline. */
-    vkCmdBindPipeline(mCurrentContextCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      mVRHIpipeline->GetPipeline());
+    mVRHIpipeline->Bind(mCurrentContextCommandBuffer);
+    /* bind vertex buffer */
+    VkBuffer buffers[] = {mVertexBuffer.buffer};
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(mCurrentContextCommandBuffer, 0, 1, buffers, offsets);
     /* draw call */
     vkCmdDraw(mCurrentContextCommandBuffer, 3, 1, 0, 0);
 }

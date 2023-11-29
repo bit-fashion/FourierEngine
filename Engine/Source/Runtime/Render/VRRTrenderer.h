@@ -24,6 +24,9 @@
 #include <vector>
 #include <VRRT.h>
 #include <unordered_map>
+#include <glm/glm.hpp>
+#include <array>
+#include <stddef.h>
 
 class VRRTwindow;
 
@@ -56,6 +59,13 @@ struct VRHISwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
+/** 缓冲区结构体 */
+struct VRHIbuffer {
+    VkBuffer buffer = VK_NULL_HANDLE;
+    VkDeviceMemory memory = VK_NULL_HANDLE;
+    VkDeviceSize size = 0;
+};
+
 /** 查询所有物理设备 */
 static void VRHIGETGPU(VkInstance instance, std::vector<VRHIGPU> *pRIVGPU) {
     uint32_t count = 0;
@@ -74,14 +84,15 @@ static void VRHIGETGPU(VkInstance instance, std::vector<VRHIGPU> *pRIVGPU) {
     }
 }
 
-struct VRHIbuffer {
-    VkBuffer buffer;
-    VkDeviceMemory memory;
-};
-
 class VRHIswapchain;
 class VRHIdevice;
 class VRHIpipeline;
+
+/** 顶点结构体 */
+struct VRHIvertex {
+    glm::vec3 position;
+    glm::vec3 color;
+};
 
 /**
  * 渲染管线
@@ -91,9 +102,33 @@ public:
     explicit VRHIpipeline(VRHIdevice *device, VRHIswapchain *swapchain,
                           const char *vertex_shader_path, const char *fragment_shader_path);
     ~VRHIpipeline();
+    void Bind(VkCommandBuffer commandBuffer);
 
-public:
-    VkPipeline GetPipeline() { return mPipeline; }
+private:
+    static VkVertexInputBindingDescription VRHIGetVertexInputBindingDescription() {
+        VkVertexInputBindingDescription vertexInputBindingDescription = {};
+        vertexInputBindingDescription.binding = 0;
+        vertexInputBindingDescription.stride = sizeof(VRHIvertex);
+        vertexInputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        return vertexInputBindingDescription;
+    };
+
+    static std::array<VkVertexInputAttributeDescription, 2> VRHIGetVertexInputAttributeDescriptionArray() {
+        std::array<VkVertexInputAttributeDescription, 2> array = {};
+        /* position attribute */
+        array[0].binding = 0;
+        array[0].location = 0;
+        array[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+        array[0].offset = offsetof(VRHIvertex, position);
+
+        /* color attribute */
+        array[1].binding = 0;
+        array[1].location = 1;
+        array[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+        array[1].offset = offsetof(VRHIvertex, color);
+
+        return array;
+    }
 
 private:
     VRHIdevice *mVRHIdevice;
@@ -203,6 +238,7 @@ public:
     explicit VRRTrenderer(VRRTwindow *pVRRTwidnow);
     ~VRRTrenderer();
 
+    /* Render interface. */
     void BeginRender();
     void Draw();
     void EndRender();
@@ -219,6 +255,12 @@ private:
     void SubmitCommandBuffer();
 
 private:
+    const std::vector<VRHIvertex> mVertices = {
+            {{0.0f,  -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+            {{0.5f,  0.5f,  0.0f}, {0.0f, 1.0f, 0.0f}},
+            {{-0.5f, 0.5f,  0.0f}, {0.0f, 0.0f, 1.0f}}
+    };
+    VRHIbuffer mVertexBuffer;
     VkInstance mInstance = VK_NULL_HANDLE;
     VkSurfaceKHR mSurface = VK_NULL_HANDLE;
     VRRTwindow *mVRRTwindow;
