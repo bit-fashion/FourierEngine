@@ -196,9 +196,18 @@ public:
     void DestroySemaphore(VkSemaphore semaphore);
     void AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VRHIbuffer *buffer);
     void FreeBuffer(VRHIbuffer buffer);
+    void AllocateVertexBuffer(VkDeviceSize size, const VRHIvertex *pVertices, VRHIbuffer *pVertexBuffer);
+    void FreeVertexBuffer(VRHIbuffer vertexBuffer);
+    void CopyBuffer(VRHIbuffer dest, VRHIbuffer src, VkDeviceSize size);
     void MapMemory(VRHIbuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void **ppData);
     void UnmapMemory(VRHIbuffer buffer);
     void WaitIdle();
+    void BeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags usageFlags);
+    void EndCommandBuffer(VkCommandBuffer commandBuffer);
+    void SyncQueueSubmit(uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers,
+                       uint32_t waitSemaphoreCount, VkSemaphore *pWaitSemaphores,
+                       uint32_t signalSemaphoreCount, VkSemaphore *pSignalSemaphores,
+                       VkPipelineStageFlags *pWaitDstStageMask);
 
 public:
     VkPhysicalDevice GetPhysicalDeviceHandle() { return mVRHIGPU.device; }
@@ -252,7 +261,7 @@ private:
     void EndRecordCommandBuffer();
     void BeginRenderPass(VkRenderPass renderPass);
     void EndRenderPass();
-    void SubmitCommandBuffer();
+    void QueueSubmitBuffer();
 
 private:
     const std::vector<VRHIvertex> mVertices = {
@@ -261,6 +270,7 @@ private:
             {{-0.5f, 0.5f,  0.0f}, {0.0f, 0.0f, 1.0f}}
     };
     VRHIbuffer mVertexBuffer;
+    VRHIbuffer mIndexBuffer;
     VkInstance mInstance = VK_NULL_HANDLE;
     VkSurfaceKHR mSurface = VK_NULL_HANDLE;
     VRRTwindow *mVRRTwindow;

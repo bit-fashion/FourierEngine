@@ -33,3 +33,6 @@
 #define VRRT_THROW_ERROR(fmt, ...) throw std::runtime_error(std::format(fmt, ##__VA_ARGS__))
 
 #define VRRT_FREE_POINTER(ptr) (ptr = nullptr)
+
+/* Get total byte size of array. */
+#define ARRAY_TOTAL_SIZE(a) (sizeof(a[0]) * std::size(a))

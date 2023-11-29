@@ -637,6 +637,39 @@ void VRHIdevice::FreeBuffer(VRHIbuffer buffer) {
     vkDestroyBuffer(mDevice, buffer.buffer, VK_NULL_HANDLE);
 }
 
+void VRHIdevice::AllocateVertexBuffer(VkDeviceSize size, const VRHIvertex *pVertices, VRHIbuffer *pVertexBuffer) {
+    VRHIbuffer stagingBuffer;
+    AllocateBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer);
+    void *data;
+    MapMemory(stagingBuffer, 0, stagingBuffer.size, 0, &data);
+    memcpy(data, pVertices, static_cast<VkDeviceSize>(stagingBuffer.size));
+    UnmapMemory(stagingBuffer);
+    /* vertex buffer */
+    AllocateBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                   VK_MEMORY_HEAP_DEVICE_LOCAL_BIT, pVertexBuffer);
+    CopyBuffer(*pVertexBuffer, stagingBuffer, size);
+    FreeBuffer(stagingBuffer);
+}
+
+void VRHIdevice::CopyBuffer(VRHIbuffer dest, VRHIbuffer src, VkDeviceSize size) {
+    VkCommandBuffer copyStagingCommandBuffer;
+    AllocateCommandBuffer(1, &copyStagingCommandBuffer);
+    BeginCommandBuffer(copyStagingCommandBuffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    {
+        /* copy buffer */
+        VkBufferCopy copyRegion = {};
+        copyRegion.srcOffset = 0;
+        copyRegion.dstOffset = 0;
+        copyRegion.size = size;
+        vkCmdCopyBuffer(copyStagingCommandBuffer, src.buffer, dest.buffer, 1, &copyRegion);
+    }
+    EndCommandBuffer(copyStagingCommandBuffer);
+    /* submit */
+    SyncQueueSubmit(1, &copyStagingCommandBuffer, 0, VK_NULL_HANDLE, 0, VK_NULL_HANDLE, VK_NULL_HANDLE);
+    FreeCommandBuffer(1, &copyStagingCommandBuffer);
+}
+
 void VRHIdevice::MapMemory(VRHIbuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void **ppData) {
     vkMapMemory(mDevice, buffer.memory, offset, size, flags, ppData);
 }
@@ -647,6 +680,45 @@ void VRHIdevice::UnmapMemory(VRHIbuffer buffer) {
 
 void VRHIdevice::WaitIdle() {
     vkDeviceWaitIdle(mDevice);
+}
+
+void VRHIdevice::BeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags usageFlags) {
+    /* start command buffers record. */
+    vkResetCommandBuffer(commandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
+    VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    commandBufferBeginInfo.flags = usageFlags;
+    commandBufferBeginInfo.pInheritanceInfo = nullptr; // Optional
+    vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+}
+
+void VRHIdevice::EndCommandBuffer(VkCommandBuffer commandBuffer) {
+    /* end command buffer record. */
+    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
+        throw std::runtime_error("failed to record command buffer!");
+}
+
+void VRHIdevice::SyncQueueSubmit(uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers,
+                               uint32_t waitSemaphoreCount, VkSemaphore *pWaitSemaphores,
+                               uint32_t signalSemaphoreCount, VkSemaphore *pSignalSemaphores,
+                               VkPipelineStageFlags *pWaitDstStageMask) {
+    /* submit command buffer */
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    submitInfo.waitSemaphoreCount = waitSemaphoreCount;
+    submitInfo.pWaitSemaphores = pWaitSemaphores;
+    submitInfo.pWaitDstStageMask = pWaitDstStageMask;
+    submitInfo.commandBufferCount = commandBufferCount;
+    submitInfo.pCommandBuffers = pCommandBuffers;
+
+    submitInfo.signalSemaphoreCount = signalSemaphoreCount;
+    submitInfo.pSignalSemaphores = pSignalSemaphores;
+
+    if (vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+        throw std::runtime_error("failed to submit draw command buffer!");
+
+    vkQueueWaitIdle(mGraphicsQueue);
 }
 
 void VRHIdevice::InitAllocateDescriptorSet() {
@@ -777,13 +849,9 @@ void VRRTrenderer::Init_Vulkan_Impl() {
         VRRTrenderer *pVRHI = (VRRTrenderer *) pVRRTwindow->GetWindowUserPointer();
         pVRHI->RecreateSwapchain();
     });
-    /* 创建缓冲区 */
-    mVRHIdevice->AllocateBuffer(sizeof(mVertices[0]) * std::size(mVertices), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &mVertexBuffer);
-    void *data;
-    mVRHIdevice->MapMemory(mVertexBuffer, 0, mVertexBuffer.size, 0, &data);
-    memcpy(data, std::data(mVertices), static_cast<VkDeviceSize>(mVertexBuffer.size));
-    mVRHIdevice->UnmapMemory(mVertexBuffer);
+    /* 创建 Vertex buffer */
+    mVRHIdevice->AllocateVertexBuffer(ARRAY_TOTAL_SIZE(mVertices), std::data(mVertices), &mVertexBuffer);
+    /* 创建 Index buffer */
 }
 
 void VRRTrenderer::CleanupSwapchain() {
@@ -809,19 +877,11 @@ void VRRTrenderer::RecreateSwapchain() {
 void VRRTrenderer::BeginRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t index) {
     mCurrentContextCommandBuffer = commandBuffer;
     mCurrentContextImageIndex = index;
-    /* start command buffers record. */
-    vkResetCommandBuffer(mCurrentContextCommandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
-    VkCommandBufferBeginInfo commandBufferBeginInfo = {};
-    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-    commandBufferBeginInfo.pInheritanceInfo = nullptr; // Optional
-    vkBeginCommandBuffer(mCurrentContextCommandBuffer, &commandBufferBeginInfo);
+    mVRHIdevice->BeginCommandBuffer(mCurrentContextCommandBuffer, VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
 }
 
 void VRRTrenderer::EndRecordCommandBuffer() {
-    /* end command buffer record. */
-    if (vkEndCommandBuffer(mCurrentContextCommandBuffer) != VK_SUCCESS)
-        throw std::runtime_error("failed to record command buffer!");
+    mVRHIdevice->EndCommandBuffer(mCurrentContextCommandBuffer);
 }
 
 void VRRTrenderer::BeginRenderPass(VkRenderPass renderPass) {
@@ -852,26 +912,15 @@ void VRRTrenderer::BeginRender() {
     BeginRenderPass(mSwapchain->GetRenderPass());
 }
 
-void VRRTrenderer::SubmitCommandBuffer() {
+void VRRTrenderer::QueueSubmitBuffer() {
     VkSemaphore waitSemaphores[] = { mImageAvailableSemaphore };
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-
-    /* submit command buffer */
-    VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = waitSemaphores;
-    submitInfo.pWaitDstStageMask = waitStages;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &mCurrentContextCommandBuffer;
-
     VkSemaphore signalSemaphores[] = { mRenderFinishedSemaphore };
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = signalSemaphores;
 
-    if (vkQueueSubmit(mVRHIdevice->GetGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
-        throw std::runtime_error("failed to submit draw command buffer!");
+    mVRHIdevice->SyncQueueSubmit(1, &mCurrentContextCommandBuffer,
+                                 1, waitSemaphores,
+                                 1, signalSemaphores,
+                                 waitStages);
 
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -903,5 +952,5 @@ void VRRTrenderer::EndRender() {
     EndRenderPass();
     EndRecordCommandBuffer();
     /* final submit */
-    SubmitCommandBuffer();
+    QueueSubmitBuffer();
 }

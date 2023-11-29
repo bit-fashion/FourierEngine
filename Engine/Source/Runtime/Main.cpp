@@ -19,10 +19,12 @@
 /* Creates on 2022/9/14. */
 #include "Window/VRRTwindow.h"
 
- #include "Render/VRRTrenderer.h"
-//#include "Render/Demo/VulkanRenderAPI.h"
+#include <stdlib.h>
+#include "Render/VRRTrenderer.h"
 
 int main() {
+    system("chcp 65001");
+    system("cd ../Bin & spvc.cmd");
     auto window = VRRTwindow(1280, 1000, "NE-1");
     /* Create VRRTrenderer */
      std::unique_ptr<VRRTrenderer> pVRRTrenderer = std::make_unique<VRRTrenderer>(&window);
