@@ -334,7 +334,7 @@ VRHIpipeline::VRHIpipeline(VRHIdevice *device, VRHIswapchain *swapchain, const c
     graphicsPipelineCreateInfo.pColorBlendState = &pipelineColorBlendStateCreateInfo;
     graphicsPipelineCreateInfo.pDynamicState = nullptr; // Optional
     graphicsPipelineCreateInfo.layout = mPipelineLayout;
-    graphicsPipelineCreateInfo.renderPass = mSwapchain->GetRenderPassHandle();
+    graphicsPipelineCreateInfo.renderPass = mSwapchain->GetRenderPass();
     graphicsPipelineCreateInfo.subpass = 0;
     graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
     graphicsPipelineCreateInfo.basePipelineIndex = -1; // Optional
@@ -790,52 +790,71 @@ void VRHI::RecreateSwapchain() {
     mVRHIdevice->AllocateCommandBuffer(std::size(mCommandBuffers), std::data(mCommandBuffers));
 }
 
-void VRHI::RecordCommandBuffer(uint32_t index, VkCommandBuffer commandBuffer) {
+void VRHI::BeginRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t index) {
+    mCurrentContextCommandBuffer = commandBuffer;
+    mCurrentContextImageIndex = index;
     /* start command buffers record. */
+    vkResetCommandBuffer(mCurrentContextCommandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
     VkCommandBufferBeginInfo commandBufferBeginInfo = {};
     commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
     commandBufferBeginInfo.pInheritanceInfo = nullptr; // Optional
-    vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
-    {
-        /* start render pass. */
-        VkRenderPassBeginInfo renderPassBeginInfo = {};
-        renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassBeginInfo.renderPass = mSwapchain->GetRenderPassHandle();
-        renderPassBeginInfo.framebuffer = mSwapchain->GetFramebuffer(index);
-        renderPassBeginInfo.renderArea.offset = {0, 0};
-        renderPassBeginInfo.renderArea.extent = mSwapchain->GetExtent2D();
+    vkBeginCommandBuffer(mCurrentContextCommandBuffer, &commandBufferBeginInfo);
+}
 
-        VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
-        renderPassBeginInfo.clearValueCount = 1;
-        renderPassBeginInfo.pClearValues = &clearColor;
-        vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-        {
-            /* bind graphics pipeline. */
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                              mVRHIpipeline->GetPipelineHandle());
-            /* draw call */
-            vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-        }
-        /* end render pass */
-        vkCmdEndRenderPass(commandBuffer);
-    }
+void VRHI::EndRecordCommandBuffer() {
     /* end command buffer record. */
-    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
+    if (vkEndCommandBuffer(mCurrentContextCommandBuffer) != VK_SUCCESS)
         throw std::runtime_error("failed to record command buffer!");
 }
 
-void VRHI::BeginRender() {
+void VRHI::BeginRenderPass(VkRenderPass renderPass) {
+    mCurrentContextRenderPass = renderPass;
+    /* start render pass. */
+    VkRenderPassBeginInfo renderPassBeginInfo = {};
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassBeginInfo.renderPass = mCurrentContextRenderPass;
+    renderPassBeginInfo.framebuffer = mSwapchain->GetFramebuffer(mCurrentContextImageIndex);
+    renderPassBeginInfo.renderArea.offset = {0, 0};
+    renderPassBeginInfo.renderArea.extent = mSwapchain->GetExtent2D();
 
+    VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
+    renderPassBeginInfo.clearValueCount = 1;
+    renderPassBeginInfo.pClearValues = &clearColor;
+    vkCmdBeginRenderPass(mCurrentContextCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    {
+        /* bind graphics pipeline. */
+        vkCmdBindPipeline(mCurrentContextCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          mVRHIpipeline->GetPipeline());
+        /* draw call */
+        vkCmdDraw(mCurrentContextCommandBuffer, 3, 1, 0, 0);
+    }
+}
+
+void VRHI::EndRenderPass() {
+    /* end render pass */
+    vkCmdEndRenderPass(mCurrentContextCommandBuffer);
+}
+
+void VRHI::BeginRender() {
+    uint32_t index;
+    mSwapchain->AcquireNextImage(mImageAvailableSemaphore, &index);
+
+    BeginRecordCommandBuffer(mCommandBuffers[index], index);
+    BeginRenderPass(mSwapchain->GetRenderPass());
 }
 
 void VRHI::Draw() {
-    uint32_t imageIndex;
-    mSwapchain->AcquireNextImage(mImageAvailableSemaphore, &imageIndex);
+    /* bind graphics pipeline. */
+    vkCmdBindPipeline(mCurrentContextCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                      mVRHIpipeline->GetPipeline());
+    /* draw call */
+    vkCmdDraw(mCurrentContextCommandBuffer, 3, 1, 0, 0);
+}
 
-    auto commandBuffer = mCommandBuffers[imageIndex];
-    vkResetCommandBuffer(commandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
-    RecordCommandBuffer(imageIndex, commandBuffer);
+void VRHI::EndRender() {
+    EndRenderPass();
+    EndRecordCommandBuffer();
 
     VkSemaphore waitSemaphores[] = { mImageAvailableSemaphore };
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
@@ -848,7 +867,7 @@ void VRHI::Draw() {
     submitInfo.pWaitSemaphores = waitSemaphores;
     submitInfo.pWaitDstStageMask = waitStages;
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &mCommandBuffers[imageIndex];
+    submitInfo.pCommandBuffers = &mCurrentContextCommandBuffer;
 
     VkSemaphore signalSemaphores[] = { mRenderFinishedSemaphore };
     submitInfo.signalSemaphoreCount = 1;
@@ -865,13 +884,9 @@ void VRHI::Draw() {
     VkSwapchainKHR swapChains[] = { mSwapchain->GetSwapchainKHRHandle() };
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
-    presentInfo.pImageIndices = &imageIndex;
+    presentInfo.pImageIndices = &mCurrentContextImageIndex;
     presentInfo.pResults = nullptr; // Optional
 
     vkQueuePresentKHR(mVRHIdevice->GetPresentQueue(), &presentInfo);
     vkQueueWaitIdle(mVRHIdevice->GetPresentQueue());
-}
-
-void VRHI::EndRender() {
-
 }

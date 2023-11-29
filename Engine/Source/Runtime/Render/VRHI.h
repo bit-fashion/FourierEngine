@@ -93,7 +93,7 @@ public:
     ~VRHIpipeline();
 
 public:
-    VkPipeline GetPipelineHandle() { return mPipeline; }
+    VkPipeline GetPipeline() { return mPipeline; }
 
 private:
     VRHIdevice *mVRHIdevice;
@@ -115,7 +115,7 @@ public:
 public:
     uint32_t GetWidth() { return mSwapchainExtent.width; }
     uint32_t GetHeight() { return mSwapchainExtent.height; }
-    VkRenderPass GetRenderPassHandle() { return mRenderPass; }
+    VkRenderPass GetRenderPass() { return mRenderPass; }
     uint32_t GetImageCount() { return mSwapchainImageCount; }
     VkFramebuffer GetFramebuffer(uint32_t index) { return mSwapchainFramebuffers[index]; }
     VkExtent2D GetExtent2D() { return mSwapchainExtent; }
@@ -209,10 +209,13 @@ public:
 
 private:
     void Init_Vulkan_Impl();
-    void RecordCommandBuffer(uint32_t index, VkCommandBuffer commandBuffer);
     void CleanupSwapchain();
     void CreateSwapchain();
     void RecreateSwapchain();
+    void BeginRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t index);
+    void EndRecordCommandBuffer();
+    void BeginRenderPass(VkRenderPass renderPass);
+    void EndRenderPass();
 
 private:
     VkInstance mInstance = VK_NULL_HANDLE;
@@ -230,4 +233,8 @@ private:
     /* Map */
     std::unordered_map<std::string, VkExtensionProperties> mVkInstanceExtensionPropertiesSupports;
     std::unordered_map<std::string, VkLayerProperties> mVkInstanceLayerPropertiesSupports;
+    /* Context */
+    VkCommandBuffer mCurrentContextCommandBuffer = VK_NULL_HANDLE;
+    VkRenderPass mCurrentContextRenderPass = VK_NULL_HANDLE;
+    uint32_t mCurrentContextImageIndex = 0;
 };
