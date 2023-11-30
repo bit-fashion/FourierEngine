@@ -1,6 +1,6 @@
 # VerirrtEngine
 
-> The Verirrt game engine editor. this NannorivEngine for my learning about three-dimensional game develop, if you interested in that too. i hope you can learn and develop with us.
+> The Verirrt game engine editor. this VerirrtEngine for my learning about three-dimensional game develop, if you interested in that too. i hope you can learn and develop with us.
 
 ![VulkanHomePage](https://github.com/bit-fashion/VerirrtEngine/blob/master/Engine/Resource/VulkanHomePage.png)
 
