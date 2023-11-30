@@ -682,6 +682,21 @@ void VRHIdevice::CopyBuffer(VRHIbuffer dest, VRHIbuffer src, VkDeviceSize size) 
     FreeCommandBuffer(1, &copyStagingCommandBuffer);
 }
 
+void VRHIdevice::AllocateIndexBuffer(VkDeviceSize size, const uint32_t *pIndices, VRHIbuffer *pIndexBuffer) {
+    VRHIbuffer stagingBuffer;
+    AllocateBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer);
+    void *data;
+    MapMemory(stagingBuffer, 0, stagingBuffer.size, 0, &data);
+    memcpy(data, pIndices, static_cast<VkDeviceSize>(stagingBuffer.size));
+    UnmapMemory(stagingBuffer);
+    /* vertex buffer */
+    AllocateBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                   VK_MEMORY_HEAP_DEVICE_LOCAL_BIT, pIndexBuffer);
+    CopyBuffer(*pIndexBuffer, stagingBuffer, size);
+    FreeBuffer(stagingBuffer);
+}
+
 void VRHIdevice::MapMemory(VRHIbuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void **ppData) {
     vkMapMemory(mDevice, buffer.memory, offset, size, flags, ppData);
 }
@@ -849,6 +864,7 @@ void VRRTrenderer::Init_Vulkan_Impl() {
     /* 创建 Vertex buffer */
     mVRHIdevice->AllocateVertexBuffer(ARRAY_TOTAL_SIZE(mVertices), std::data(mVertices), &mVertexBuffer);
     /* 创建 Index buffer */
+    mVRHIdevice->AllocateIndexBuffer(ARRAY_TOTAL_SIZE(mIndices), std::data(mIndices), &mIndexBuffer);
 }
 
 void VRRTrenderer::CleanupSwapchain() {
@@ -941,8 +957,10 @@ void VRRTrenderer::Draw() {
     VkBuffer buffers[] = {mVertexBuffer.buffer};
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(mCurrentContextCommandBuffer, 0, 1, buffers, offsets);
+    vkCmdBindIndexBuffer(mCurrentContextCommandBuffer, mIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
     /* draw call */
-    vkCmdDraw(mCurrentContextCommandBuffer, 3, 1, 0, 0);
+    // vkCmdDraw(mCurrentContextCommandBuffer, 3, 1, 0, 0);
+    vkCmdDrawIndexed(mCurrentContextCommandBuffer, static_cast<uint32_t>(std::size(mIndices)), 1, 0, 0, 0);
 }
 
 void VRRTrenderer::EndRender() {

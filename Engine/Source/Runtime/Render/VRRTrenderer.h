@@ -74,7 +74,7 @@ static void VRHIGETGPU(VkInstance instance, std::vector<VRHIGPU> *pRIVGPU) {
     vkEnumeratePhysicalDevices(instance, &count, std::data(devices));
 
     for (const auto &device: devices) {
-        VRHIGPU gpu;
+        VRHIGPU gpu{};
         gpu.device = device;
         /* 查询物理设备信息 */
         vkGetPhysicalDeviceProperties(device, &gpu.properties);
@@ -200,6 +200,7 @@ public:
     void AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VRHIbuffer *buffer);
     void FreeBuffer(VRHIbuffer buffer);
     void AllocateVertexBuffer(VkDeviceSize size, const VRHIvertex *pVertices, VRHIbuffer *pVertexBuffer);
+    void AllocateIndexBuffer(VkDeviceSize size, const uint32_t *pIndices, VRHIbuffer *pIndexBuffer);
     void CopyBuffer(VRHIbuffer dest, VRHIbuffer src, VkDeviceSize size);
     void MapMemory(VRHIbuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void **ppData);
     void UnmapMemory(VRHIbuffer buffer);
@@ -265,9 +266,13 @@ private:
 
 private:
     const std::vector<VRHIvertex> mVertices = {
-            {{0.0f,  -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-            {{0.5f,  0.5f,  0.0f}, {0.0f, 1.0f, 0.0f}},
-            {{-0.5f, 0.5f,  0.0f}, {0.0f, 0.0f, 1.0f}}
+            {{-0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+            {{0.5f,  -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f}},
+            {{0.5f,  0.5f,  1.0f},  {0.0f, 0.0f, 1.0f}},
+            {{-0.5f, 0.5f,  1.0f},  {1.0f, 1.0f, 1.0f}}
+    };
+    const std::vector<uint32_t> mIndices = {
+            0, 1, 2, 2, 3, 0
     };
     VRHIbuffer mVertexBuffer;
     VRHIbuffer mIndexBuffer;
