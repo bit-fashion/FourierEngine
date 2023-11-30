@@ -228,7 +228,7 @@ VRHIpipeline::VRHIpipeline(VRHIdevice *device, VRHIswapchain *swapchain, const c
     pipelineVertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
     pipelineVertexInputStateCreateInfo.pVertexBindingDescriptions = &vertexInputBindingDescription;
 
-    std::array<VkVertexInputAttributeDescription, 2> vertexInputAttributeDescriptions = VRHIpipeline::VRHIGetVertexInputAttributeDescriptionArray();
+    auto vertexInputAttributeDescriptions = VRHIpipeline::VRHIGetVertexInputAttributeDescriptionArray();
     pipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount = std::size(vertexInputAttributeDescriptions);
     pipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions = std::data(vertexInputAttributeDescriptions);
 
@@ -369,29 +369,46 @@ void VRHIpipeline::Bind(VkCommandBuffer commandBuffer) {
                             mPipelineLayout, 0, 1, &mUboDescriptorSet, 0, nullptr);
 }
 
-void VRHIpipeline::Write(VkDeviceSize offset, VkDeviceSize range, VRHIbuffer buffer) {
+void VRHIpipeline::Write(VkDeviceSize offset, VkDeviceSize range, VRHIbuffer buffer, VRHItexture texture) {
+    std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
+
     VkDescriptorBufferInfo bufferInfo = {};
     bufferInfo.buffer = buffer.buffer;
     bufferInfo.offset = offset;
     bufferInfo.range = range;
 
-    VkWriteDescriptorSet descriptorWrite = {};
-    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrite.dstSet = mUboDescriptorSet;
-    descriptorWrite.dstBinding = 0;
-    descriptorWrite.dstArrayElement = 0;
-    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptorWrite.descriptorCount = 1;
-    descriptorWrite.pBufferInfo = &bufferInfo;
-    descriptorWrite.pImageInfo = nullptr; // Optional
-    descriptorWrite.pTexelBufferView = nullptr; // Optional
+    descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrites[0].dstSet = mUboDescriptorSet;
+    descriptorWrites[0].dstBinding = 0;
+    descriptorWrites[0].dstArrayElement = 0;
+    descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptorWrites[0].descriptorCount = 1;
+    descriptorWrites[0].pBufferInfo = &bufferInfo;
+    descriptorWrites[0].pImageInfo = nullptr; // Optional
+    descriptorWrites[0].pTexelBufferView = nullptr; // Optional
 
-    vkUpdateDescriptorSets(mVRHIdevice->GetDeviceHandle(), 1, &descriptorWrite, 0, nullptr);
+    VkDescriptorImageInfo imageInfo = {};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = texture.imageView;
+    imageInfo.sampler = texture.sampler;
+
+    descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrites[1].dstSet = mUboDescriptorSet;
+    descriptorWrites[1].dstBinding = 1;
+    descriptorWrites[1].dstArrayElement = 0;
+    descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorWrites[1].descriptorCount = 1;
+    descriptorWrites[1].pBufferInfo = nullptr;
+    descriptorWrites[1].pImageInfo = &imageInfo;
+    descriptorWrites[1].pTexelBufferView = nullptr;
+
+    vkUpdateDescriptorSets(mVRHIdevice->GetDeviceHandle(), std::size(descriptorWrites), std::data(descriptorWrites), 0, nullptr);
 }
 
 void VRHIpipeline::Init_Graphics_Pipeline() {
     std::vector<VkDescriptorSetLayoutBinding> uboDescriptorSetLayoutBinding = {
-            { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, VK_NULL_HANDLE }
+            { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, VK_NULL_HANDLE },
+            { 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, VK_NULL_HANDLE },
     };
     mVRHIdevice->CreateDescriptorSetLayout(uboDescriptorSetLayoutBinding, 0, &mUboDescriptorSetLayout);
 
@@ -987,14 +1004,15 @@ void VRHIdevice::CopyTextureBuffer(VRHIbuffer buffer, VRHItexture texture, uint3
 
 void VRHIdevice::InitAllocateDescriptorSetPool() {
     /** Create descriptor set pool */
-    VkDescriptorPoolSize poolSize = {};
-    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSize.descriptorCount = 1;
+    std::vector<VkDescriptorPoolSize> poolSizes = {
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
+    };
 
     VkDescriptorPoolCreateInfo descriptorPoolCrateInfo = {};
     descriptorPoolCrateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    descriptorPoolCrateInfo.poolSizeCount = 1;
-    descriptorPoolCrateInfo.pPoolSizes = &poolSize;
+    descriptorPoolCrateInfo.poolSizeCount = static_cast<uint32_t>(std::size(poolSizes));
+    descriptorPoolCrateInfo.pPoolSizes = std::data(poolSizes);
     descriptorPoolCrateInfo.maxSets = 1;
 
     vkVRRTCreate(DescriptorPool, mDevice, &descriptorPoolCrateInfo, VK_NULL_HANDLE, &mDescriptorPool);
@@ -1216,7 +1234,7 @@ void VRRTrenderer::Draw() {
     UpdateUniformBuffer();
     /* bind graphics pipeline. */
     mVRHIpipeline->Bind(mCurrentContextCommandBuffer);
-    mVRHIpipeline->Write(0, sizeof(VRHIUniformBufferObject), mUniformBuffer);
+    mVRHIpipeline->Write(0, sizeof(VRHIUniformBufferObject), mUniformBuffer, mTexture);
     /* bind vertex buffer */
     VkBuffer buffers[] = {mVertexBuffer.buffer};
     VkDeviceSize offsets[] = {0};

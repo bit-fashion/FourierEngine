@@ -95,6 +95,7 @@ class VRHIpipeline;
 struct VRHIvertex {
     glm::vec3 position;
     glm::vec3 color;
+    glm::vec2 texCoord;
 };
 
 struct VRHItexture {
@@ -122,7 +123,7 @@ public:
                           const char *vertex_shader_path, const char *fragment_shader_path);
     ~VRHIpipeline();
     void Bind(VkCommandBuffer commandBuffer);
-    void Write(VkDeviceSize offset, VkDeviceSize range, VRHIbuffer buffer);
+    void Write(VkDeviceSize offset, VkDeviceSize range, VRHIbuffer buffer, VRHItexture texture);
 
 private:
     void Init_Graphics_Pipeline();
@@ -136,8 +137,8 @@ private:
         return vertexInputBindingDescription;
     };
 
-    static std::array<VkVertexInputAttributeDescription, 2> VRHIGetVertexInputAttributeDescriptionArray() {
-        std::array<VkVertexInputAttributeDescription, 2> array = {};
+    static std::array<VkVertexInputAttributeDescription, 3> VRHIGetVertexInputAttributeDescriptionArray() {
+        std::array<VkVertexInputAttributeDescription, 3> array = {};
         /* position attribute */
         array[0].binding = 0;
         array[0].location = 0;
@@ -149,6 +150,11 @@ private:
         array[1].location = 1;
         array[1].format = VK_FORMAT_R32G32B32_SFLOAT;
         array[1].offset = offsetof(VRHIvertex, color);
+
+        array[2].binding = 0;
+        array[2].location = 2;
+        array[2].format = VK_FORMAT_R32G32_SFLOAT;
+        array[2].offset = offsetof(VRHIvertex, texCoord);
 
         return array;
     }
@@ -299,10 +305,10 @@ private:
 
 private:
     const std::vector<VRHIvertex> mVertices = {
-            {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-            {{0.5f,  -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-            {{0.5f,  0.5f,  0.0f},  {0.0f, 0.0f, 1.0f}},
-            {{-0.5f, 0.5f,  0.0f},  {1.0f, 1.0f, 1.0f}}
+            {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+            {{0.5f,  -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+            {{0.5f,  0.5f,  0.0f},  {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+            {{-0.5f, 0.5f,  0.0f},  {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
     };
     const std::vector<uint32_t> mIndices = {
             0, 1, 2, 2, 3, 0
