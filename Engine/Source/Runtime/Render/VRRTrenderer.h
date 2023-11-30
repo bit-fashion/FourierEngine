@@ -24,9 +24,12 @@
 #include <vector>
 #include <VRRT.h>
 #include <unordered_map>
-#include <glm/glm.hpp>
 #include <array>
 #include <stddef.h>
+#include <chrono>
+// glm
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 class VRRTwindow;
 
@@ -94,6 +97,13 @@ struct VRHIvertex {
     glm::vec3 color;
 };
 
+struct VRHIUniformBufferObject {
+    glm::mat4 m;
+    glm::mat4 v;
+    glm::mat4 p;
+    float     t;
+};
+
 /**
  * 渲染管线
  */
@@ -103,6 +113,13 @@ public:
                           const char *vertex_shader_path, const char *fragment_shader_path);
     ~VRHIpipeline();
     void Bind(VkCommandBuffer commandBuffer);
+    void Write(VkDeviceSize offset, VkDeviceSize range, VRHIbuffer buffer);
+
+public:
+    VkDescriptorSet GetDescriptorSet() { return mUboDescriptorSet; }
+
+private:
+    void Init_Graphics_Pipeline();
 
 private:
     static VkVertexInputBindingDescription VRHIGetVertexInputBindingDescription() {
@@ -133,6 +150,8 @@ private:
 private:
     VRHIdevice *mVRHIdevice;
     VRHIswapchain *mSwapchain;
+    VkDescriptorSetLayout mUboDescriptorSetLayout;
+    VkDescriptorSet mUboDescriptorSet;
     VkPipeline mPipeline;
     VkPipelineLayout mPipelineLayout;
 };
@@ -188,7 +207,7 @@ public:
 
     void CreateSwapchain(VRHIswapchain **pSwapchain);
     void DestroySwapchain(VRHIswapchain *swapchain);
-    void CreateDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> bindings, VkDescriptorSetLayoutCreateFlags flags,
+    void CreateDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> &bindings, VkDescriptorSetLayoutCreateFlags flags,
                                    VkDescriptorSetLayout *pDescriptorSetLayout);
     void DestroyDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout);
     void AllocateDescriptorSet(std::vector<VkDescriptorSetLayout> &descriptorSetLayouts, VkDescriptorSet *pDescriptorSet);
@@ -263,19 +282,21 @@ private:
     void BeginRenderPass(VkRenderPass renderPass);
     void EndRenderPass();
     void QueueSubmitBuffer();
+    void UpdateUniformBuffer();
 
 private:
     const std::vector<VRHIvertex> mVertices = {
-            {{-0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f}},
-            {{0.5f,  -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f}},
-            {{0.5f,  0.5f,  1.0f},  {0.0f, 0.0f, 1.0f}},
-            {{-0.5f, 0.5f,  1.0f},  {1.0f, 1.0f, 1.0f}}
+            {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+            {{0.5f,  -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+            {{0.5f,  0.5f,  0.0f},  {0.0f, 0.0f, 1.0f}},
+            {{-0.5f, 0.5f,  0.0f},  {1.0f, 1.0f, 1.0f}}
     };
     const std::vector<uint32_t> mIndices = {
             0, 1, 2, 2, 3, 0
     };
     VRHIbuffer mVertexBuffer;
     VRHIbuffer mIndexBuffer;
+    VRHIbuffer mUniformBuffer;
     VkInstance mInstance = VK_NULL_HANDLE;
     VkSurfaceKHR mSurface = VK_NULL_HANDLE;
     VRRTwindow *mVRRTwindow;

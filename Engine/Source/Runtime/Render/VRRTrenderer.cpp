@@ -190,6 +190,8 @@ uint32_t FindMemoryType(uint32_t typeFilter, VkPhysicalDevice physicalDevice, Vk
 
 VRHIpipeline::VRHIpipeline(VRHIdevice *device, VRHIswapchain *swapchain, const char *vertex_shader_path, const char *fragment_shader_path)
   : mVRHIdevice(device), mSwapchain(swapchain){
+    /* init */
+    Init_Graphics_Pipeline();
     /** Create shader of vertex & fragment module. */
     VRRT_LOGGER_INFO("Loading and create vertex shader module from: {}", vertex_shader_path);
     VkShaderModule vertex_shader_module = LoadShaderModule(mVRHIdevice->GetDeviceHandle(), vertex_shader_path);
@@ -259,7 +261,7 @@ VRHIpipeline::VRHIpipeline(VRHIdevice *device, VRHIswapchain *swapchain, const c
     pipelineRasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
     pipelineRasterizationStateCreateInfo.lineWidth = 1.0f;
     pipelineRasterizationStateCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-    pipelineRasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    pipelineRasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     pipelineRasterizationStateCreateInfo.depthBiasEnable = VK_FALSE;
     pipelineRasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f; // Optional
     pipelineRasterizationStateCreateInfo.depthBiasClamp = 0.0f; // Optional
@@ -319,7 +321,8 @@ VRHIpipeline::VRHIpipeline(VRHIdevice *device, VRHIswapchain *swapchain, const c
     /* 管道布局 */
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &mUboDescriptorSetLayout;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
 
     vkVRRTCreate(PipelineLayout, mVRHIdevice->GetDeviceHandle(), &pipelineLayoutInfo, nullptr, &mPipelineLayout);
@@ -351,12 +354,45 @@ VRHIpipeline::VRHIpipeline(VRHIdevice *device, VRHIswapchain *swapchain, const c
 }
 
 VRHIpipeline::~VRHIpipeline() {
+    mVRHIdevice->DestroyDescriptorSetLayout(mUboDescriptorSetLayout);
     vkDestroyPipelineLayout(mVRHIdevice->GetDeviceHandle(), mPipelineLayout, VK_NULL_HANDLE);
     vkDestroyPipeline(mVRHIdevice->GetDeviceHandle(), mPipeline, VK_NULL_HANDLE);
 }
 
 void VRHIpipeline::Bind(VkCommandBuffer commandBuffer) {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            mPipelineLayout, 0, 1, &mUboDescriptorSet, 0, nullptr);
+}
+
+void VRHIpipeline::Write(VkDeviceSize offset, VkDeviceSize range, VRHIbuffer buffer) {
+    VkDescriptorBufferInfo bufferInfo = {};
+    bufferInfo.buffer = buffer.buffer;
+    bufferInfo.offset = offset;
+    bufferInfo.range = range;
+
+    VkWriteDescriptorSet descriptorWrite = {};
+    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrite.dstSet = mUboDescriptorSet;
+    descriptorWrite.dstBinding = 0;
+    descriptorWrite.dstArrayElement = 0;
+    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptorWrite.descriptorCount = 1;
+    descriptorWrite.pBufferInfo = &bufferInfo;
+    descriptorWrite.pImageInfo = nullptr; // Optional
+    descriptorWrite.pTexelBufferView = nullptr; // Optional
+
+    vkUpdateDescriptorSets(mVRHIdevice->GetDeviceHandle(), 1, &descriptorWrite, 0, nullptr);
+}
+
+void VRHIpipeline::Init_Graphics_Pipeline() {
+    std::vector<VkDescriptorSetLayoutBinding> uboDescriptorSetLayoutBinding = {
+            { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, VK_NULL_HANDLE }
+    };
+    mVRHIdevice->CreateDescriptorSetLayout(uboDescriptorSetLayoutBinding, 0, &mUboDescriptorSetLayout);
+
+    std::vector<VkDescriptorSetLayout> layous = {mUboDescriptorSetLayout};
+    mVRHIdevice->AllocateDescriptorSet(layous, &mUboDescriptorSet);
 }
 
 // ----------------------------------------------------------------------------
@@ -568,7 +604,7 @@ void VRHIdevice::DestroySwapchain(VRHIswapchain *swapchain) {
     delete swapchain;
 }
 
-void VRHIdevice::CreateDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> bindings, VkDescriptorSetLayoutCreateFlags flags,
+void VRHIdevice::CreateDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> &bindings, VkDescriptorSetLayoutCreateFlags flags,
                                            VkDescriptorSetLayout *pDescriptorSetLayout) {
     VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
     descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -840,6 +876,7 @@ VRRTrenderer::VRRTrenderer(VRRTwindow *pVRRTwindow) : mVRRTwindow(pVRRTwindow) {
 
 VRRTrenderer::~VRRTrenderer() {
     mVRHIdevice->FreeBuffer(mVertexBuffer);
+    mVRHIdevice->FreeBuffer(mIndexBuffer);
     mVRHIdevice->DestroySemaphore(mImageAvailableSemaphore);
     mVRHIdevice->DestroySemaphore(mRenderFinishedSemaphore);
     CleanupSwapchain();
@@ -865,6 +902,9 @@ void VRRTrenderer::Init_Vulkan_Impl() {
     mVRHIdevice->AllocateVertexBuffer(ARRAY_TOTAL_SIZE(mVertices), std::data(mVertices), &mVertexBuffer);
     /* 创建 Index buffer */
     mVRHIdevice->AllocateIndexBuffer(ARRAY_TOTAL_SIZE(mIndices), std::data(mIndices), &mIndexBuffer);
+    /* 创建 Uniform buffer */
+    mVRHIdevice->AllocateBuffer(sizeof(VRHIUniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &mUniformBuffer);
 }
 
 void VRRTrenderer::CleanupSwapchain() {
@@ -950,9 +990,27 @@ void VRRTrenderer::QueueSubmitBuffer() {
     vkQueueWaitIdle(mVRHIdevice->GetPresentQueue());
 }
 
+void VRRTrenderer::UpdateUniformBuffer() {
+    static auto startTime = std::chrono::high_resolution_clock::now();
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.0f;
+    VRHIUniformBufferObject ubo = {};
+    ubo.m = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.v = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.p = glm::perspective(glm::radians(45.0f), mSwapchain->GetWidth() / (float) mSwapchain->GetHeight(), 0.1f, 10.0f);
+    ubo.p[1][1] *= -1;
+    ubo.t = glfwGetTime();
+    void* data;
+    mVRHIdevice->MapMemory(mUniformBuffer, 0, sizeof(ubo), 0, &data);
+    memcpy(data, &ubo, sizeof(ubo));
+    mVRHIdevice->UnmapMemory(mUniformBuffer);
+}
+
 void VRRTrenderer::Draw() {
+    UpdateUniformBuffer();
     /* bind graphics pipeline. */
     mVRHIpipeline->Bind(mCurrentContextCommandBuffer);
+    mVRHIpipeline->Write(0, sizeof(VRHIUniformBufferObject), mUniformBuffer);
     /* bind vertex buffer */
     VkBuffer buffers[] = {mVertexBuffer.buffer};
     VkDeviceSize offsets[] = {0};
