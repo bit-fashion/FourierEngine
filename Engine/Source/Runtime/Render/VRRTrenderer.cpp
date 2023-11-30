@@ -550,13 +550,12 @@ VRHIdevice::VRHIdevice(VkInstance instance, VkSurfaceKHR surface, VRRTwindow *pV
     vkGetDeviceQueue(mDevice, mVRHIQueueFamilyIndices.presentQueueFamily, 0, &mPresentQueue);
 
     /* init */
-    InitAllocateDescriptorSet();
+    InitAllocateDescriptorSetPool();
     InitCommandPool();
 }
 
 VRHIdevice::~VRHIdevice() {
     vkDestroyDescriptorPool(mDevice, mDescriptorPool, VK_NULL_HANDLE);
-    vkDestroyDescriptorSetLayout(mDevice, mDescriptorSetLayout, VK_NULL_HANDLE);
     vkDestroyCommandPool(mDevice, mCommandPool, VK_NULL_HANDLE);
     vkDestroyDevice(mDevice, VK_NULL_HANDLE);
 }
@@ -569,14 +568,27 @@ void VRHIdevice::DestroySwapchain(VRHIswapchain *swapchain) {
     delete swapchain;
 }
 
-void VRHIdevice::AllocateDescriptorSet(uint32_t count, VkDescriptorSet *pDescriptorSet) {
+void VRHIdevice::CreateDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> bindings, VkDescriptorSetLayoutCreateFlags flags,
+                                           VkDescriptorSetLayout *pDescriptorSetLayout) {
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
+    descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    descriptorSetLayoutCreateInfo.flags = flags;
+    descriptorSetLayoutCreateInfo.bindingCount = std::size(bindings);
+    descriptorSetLayoutCreateInfo.pBindings = std::data(bindings);
+    vkVRRTCreate(DescriptorSetLayout, mDevice, &descriptorSetLayoutCreateInfo, VK_NULL_HANDLE, pDescriptorSetLayout);
+}
+
+void VRHIdevice::DestroyDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout) {
+    vkDestroyDescriptorSetLayout(mDevice, descriptorSetLayout, VK_NULL_HANDLE);
+}
+
+void VRHIdevice::AllocateDescriptorSet(std::vector<VkDescriptorSetLayout> &descriptorSetLayouts, VkDescriptorSet *pDescriptorSet) {
     /** Allocate descriptor set */
-    VkDescriptorSetLayout descriptorSetLayouts[] = {mDescriptorSetLayout};
     VkDescriptorSetAllocateInfo descriptorAllocateInfo = {};
     descriptorAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     descriptorAllocateInfo.descriptorPool = mDescriptorPool;
-    descriptorAllocateInfo.descriptorSetCount = count;
-    descriptorAllocateInfo.pSetLayouts = descriptorSetLayouts;
+    descriptorAllocateInfo.descriptorSetCount = std::size(descriptorSetLayouts);
+    descriptorAllocateInfo.pSetLayouts = std::data(descriptorSetLayouts);
     vkAllocateDescriptorSets(mDevice, &descriptorAllocateInfo, pDescriptorSet);
 }
 
@@ -699,9 +711,9 @@ void VRHIdevice::EndCommandBuffer(VkCommandBuffer commandBuffer) {
 }
 
 void VRHIdevice::SyncQueueSubmit(uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers,
-                               uint32_t waitSemaphoreCount, VkSemaphore *pWaitSemaphores,
-                               uint32_t signalSemaphoreCount, VkSemaphore *pSignalSemaphores,
-                               VkPipelineStageFlags *pWaitDstStageMask) {
+                                 uint32_t waitSemaphoreCount, VkSemaphore *pWaitSemaphores,
+                                 uint32_t signalSemaphoreCount, VkSemaphore *pSignalSemaphores,
+                                 VkPipelineStageFlags *pWaitDstStageMask) {
     /* submit command buffer */
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -721,22 +733,7 @@ void VRHIdevice::SyncQueueSubmit(uint32_t commandBufferCount, VkCommandBuffer *p
     vkQueueWaitIdle(mGraphicsQueue);
 }
 
-void VRHIdevice::InitAllocateDescriptorSet() {
-    /** Descriptor set layout */
-    VkDescriptorSetLayoutBinding descriptorSetLayoutBinding = {};
-    descriptorSetLayoutBinding.binding = 0;
-    descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptorSetLayoutBinding.descriptorCount = 1;
-    descriptorSetLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    descriptorSetLayoutBinding.pImmutableSamplers = nullptr; // Optional
-
-    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
-    descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descriptorSetLayoutCreateInfo.bindingCount = 1;
-    descriptorSetLayoutCreateInfo.pBindings = &descriptorSetLayoutBinding;
-
-    vkVRRTCreate(DescriptorSetLayout, mDevice, &descriptorSetLayoutCreateInfo, VK_NULL_HANDLE, &mDescriptorSetLayout);
-
+void VRHIdevice::InitAllocateDescriptorSetPool() {
     /** Create descriptor set pool */
     VkDescriptorPoolSize poolSize = {};
     poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;

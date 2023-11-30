@@ -188,7 +188,10 @@ public:
 
     void CreateSwapchain(VRHIswapchain **pSwapchain);
     void DestroySwapchain(VRHIswapchain *swapchain);
-    void AllocateDescriptorSet(uint32_t count, VkDescriptorSet *pDescriptorSet);
+    void CreateDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> bindings, VkDescriptorSetLayoutCreateFlags flags,
+                                   VkDescriptorSetLayout *pDescriptorSetLayout);
+    void DestroyDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout);
+    void AllocateDescriptorSet(std::vector<VkDescriptorSetLayout> &descriptorSetLayouts, VkDescriptorSet *pDescriptorSet);
     void FreeDescriptorSet(uint32_t count, VkDescriptorSet *pDescriptorSet);
     void AllocateCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer);
     void FreeCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer);
@@ -197,7 +200,6 @@ public:
     void AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VRHIbuffer *buffer);
     void FreeBuffer(VRHIbuffer buffer);
     void AllocateVertexBuffer(VkDeviceSize size, const VRHIvertex *pVertices, VRHIbuffer *pVertexBuffer);
-    void FreeVertexBuffer(VRHIbuffer vertexBuffer);
     void CopyBuffer(VRHIbuffer dest, VRHIbuffer src, VkDeviceSize size);
     void MapMemory(VRHIbuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void **ppData);
     void UnmapMemory(VRHIbuffer buffer);
@@ -205,19 +207,18 @@ public:
     void BeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags usageFlags);
     void EndCommandBuffer(VkCommandBuffer commandBuffer);
     void SyncQueueSubmit(uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers,
-                       uint32_t waitSemaphoreCount, VkSemaphore *pWaitSemaphores,
-                       uint32_t signalSemaphoreCount, VkSemaphore *pSignalSemaphores,
-                       VkPipelineStageFlags *pWaitDstStageMask);
+                         uint32_t waitSemaphoreCount, VkSemaphore *pWaitSemaphores,
+                         uint32_t signalSemaphoreCount, VkSemaphore *pSignalSemaphores,
+                         VkPipelineStageFlags *pWaitDstStageMask);
 
 public:
     VkPhysicalDevice GetPhysicalDeviceHandle() { return mVRHIGPU.device; }
     VkDevice GetDeviceHandle() { return mDevice; }
-    VkDescriptorSetLayout GetDescriptorSetLayout() { return mDescriptorSetLayout; }
     VkQueue GetGraphicsQueue() { return mGraphicsQueue; }
     VkQueue GetPresentQueue() { return mPresentQueue; }
 
 private:
-    void InitAllocateDescriptorSet();
+    void InitAllocateDescriptorSetPool();
     void InitCommandPool();
     VRHIQueueFamilyIndices FindQueueFamilyIndices();
 
@@ -228,7 +229,6 @@ private:
     VRHIGPU mVRHIGPU = {};
     VRRTwindow *mVRRTwindow;
     VkDescriptorPool mDescriptorPool = VK_NULL_HANDLE;
-    VkDescriptorSetLayout mDescriptorSetLayout = VK_NULL_HANDLE;
     VkCommandPool mCommandPool = VK_NULL_HANDLE;
     VkMemoryRequirements mMemoryRequirements;
     /* 队列族 */

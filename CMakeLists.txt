@@ -54,7 +54,3 @@ target_link_libraries(${PROJECT_NAME}
         glfw3
         imm32
 )
-
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND "${CMAKE_SOURCE_DIR}/Bin/spvc.cmd"
-)
