@@ -28,9 +28,9 @@ int main() {
     auto window = VRRTwindow(1280, 1000, "NE-1");
     /* Create VRRTrenderer */
      std::unique_ptr<VRRTrenderer> pVRRTrenderer = std::make_unique<VRRTrenderer>(&window);
-    window.ShowWindowInScreen();
+    window.SetWindowHintVisible(true);
 
-    while (!window.WindowShouldClose()) {
+    while (!window.ShouldClose()) {
         NRIVPollEvents();
         pVRRTrenderer->BeginRender();
         {

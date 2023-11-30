@@ -32,8 +32,8 @@ public:
     VRRTwindow(int width, int height, const char *title);
     ~VRRTwindow();
     /* Support functions. */
-    bool WindowShouldClose();
-    void ShowWindowInScreen();
+    bool ShouldClose();
+    void SetWindowHintVisible(bool isVisible);
 
 public:
     /* Get/Set member variables. */

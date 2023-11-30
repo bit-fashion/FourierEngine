@@ -24,6 +24,7 @@ VRRTwindow::VRRTwindow(int width, int height, const char *title) : m_Width(width
 
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
     m_Window = glfwCreateWindow(width, height, title, 0, 0);
 
@@ -42,9 +43,6 @@ VRRTwindow::VRRTwindow(int width, int height, const char *title) : m_Width(width
         if (pRIVwindow->m_FnVRRTResizableWindowCallback != NULL)
             pRIVwindow->m_FnVRRTResizableWindowCallback(pRIVwindow, width, height);
     });
-
-    /* Default hide window. */
-    glfwHideWindow(m_Window);
 }
 
 VRRTwindow::~VRRTwindow() {
@@ -52,10 +50,13 @@ VRRTwindow::~VRRTwindow() {
     glfwDestroyWindow(m_Window);
 }
 
-bool VRRTwindow::WindowShouldClose() {
+bool VRRTwindow::ShouldClose() {
     return glfwWindowShouldClose(m_Window);
 }
 
-void VRRTwindow::ShowWindowInScreen() {
-    glfwShowWindow(m_Window);
+void VRRTwindow::SetWindowHintVisible(bool isVisible) {
+    if (isVisible)
+        glfwShowWindow(m_Window);
+    else
+        glfwHideWindow(m_Window);
 }
