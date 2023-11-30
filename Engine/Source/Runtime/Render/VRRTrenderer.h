@@ -97,6 +97,15 @@ struct VRHIvertex {
     glm::vec3 color;
 };
 
+struct VRHItexture {
+    VkImage image;
+    VkImageView imageView;
+    VkSampler sampler;
+    VkFormat format;
+    VkImageLayout layout;
+    VkDeviceMemory memory;
+};
+
 struct VRHIUniformBufferObject {
     glm::mat4 m;
     glm::mat4 v;
@@ -114,9 +123,6 @@ public:
     ~VRHIpipeline();
     void Bind(VkCommandBuffer commandBuffer);
     void Write(VkDeviceSize offset, VkDeviceSize range, VRHIbuffer buffer);
-
-public:
-    VkDescriptorSet GetDescriptorSet() { return mUboDescriptorSet; }
 
 private:
     void Init_Graphics_Pipeline();
@@ -230,6 +236,12 @@ public:
                          uint32_t waitSemaphoreCount, VkSemaphore *pWaitSemaphores,
                          uint32_t signalSemaphoreCount, VkSemaphore *pSignalSemaphores,
                          VkPipelineStageFlags *pWaitDstStageMask);
+    void BeginOneTimeCommandBufferSubmit(VkCommandBuffer *pCommandBuffer);
+    void EndOneTimeCommandBufferSubmit();
+    void CreateTexture(const char *path, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VRHItexture *pTexture);
+    void DestroyTexture(VRHItexture texture);
+    void TransitionTextureLayout(VRHItexture *texture, VkImageLayout newLayout);
+    void CopyTextureBuffer(VRHIbuffer buffer, VRHItexture texture, uint32_t width, uint32_t height);
 
 public:
     VkPhysicalDevice GetPhysicalDeviceHandle() { return mVRHIGPU.device; }
@@ -251,6 +263,7 @@ private:
     VkDescriptorPool mDescriptorPool = VK_NULL_HANDLE;
     VkCommandPool mCommandPool = VK_NULL_HANDLE;
     VkMemoryRequirements mMemoryRequirements;
+    VkCommandBuffer mSingleTimeCommandBuffer = VK_NULL_HANDLE;
     /* 队列族 */
     VRHIQueueFamilyIndices mVRHIQueueFamilyIndices;
     VkQueue mGraphicsQueue = VK_NULL_HANDLE;
@@ -297,6 +310,7 @@ private:
     VRHIbuffer mVertexBuffer;
     VRHIbuffer mIndexBuffer;
     VRHIbuffer mUniformBuffer;
+    VRHItexture mTexture;
     VkInstance mInstance = VK_NULL_HANDLE;
     VkSurfaceKHR mSurface = VK_NULL_HANDLE;
     VRRTwindow *mVRRTwindow;

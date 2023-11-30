@@ -22,6 +22,10 @@
 #include "Window/VRRTwindow.h"
 #include "Utils/IOUtils.h"
 
+// stb
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
+
 #define VRRT_SHADER_MODULE_OF_VERTEX_BINARY_FILE "../Engine/Binaries/simple_shader.vert.spv"
 #define VRRT_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE "../Engine/Binaries/simple_shader.frag.spv"
 
@@ -701,21 +705,17 @@ void VRHIdevice::AllocateVertexBuffer(VkDeviceSize size, const VRHIvertex *pVert
 }
 
 void VRHIdevice::CopyBuffer(VRHIbuffer dest, VRHIbuffer src, VkDeviceSize size) {
-    VkCommandBuffer copyStagingCommandBuffer;
-    AllocateCommandBuffer(1, &copyStagingCommandBuffer);
-    BeginCommandBuffer(copyStagingCommandBuffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    VkCommandBuffer oneTimeCommandBuffer;
+    BeginOneTimeCommandBufferSubmit(&oneTimeCommandBuffer);
     {
         /* copy buffer */
         VkBufferCopy copyRegion = {};
         copyRegion.srcOffset = 0;
         copyRegion.dstOffset = 0;
         copyRegion.size = size;
-        vkCmdCopyBuffer(copyStagingCommandBuffer, src.buffer, dest.buffer, 1, &copyRegion);
+        vkCmdCopyBuffer(oneTimeCommandBuffer, src.buffer, dest.buffer, 1, &copyRegion);
     }
-    EndCommandBuffer(copyStagingCommandBuffer);
-    /* submit */
-    SyncQueueSubmit(1, &copyStagingCommandBuffer, 0, VK_NULL_HANDLE, 0, VK_NULL_HANDLE, VK_NULL_HANDLE);
-    FreeCommandBuffer(1, &copyStagingCommandBuffer);
+    EndOneTimeCommandBufferSubmit();
 }
 
 void VRHIdevice::AllocateIndexBuffer(VkDeviceSize size, const uint32_t *pIndices, VRHIbuffer *pIndexBuffer) {
@@ -782,6 +782,207 @@ void VRHIdevice::SyncQueueSubmit(uint32_t commandBufferCount, VkCommandBuffer *p
         throw std::runtime_error("failed to submit draw command buffer!");
 
     vkQueueWaitIdle(mGraphicsQueue);
+}
+
+void VRHIdevice::BeginOneTimeCommandBufferSubmit(VkCommandBuffer *pCommandBuffer) {
+    AllocateCommandBuffer(1, &mSingleTimeCommandBuffer);
+    *pCommandBuffer = mSingleTimeCommandBuffer;
+    /* begin */
+    BeginCommandBuffer(mSingleTimeCommandBuffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+}
+
+void VRHIdevice::EndOneTimeCommandBufferSubmit() {
+    EndCommandBuffer(mSingleTimeCommandBuffer);
+    /* submit */
+    SyncQueueSubmit(1, &mSingleTimeCommandBuffer, 0, NULL, 0, NULL, NULL);
+    FreeCommandBuffer(1, &mSingleTimeCommandBuffer);
+}
+
+void VRHIdevice::CreateTexture(const char *path, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VRHItexture *pTexture) {
+    /* load image. */
+    int texWidth, texHeight, texChannels;
+    stbi_uc* pixels = stbi_load(path, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    VkDeviceSize imageSize = texWidth * texHeight * 4;
+    if (!pixels)
+        VRRT_THROW_ERROR("failed to load texture image!");
+
+    VRHIbuffer stagingBuffer;
+    AllocateBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer);
+
+    void *data;
+    MapMemory(stagingBuffer, 0, imageSize, 0, &data);
+    memcpy(data, pixels, static_cast<size_t>(imageSize));
+    UnmapMemory(stagingBuffer);
+
+    stbi_image_free(pixels);
+
+    /* Create image */
+    VkImageCreateInfo imageCreateInfo = {};
+    imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageCreateInfo.extent.width = static_cast<uint32_t>(texWidth);
+    imageCreateInfo.extent.height = static_cast<uint32_t>(texHeight);
+    imageCreateInfo.extent.depth = 1;
+    imageCreateInfo.mipLevels = 1;
+    imageCreateInfo.arrayLayers = 1;
+    imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+    imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.flags = 0; // Optional
+
+    pTexture->format = imageCreateInfo.format;
+    pTexture->layout = imageCreateInfo.initialLayout;
+
+    vkVRRTCreate(Image, mDevice, &imageCreateInfo, VK_NULL_HANDLE, &pTexture->image);
+
+    /* bind memory */
+    VkMemoryRequirements requirements;
+    vkGetImageMemoryRequirements(mDevice, pTexture->image, &requirements);
+
+    VkMemoryAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = requirements.size;
+    allocInfo.memoryTypeIndex = FindMemoryType(requirements.memoryTypeBits, mVRHIGPU.device, properties);
+
+    vkVRRTAllocate(Memory, mDevice, &allocInfo, VK_NULL_HANDLE, &pTexture->memory);
+
+    vkBindImageMemory(mDevice, pTexture->image, pTexture->memory, 0);
+
+    /* create image view */
+    VkImageViewCreateInfo viewInfo = {};
+    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image = pTexture->image;
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.baseMipLevel = 0;
+    viewInfo.subresourceRange.levelCount = 1;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount = 1;
+
+    vkVRRTCreate(ImageView, mDevice, &viewInfo, nullptr, &pTexture->imageView);
+
+    /* create texture  sampler */
+    VkSamplerCreateInfo samplerInfo = {};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.magFilter = VK_FILTER_LINEAR;
+    samplerInfo.minFilter = VK_FILTER_LINEAR;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.anisotropyEnable = VK_FALSE;
+    samplerInfo.maxAnisotropy = 16;
+    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+    samplerInfo.compareEnable = VK_FALSE;
+    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.mipLodBias = 0.0f;
+    samplerInfo.minLod = 0.0f;
+    samplerInfo.maxLod = 0.0f;
+
+    vkVRRTCreate(Sampler, mDevice, &samplerInfo, VK_NULL_HANDLE, &pTexture->sampler);
+
+    /* copy buffer to image */
+    TransitionTextureLayout(pTexture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    CopyTextureBuffer(stagingBuffer, *pTexture, texWidth, texHeight);
+    TransitionTextureLayout(pTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    FreeBuffer(stagingBuffer);
+}
+
+void VRHIdevice::DestroyTexture(VRHItexture texture) {
+    vkDestroySampler(mDevice, texture.sampler, VK_NULL_HANDLE);
+    vkDestroyImageView(mDevice, texture.imageView, VK_NULL_HANDLE);
+    vkDestroyImage(mDevice, texture.image, VK_NULL_HANDLE);
+    vkFreeMemory(mDevice, texture.memory, VK_NULL_HANDLE);
+}
+
+void VRHIdevice::TransitionTextureLayout(VRHItexture *texture, VkImageLayout newLayout) {
+    VkCommandBuffer commandBuffer;
+    BeginOneTimeCommandBufferSubmit(&commandBuffer);
+
+    VkImageMemoryBarrier barrier = {};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = texture->layout;
+    barrier.newLayout = newLayout;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = texture->image;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.srcAccessMask = 0; // TODO
+    barrier.dstAccessMask = 0; // TODO
+
+    VkPipelineStageFlags sourceStage;
+    VkPipelineStageFlags destinationStage;
+
+    if (texture->layout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    } else if (texture->layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    } else {
+        throw std::invalid_argument("unsupported layout transition!");
+    }
+
+    vkCmdPipelineBarrier(
+            commandBuffer,
+            sourceStage,
+            destinationStage,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &barrier
+    );
+
+    EndOneTimeCommandBufferSubmit();
+
+    texture->layout = newLayout;
+}
+
+void VRHIdevice::CopyTextureBuffer(VRHIbuffer buffer, VRHItexture texture, uint32_t width, uint32_t height) {
+    VkCommandBuffer commandBuffer;
+    BeginOneTimeCommandBufferSubmit(&commandBuffer);
+
+    VkBufferImageCopy region = {};
+    region.bufferOffset = 0;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
+
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.mipLevel = 0;
+    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.layerCount = 1;
+
+    region.imageOffset = {0, 0, 0};
+    region.imageExtent = {
+            width,
+            height,
+            1
+    };
+
+    vkCmdCopyBufferToImage(
+            commandBuffer,
+            buffer.buffer,
+            texture.image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            1,
+            &region
+    );
+
+    EndOneTimeCommandBufferSubmit();
 }
 
 void VRHIdevice::InitAllocateDescriptorSetPool() {
@@ -875,6 +1076,8 @@ VRRTrenderer::VRRTrenderer(VRRTwindow *pVRRTwindow) : mVRRTwindow(pVRRTwindow) {
 }
 
 VRRTrenderer::~VRRTrenderer() {
+    mVRHIdevice->DestroyTexture(mTexture);
+    mVRHIdevice->FreeBuffer(mUniformBuffer);
     mVRHIdevice->FreeBuffer(mVertexBuffer);
     mVRHIdevice->FreeBuffer(mIndexBuffer);
     mVRHIdevice->DestroySemaphore(mImageAvailableSemaphore);
@@ -905,6 +1108,9 @@ void VRRTrenderer::Init_Vulkan_Impl() {
     /* 创建 Uniform buffer */
     mVRHIdevice->AllocateBuffer(sizeof(VRHIUniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &mUniformBuffer);
+    /* 创建 Texture */
+    mVRHIdevice->CreateTexture("../Engine/Resource/VulkanHomePage.png", VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
+                               VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &mTexture);
 }
 
 void VRRTrenderer::CleanupSwapchain() {
