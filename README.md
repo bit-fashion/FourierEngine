@@ -4,14 +4,17 @@
 
 ![VulkanHomePage](https://github.com/bit-fashion/VerirrtEngine/blob/master/Engine/Resource/VulkanHomePage.png)
 
-# How to build
+# Building environment requirements
 
-This engine use Vulkan API, The API tutorial for lerning Vulakn can be found on the [Home | Vulkan](https://www.vulkan.org/) page. if you want build this engine project, you need:
+This repository use [cmake toolchains](https://cmake.org/) compile and build, required gcc compiler, required `C++ 23` version.
 
-- CMAKE
-- GCC 21
-- Widnow 10
+- `CMAKE 3.26` - Use build and compile this repository.
+- `MinGw-w64` - MinGw is GUN compile for gcc.
+- `GLFW` - GLFW is cross-platform create window.
+- `Vulkan` - The Vulkan is graphics api is cross-platform api.
 
-# Demo Photo (current develop stage)
+# Demo photo (current develop stage)
+
+Repository build & run example image:
 
 ![DemoPhoto](https://github.com/bit-fashion/VerirrtEngine/blob/master/Doc/DemoPhoto.png)
