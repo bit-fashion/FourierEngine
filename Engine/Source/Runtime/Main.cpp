@@ -25,7 +25,7 @@
 int main() {
     system("chcp 65001");
     system("cd ../Bin & spvc.cmd");
-    auto window = VRRTwindow(1280, 1000, "VerirrtEngine(vulkan)");
+    auto window = VRRTwindow(1280, 1000, "NatureEngine(vulkan)");
     /* Create VRRTrenderer */
      std::unique_ptr<VRRTrenderer> pVRRTrenderer = std::make_unique<VRRTrenderer>(&window);
     window.SetWindowHintVisible(true);

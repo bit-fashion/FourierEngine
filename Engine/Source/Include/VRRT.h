@@ -26,7 +26,7 @@
 
 #include "VCNF.h"
 
-#define VRRT_ENGINE_NAME "VerirrtEngine"
+#define VRRT_ENGINE_NAME "NatureEngine"
 
 #define VRRT_LOGGER_INFO(fmt, ...) printf("%s\n", std::format(fmt, ##__VA_ARGS__).c_str())
 #define VRRT_LOGGER_ERROR(fmt, ...) printf("%s\n", std::format(fmt, ##__VA_ARGS__).c_str())
