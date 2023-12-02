@@ -30,8 +30,8 @@ int main() {
      std::unique_ptr<NVRIrenderer> pNVRIrenderer = std::make_unique<NVRIrenderer>(&window);
     window.SetWindowHintVisible(true);
 
-    while (!window.ShouldClose()) {
-        NRIVPollEvents();
+    while (!window.is_close()) {
+        NatureWindow::PollEvents();
         pNVRIrenderer->BeginRender();
         {
             pNVRIrenderer->Draw();

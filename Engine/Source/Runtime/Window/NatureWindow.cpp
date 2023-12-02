@@ -50,7 +50,7 @@ NatureWindow::~NatureWindow() {
     glfwDestroyWindow(m_Window);
 }
 
-bool NatureWindow::ShouldClose() {
+bool NatureWindow::is_close() {
     return glfwWindowShouldClose(m_Window);
 }
 
@@ -59,4 +59,8 @@ void NatureWindow::SetWindowHintVisible(bool isVisible) {
         glfwShowWindow(m_Window);
     else
         glfwHideWindow(m_Window);
+}
+
+void NatureWindow::SetWindowHintFullScreen(bool isFullScreen, uint32_t width, uint32_t height) {
+
 }

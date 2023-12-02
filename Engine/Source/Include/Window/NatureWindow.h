@@ -32,8 +32,10 @@ public:
     NatureWindow(int width, int height, const char *title);
     ~NatureWindow();
     /* Support functions. */
-    bool ShouldClose();
+    bool is_close();
+    /* hint */
     void SetWindowHintVisible(bool isVisible);
+    void SetWindowHintFullScreen(bool isFullScreen, uint32_t width, uint32_t height);
 
 public:
     /* Get/Set member variables. */
@@ -47,6 +49,9 @@ public:
       { m_FnNATUREResizableWindowCallback = fnEngineWindowResizableWindowCallback; };
     GLFWwindow *GetWindowHandle() { return m_Window; };
 
+public:
+    static void PollEvents() { glfwPollEvents(); }
+
 private:
     int m_Width;
     int m_Height;
@@ -54,7 +59,3 @@ private:
     void *m_UserPointer = NULL;
     PFN_EngineWindowResizableWindowCallback m_FnNATUREResizableWindowCallback = NULL;
 };
-
-static void NRIVPollEvents() {
-    glfwPollEvents();
-}
