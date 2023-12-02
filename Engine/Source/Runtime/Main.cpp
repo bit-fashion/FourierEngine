@@ -20,23 +20,23 @@
 #include "Window/NatureWindow.h"
 
 #include <stdlib.h>
-#include "Render/Vulkan/NVRIrenderer.h"
+#include "Render/Vulkan/VulkanRenderer.h"
 
 int main() {
     system("chcp 65001");
     system("cd ../Bin & spvc.cmd");
     auto window = NatureWindow(1280, 1000, "NatureEngine(vulkan)");
-    /* Create NVRIrenderer */
-     std::unique_ptr<NVRIrenderer> pNVRIrenderer = std::make_unique<NVRIrenderer>(&window);
+    /* Create VulkanRenderer */
+     std::unique_ptr<VulkanRenderer> pVulkanRenderer = std::make_unique<VulkanRenderer>(&window);
     window.SetWindowHintVisible(true);
 
     while (!window.is_close()) {
         NatureWindow::PollEvents();
-        pNVRIrenderer->BeginRender();
+        pVulkanRenderer->BeginRender();
         {
-            pNVRIrenderer->Draw();
+            pVulkanRenderer->Draw();
         }
-        pNVRIrenderer->EndRender();
+        pVulkanRenderer->EndRender();
     }
 
     return 0;

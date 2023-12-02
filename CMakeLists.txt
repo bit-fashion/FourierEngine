@@ -46,7 +46,7 @@ link_directories(
 add_executable(${PROJECT_NAME}
         "Engine/Source/Runtime/Main.cpp"
         "Engine/Source/Runtime/Window/NatureWindow.cpp"
-        "Engine/Source/Runtime/Render/Vulkan/NVRIrenderer.cpp"
+        "Engine/Source/Runtime/Render/Vulkan/VulkanRenderer.cpp"
 )
 
 target_link_libraries(${PROJECT_NAME}

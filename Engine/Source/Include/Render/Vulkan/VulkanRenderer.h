@@ -43,48 +43,48 @@ class NatureWindow;
         NATURE_THROW_ERROR("[VERIRRT ENGINE] [INIT_VULKAN_API] ERR/ - Create [{}] handle failed!", #name)
 
 /** GPU 设备信息 */
-struct NVRIGPU {
+struct VulkanPhysicalDevice {
     VkPhysicalDevice device;
     VkPhysicalDeviceProperties properties;
     VkPhysicalDeviceFeatures features;
 };
 
 /** 队列族 */
-struct NVRIQueueFamilyIndices {
+struct QueueFamilyIndices {
     uint32_t graphicsQueueFamily = 0;
     uint32_t presentQueueFamily = 0;
 };
 
 /** SwapChain supports details struct. */
-struct NVRISwapChainSupportDetails {
+struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
 };
 
 /** 缓冲区结构体 */
-struct NVRIbuffer {
+struct VulkanBuffer {
     VkBuffer buffer;
     VkDeviceMemory memory;
     VkDeviceSize size;
 };
 
 /** 渲染上下文 */
-struct NVRIRenderContext {
+struct VulkanRenderContext {
     VkCommandBuffer commandBuffer;
     VkRenderPass renderPass;
     uint32_t index; /* current frame index */
 };
 
 /** 查询所有物理设备 */
-static void NVRIGETGPU(VkInstance instance, std::vector<NVRIGPU> *pRIVGPU) {
+static void EnumerateVulkanPhysicalDevice(VkInstance instance, std::vector<VulkanPhysicalDevice> *pRIVGPU) {
     uint32_t count = 0;
     vkEnumeratePhysicalDevices(instance, &count, VK_NULL_HANDLE);
     std::vector<VkPhysicalDevice> devices(count);
     vkEnumeratePhysicalDevices(instance, &count, std::data(devices));
 
     for (const auto &device: devices) {
-        NVRIGPU gpu{};
+        VulkanPhysicalDevice gpu{};
         gpu.device = device;
         /* 查询物理设备信息 */
         vkGetPhysicalDeviceProperties(device, &gpu.properties);
@@ -94,18 +94,18 @@ static void NVRIGETGPU(VkInstance instance, std::vector<NVRIGPU> *pRIVGPU) {
     }
 }
 
-class NVRIswapchain;
-class NVRIdevice;
-class NVRIpipeline;
+class VulkanSwapchainKHR;
+class VulkanDevice;
+class VulkanPipeline;
 
 /** 顶点结构体 */
-struct NVRIvertex {
+struct Vertex {
     glm::vec3 position;
     glm::vec3 color;
     glm::vec2 texCoord;
 };
 
-struct NVRItexture {
+struct VulkanTexture2D {
     VkImage image;
     VkImageView imageView;
     VkSampler sampler;
@@ -114,7 +114,7 @@ struct NVRItexture {
     VkDeviceMemory memory;
 };
 
-struct NVRIUniformBufferObject {
+struct UniformBufferObject {
     glm::mat4 m;
     glm::mat4 v;
     glm::mat4 p;
@@ -124,51 +124,51 @@ struct NVRIUniformBufferObject {
 /**
  * 渲染管线
  */
-class NVRIpipeline {
+class VulkanPipeline {
 public:
-    explicit NVRIpipeline(NVRIdevice *device, NVRIswapchain *swapchain,
+    explicit VulkanPipeline(VulkanDevice *device, VulkanSwapchainKHR *swapchain,
                           const char *vertex_shader_path, const char *fragment_shader_path);
-    ~NVRIpipeline();
+    ~VulkanPipeline();
     void Bind(VkCommandBuffer commandBuffer);
-    void Write(VkDeviceSize offset, VkDeviceSize range, NVRIbuffer buffer, NVRItexture texture);
+    void Write(VkDeviceSize offset, VkDeviceSize range, VulkanBuffer buffer, VulkanTexture2D texture);
 
 private:
     void Init_Graphics_Pipeline();
 
 private:
-    static VkVertexInputBindingDescription NVRIGetVertexInputBindingDescription() {
+    static VkVertexInputBindingDescription GetVertexInputBindingDescription() {
         VkVertexInputBindingDescription vertexInputBindingDescription = {};
         vertexInputBindingDescription.binding = 0;
-        vertexInputBindingDescription.stride = sizeof(NVRIvertex);
+        vertexInputBindingDescription.stride = sizeof(Vertex);
         vertexInputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
         return vertexInputBindingDescription;
     };
 
-    static std::array<VkVertexInputAttributeDescription, 3> NVRIGetVertexInputAttributeDescriptionArray() {
+    static std::array<VkVertexInputAttributeDescription, 3> GetVertexInputAttributeDescriptionArray() {
         std::array<VkVertexInputAttributeDescription, 3> array = {};
         /* position attribute */
         array[0].binding = 0;
         array[0].location = 0;
         array[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        array[0].offset = offsetof(NVRIvertex, position);
+        array[0].offset = offsetof(Vertex, position);
 
         /* color attribute */
         array[1].binding = 0;
         array[1].location = 1;
         array[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        array[1].offset = offsetof(NVRIvertex, color);
+        array[1].offset = offsetof(Vertex, color);
 
         array[2].binding = 0;
         array[2].location = 2;
         array[2].format = VK_FORMAT_R32G32_SFLOAT;
-        array[2].offset = offsetof(NVRIvertex, texCoord);
+        array[2].offset = offsetof(Vertex, texCoord);
 
         return array;
     }
 
 private:
-    NVRIdevice *mNVRIdevice;
-    NVRIswapchain *mSwapchain;
+    VulkanDevice *mVulkanDevice;
+    VulkanSwapchainKHR *mSwapchain;
     VkDescriptorSetLayout mUboDescriptorSetLayout;
     VkDescriptorSet mUboDescriptorSet;
     VkPipeline mPipeline;
@@ -178,10 +178,10 @@ private:
 /**
  * 交换链
  */
-class NVRIswapchain {
+class VulkanSwapchainKHR {
 public:
-    NVRIswapchain(NVRIdevice *device, NatureWindow *pNatureWindow, VkSurfaceKHR surface);
-    ~NVRIswapchain();
+    VulkanSwapchainKHR(VulkanDevice *device, NatureWindow *pNatureWindow, VkSurfaceKHR surface);
+    ~VulkanSwapchainKHR();
 
     /* 获取下一帧图像 */
     VkResult AcquireNextImage(VkSemaphore semaphore, uint32_t *pIndex);
@@ -200,7 +200,7 @@ private:
     void CleanupSwapchain();
 
 private:
-    NVRIdevice *mNVRIdevice;
+    VulkanDevice *mVulkanDevice;
     NatureWindow *mNatureWindow;
     VkSurfaceKHR mSurface = VK_NULL_HANDLE;
     VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;
@@ -213,20 +213,20 @@ private:
     std::vector<VkImage > mSwapchainImages;
     std::vector<VkImageView> mSwapchainImageViews;
     std::vector<VkFramebuffer> mSwapchainFramebuffers;
-    NVRISwapChainSupportDetails mSwapChainDetails;
+    SwapChainSupportDetails mSwapChainDetails;
 };
 
 /**
  * 渲染设备（GPU）
  */
-class NVRIdevice {
+class VulkanDevice {
 public:
     /* init and destroy function */
-    explicit NVRIdevice(VkInstance instance, VkSurfaceKHR surface, NatureWindow *pNatureWindow);
-    ~NVRIdevice();
+    explicit VulkanDevice(VkInstance instance, VkSurfaceKHR surface, NatureWindow *pNatureWindow);
+    ~VulkanDevice();
 
-    void CreateSwapchain(NVRIswapchain **pSwapchain);
-    void DestroySwapchain(NVRIswapchain *swapchain);
+    void CreateSwapchain(VulkanSwapchainKHR **pSwapchain);
+    void DestroySwapchain(VulkanSwapchainKHR *swapchain);
     void CreateDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> &bindings, VkDescriptorSetLayoutCreateFlags flags,
                                    VkDescriptorSetLayout *pDescriptorSetLayout);
     void DestroyDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout);
@@ -236,13 +236,13 @@ public:
     void FreeCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer);
     void CreateSemaphore(VkSemaphore *pSemaphore);
     void DestroySemaphore(VkSemaphore semaphore);
-    void AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, NVRIbuffer *buffer);
-    void FreeBuffer(NVRIbuffer buffer);
-    void AllocateVertexBuffer(VkDeviceSize size, const NVRIvertex *pVertices, NVRIbuffer *pVertexBuffer);
-    void AllocateIndexBuffer(VkDeviceSize size, const uint32_t *pIndices, NVRIbuffer *pIndexBuffer);
-    void CopyBuffer(NVRIbuffer dest, NVRIbuffer src, VkDeviceSize size);
-    void MapMemory(NVRIbuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void **ppData);
-    void UnmapMemory(NVRIbuffer buffer);
+    void AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VulkanBuffer *buffer);
+    void FreeBuffer(VulkanBuffer buffer);
+    void AllocateVertexBuffer(VkDeviceSize size, const Vertex *pVertices, VulkanBuffer *pVertexBuffer);
+    void AllocateIndexBuffer(VkDeviceSize size, const uint32_t *pIndices, VulkanBuffer *pIndexBuffer);
+    void CopyBuffer(VulkanBuffer dest, VulkanBuffer src, VkDeviceSize size);
+    void MapMemory(VulkanBuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void **ppData);
+    void UnmapMemory(VulkanBuffer buffer);
     void DeviceWaitIdle();
     void QueueWaitIdle(VkQueue queue);
     void BeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags usageFlags);
@@ -254,32 +254,32 @@ public:
     void SyncSubmitQueueWithPresentInfoKHR(const VkPresentInfoKHR *presentInfoKHR);
     void BeginOneTimeCommandBufferSubmit(VkCommandBuffer *pCommandBuffer);
     void EndOneTimeCommandBufferSubmit();
-    void CreateTexture(const char *path, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, NVRItexture *pTexture);
-    void DestroyTexture(NVRItexture texture);
-    void TransitionTextureLayout(NVRItexture *texture, VkImageLayout newLayout);
-    void CopyTextureBuffer(NVRIbuffer buffer, NVRItexture texture, uint32_t width, uint32_t height);
+    void CreateTexture(const char *path, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VulkanTexture2D *pTexture);
+    void DestroyTexture(VulkanTexture2D texture);
+    void TransitionTextureLayout(VulkanTexture2D *texture, VkImageLayout newLayout);
+    void CopyTextureBuffer(VulkanBuffer buffer, VulkanTexture2D texture, uint32_t width, uint32_t height);
 
 public:
-    VkPhysicalDevice GetPhysicalDevice() { return mNVRIGPU.device; }
+    VkPhysicalDevice GetPhysicalDevice() { return mVulkanPhysicalDevice.device; }
     VkDevice GetDevice() { return mDevice; }
 
 private:
     void InitAllocateDescriptorSetPool();
     void InitCommandPool();
-    NVRIQueueFamilyIndices FindQueueFamilyIndices();
+    QueueFamilyIndices FindQueueFamilyIndices();
 
 private:
     VkInstance mInstance = VK_NULL_HANDLE;
     VkDevice mDevice = VK_NULL_HANDLE;
     VkSurfaceKHR mSurfaceKHR = VK_NULL_HANDLE;
-    NVRIGPU mNVRIGPU = {};
+    VulkanPhysicalDevice mVulkanPhysicalDevice = {};
     NatureWindow *mNatureWindow;
     VkDescriptorPool mDescriptorPool = VK_NULL_HANDLE;
     VkCommandPool mCommandPool = VK_NULL_HANDLE;
     VkMemoryRequirements mMemoryRequirements;
     VkCommandBuffer mSingleTimeCommandBuffer = VK_NULL_HANDLE;
     /* 队列族 */
-    NVRIQueueFamilyIndices mNVRIQueueFamilyIndices;
+    QueueFamilyIndices mQueueFamilyIndices;
     VkQueue mGraphicsQueue = VK_NULL_HANDLE;
     VkQueue mPresentQueue = VK_NULL_HANDLE;
     /* 设备支持的扩展列表 */
@@ -289,10 +289,10 @@ private:
 /**
  * 渲染硬件接口
  */
-class NVRIrenderer {
+class VulkanRenderer {
 public:
-    explicit NVRIrenderer(NatureWindow *pNatureWindow);
-    ~NVRIrenderer();
+    explicit VulkanRenderer(NatureWindow *pNatureWindow);
+    ~VulkanRenderer();
 
     /* Render interface. */
     void BeginRender();
@@ -312,7 +312,7 @@ private:
     void UpdateUniformBuffer();
 
 private:
-    const std::vector<NVRIvertex> mVertices = {
+    const std::vector<Vertex> mVertices = {
             {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
             {{0.5f,  -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
             {{0.5f,  0.5f,  0.0f},  {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
@@ -321,16 +321,16 @@ private:
     const std::vector<uint32_t> mIndices = {
             0, 1, 2, 2, 3, 0
     };
-    NVRIbuffer mVertexBuffer;
-    NVRIbuffer mIndexBuffer;
-    NVRIbuffer mUniformBuffer;
-    NVRItexture mTexture;
+    VulkanBuffer mVertexBuffer;
+    VulkanBuffer mIndexBuffer;
+    VulkanBuffer mUniformBuffer;
+    VulkanTexture2D mTexture;
     VkInstance mInstance = VK_NULL_HANDLE;
     VkSurfaceKHR mSurface = VK_NULL_HANDLE;
     NatureWindow *mNatureWindow;
-    std::unique_ptr<NVRIdevice> mNVRIdevice = NULL;
-    std::unique_ptr<NVRIpipeline> mNVRIpipeline = NULL;
-    NVRIswapchain *mNVRIswapchain = NULL;
+    std::unique_ptr<VulkanDevice> mVulkanDevice = NULL;
+    std::unique_ptr<VulkanPipeline> mVulkanPipeline = NULL;
+    VulkanSwapchainKHR *mVulkanSwapchainKHR = NULL;
     VkSemaphore mImageAvailableSemaphore = VK_NULL_HANDLE;
     VkSemaphore mRenderFinishedSemaphore = VK_NULL_HANDLE;
     /* Vectors. */
@@ -341,5 +341,5 @@ private:
     std::unordered_map<std::string, VkExtensionProperties> mVkInstanceExtensionPropertiesSupports;
     std::unordered_map<std::string, VkLayerProperties> mVkInstanceLayerPropertiesSupports;
     /* Render context */
-    struct NVRIRenderContext mNVRIRenderContext = {};
+    struct VulkanRenderContext mVulkanRenderContext = {};
 };
