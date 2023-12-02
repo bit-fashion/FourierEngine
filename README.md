@@ -13,8 +13,18 @@ This repository use [cmake toolchains](https://cmake.org/) compile and build, re
 - `GLFW` - GLFW is cross-platform create window.
 - `Vulkan` - The Vulkan is graphics api is cross-platform api.
 
+# Third party description
+
+- [Dear ImGui](https://github.com/ocornut/imgui) - The **Dear ImGui** using to do draw ui and editor.
+- [GLFW](https://www.glfw.org/) - The **cross-platform** create window handle library.
+- [GLM](https://github.com/g-truc/glm) - The math of matrix library.
+- [stb_image](https://github.com/nothings/stb/blob/master/stb_image.h) - Use load image file.
+- [Vulkan](https://www.vulkan.org/) - The Vulkan RenderAPI.
+
 # Demo photo (current develop stage)
 
 Repository build & run example image:
 
 ![DemoPhoto](https://github.com/bit-fashion/NatureEngine/blob/master/Doc/DemoPhoto.png)
+
+News: We integrated the `Dear ImGui` library, now we can use `Dear ImGui` create demo window or editor.
