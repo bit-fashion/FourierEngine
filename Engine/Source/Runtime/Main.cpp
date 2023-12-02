@@ -19,9 +19,8 @@
 /* Creates on 2022/9/14. */
 #include "Window/NatureWindow.h"
 
-#include <stdlib.h>
 #include "Render/Vulkan/VulkanRenderer.h"
-#include "Editor/Editor.h"
+#include "Editor/DearImGuiEditor.h"
 
 int main() {
     system("chcp 65001");
@@ -29,7 +28,7 @@ int main() {
     auto window = NatureWindow(1280, 1000, "NatureEngine(vulkan)");
     /* Create VulkanRenderer */
     std::unique_ptr<VulkanRenderer> pVulkanRenderer = std::make_unique<VulkanRenderer>(&window);
-    std::unique_ptr<Editor> pEditor = std::make_unique<Editor>(&window, pVulkanRenderer.get());
+    std::unique_ptr<DearImGuiEditor> pDearImGuiEditor = std::make_unique<DearImGuiEditor>(&window, pVulkanRenderer.get());
 
     window.SetWindowHintVisible(true);
 
@@ -37,13 +36,11 @@ int main() {
         NatureWindow::PollEvents();
         pVulkanRenderer->BeginRender();
         {
-            pEditor->BeginEditorFrameRender();
-            {
-                // Nothing
-            }
-            pEditor->EndEditorFrameRender();
             /* Draw */
             pVulkanRenderer->Draw();
+            /* Editor */
+            pDearImGuiEditor->BeginEditorFrameRender();
+            pDearImGuiEditor->EndEditorFrameRender();
         }
         pVulkanRenderer->EndRender();
     }

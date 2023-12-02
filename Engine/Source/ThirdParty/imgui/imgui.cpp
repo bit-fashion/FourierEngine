@@ -5301,7 +5301,7 @@ void ImGui::EndFrame()
 
     ErrorCheckEndFrameSanityChecks();
 
-    // Notify Platform/OS when our Input Method Editor cursor has moved (e.g. CJK inputs using Microsoft IME)
+    // Notify Platform/OS when our Input Method DearImGuiEditor cursor has moved (e.g. CJK inputs using Microsoft IME)
     ImGuiPlatformImeData* ime_data = &g.PlatformImeData;
     if (g.IO.SetPlatformImeDataFn && memcmp(ime_data, &g.PlatformImeDataPrev, sizeof(ImGuiPlatformImeData)) != 0)
     {
@@ -19284,7 +19284,7 @@ static void SetClipboardTextFn_DefaultImpl(void* user_data_ctx, const char* text
 
 static void SetPlatformImeDataFn_DefaultImpl(ImGuiViewport* viewport, ImGuiPlatformImeData* data)
 {
-    // Notify OS Input Method Editor of text input position
+    // Notify OS Input Method DearImGuiEditor of text input position
     HWND hwnd = (HWND)viewport->PlatformHandleRaw;
     if (hwnd == 0)
         return;

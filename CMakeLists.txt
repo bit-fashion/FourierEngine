@@ -47,7 +47,7 @@ add_executable(${PROJECT_NAME}
         "Engine/Source/Runtime/Main.cpp"
         "Engine/Source/Runtime/Window/NatureWindow.cpp"
         "Engine/Source/Runtime/Render/Vulkan/VulkanRenderer.cpp"
-        "Engine/Source/Runtime/Editor/Editor.cpp"
+        "Engine/Source/Runtime/Editor/DearImGuiEditor.cpp"
         #[[ Dear ImGUI ]]
         "Engine/Source/ThirdParty/imgui/imgui.cpp"
         "Engine/Source/ThirdParty/imgui/imgui_draw.cpp"

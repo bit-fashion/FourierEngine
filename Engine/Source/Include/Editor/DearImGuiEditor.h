@@ -22,13 +22,14 @@
 #include <imgui/imgui.h>
 #include <Render/Vulkan/VulkanRenderer.h>
 
-class Editor {
+/**
+ * ImGui DearImGuiEditor
+ */
+class DearImGuiEditor {
 public:
-    Editor(const NatureWindow *pNatureWindow, const VulkanRenderer *pVulkanRenderer);
+    DearImGuiEditor(const NatureWindow *pNatureWindow, const VulkanRenderer *pVulkanRenderer);
+    ~DearImGuiEditor();
+    /* function */
     void BeginEditorFrameRender();
     void EndEditorFrameRender();
-
-private:
-    const VulkanRenderer *mVulkanRenderer;
-    const NatureWindow *mNatureWindow;
 };

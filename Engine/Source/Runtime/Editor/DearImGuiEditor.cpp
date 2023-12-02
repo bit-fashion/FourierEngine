@@ -17,15 +17,14 @@
  * ************************************************************************/
 
 /* Creates on 2023/11/21. */
-#include <Editor/Editor.h>
+#include <Editor/DearImGuiEditor.h>
 #include <imgui/backends/imgui_impl_glfw.h>
 #include <imgui/backends/imgui_impl_vulkan.h>
 #include <Window/NatureWindow.h>
 
 const static VulkanRenderContext *pVulkanRenderContext = VK_NULL_HANDLE;
 
-Editor::Editor(const NatureWindow *pNatureWindow, const VulkanRenderer *pVulkanRenderer) :
-  mNatureWindow(pNatureWindow), mVulkanRenderer(pVulkanRenderer) {
+DearImGuiEditor::DearImGuiEditor(const NatureWindow *pNatureWindow, const VulkanRenderer *pVulkanRenderer) {
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -87,19 +86,20 @@ Editor::Editor(const NatureWindow *pNatureWindow, const VulkanRenderer *pVulkanR
     //IM_ASSERT(font != nullptr);
 }
 
-void Editor::BeginEditorFrameRender() {
+DearImGuiEditor::~DearImGuiEditor() {
+    ImGui_ImplVulkan_DestroyFontsTexture();
+    ImGui_ImplVulkan_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+}
+
+void DearImGuiEditor::BeginEditorFrameRender() {
     // Start the Dear ImGui frame
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
-
-    // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-    static bool show_demo_window = true;
-    if (show_demo_window)
-        ImGui::ShowDemoWindow(&show_demo_window);
 }
 
-void Editor::EndEditorFrameRender() {
+void DearImGuiEditor::EndEditorFrameRender() {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
     // Rendering
