@@ -76,6 +76,21 @@ struct VulkanRenderContext {
     uint32_t index; /* current frame index */
 };
 
+/** Vulkan 渲染实例上下文 */
+struct VulkanRenderInstanceContext {
+    VkInstance Instance;
+    VkPhysicalDevice PhysicalDevice;
+    VkDevice Device;
+    VkQueue GraphicsQueue;
+    uint32_t GraphicsQueueFamily;
+    VkQueue PresentQueue;
+    uint32_t PresentQueueFamily;
+    VkDescriptorPool DescriptorPool;
+    uint32_t MinImageCount;
+    VkRenderPass RenderPass;
+    const struct VulkanRenderContext *RenderContext;
+};
+
 /** 查询所有物理设备 */
 static void EnumerateVulkanPhysicalDevice(VkInstance instance, std::vector<VulkanPhysicalDevice> *pRIVGPU) {
     uint32_t count = 0;
@@ -260,8 +275,13 @@ public:
     void CopyTextureBuffer(VulkanBuffer buffer, VulkanTexture2D texture, uint32_t width, uint32_t height);
 
 public:
-    VkPhysicalDevice GetPhysicalDevice() { return mVulkanPhysicalDevice.device; }
-    VkDevice GetDevice() { return mDevice; }
+    VkPhysicalDevice GetPhysicalDevice() const { return mVulkanPhysicalDevice.device; }
+    VkDevice GetDevice() const { return mDevice; }
+    VkDescriptorPool GetDescriptorPool() const { return mDescriptorPool; }
+    VkQueue GetGraphicsQueue() const { return mGraphicsQueue; }
+    uint32_t GetGraphicsQueueFamily() const { return mQueueFamilyIndices.graphicsQueueFamily; }
+    VkQueue GetPresentQueue() const { return mPresentQueue; }
+    uint32_t GetPresentQueueFamily() const { return mQueueFamilyIndices.presentQueueFamily; }
 
 private:
     void InitAllocateDescriptorSetPool();
@@ -299,8 +319,12 @@ public:
     void Draw();
     void EndRender();
 
+public:
+    const VulkanRenderInstanceContext *GetVulkanRenderInstanceContext() const;
+
 private:
     void Init_Vulkan_Impl();
+    void Init_VulkanR_Instance_Context();
     void CleanupSwapchain();
     void CreateSwapchain();
     void RecreateSwapchain();
@@ -342,4 +366,5 @@ private:
     std::unordered_map<std::string, VkLayerProperties> mVkInstanceLayerPropertiesSupports;
     /* Render context */
     struct VulkanRenderContext mVulkanRenderContext = {};
+    struct VulkanRenderInstanceContext mVulkanRenderInstanceContext = {};
 };

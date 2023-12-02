@@ -47,7 +47,7 @@ public:
     void *GetWindowUserPointer() { return m_UserPointer; }
     void SetEngineWindowResizableWindowCallback(PFN_EngineWindowResizableWindowCallback fnEngineWindowResizableWindowCallback) /* Set resizable callback. */
       { m_FnNATUREResizableWindowCallback = fnEngineWindowResizableWindowCallback; };
-    GLFWwindow *GetWindowHandle() { return m_Window; };
+    GLFWwindow *GetWindowHandle() const { return m_Window; };
 
 public:
     static void PollEvents() { glfwPollEvents(); }

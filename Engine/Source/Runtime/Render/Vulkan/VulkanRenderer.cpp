@@ -1027,15 +1027,24 @@ void VulkanDevice::CopyTextureBuffer(VulkanBuffer buffer, VulkanTexture2D textur
 void VulkanDevice::InitAllocateDescriptorSetPool() {
     /** Create descriptor set pool */
     std::vector<VkDescriptorPoolSize> poolSizes = {
-            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
-            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
+            {VK_DESCRIPTOR_TYPE_SAMPLER,                1024},
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1024},
+            {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          1024},
+            {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          1024},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,   1024},
+            {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,   1024},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         1024},
+            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         1024},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1024},
+            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1024},
+            {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,       1024}
     };
 
     VkDescriptorPoolCreateInfo descriptorPoolCrateInfo = {};
     descriptorPoolCrateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     descriptorPoolCrateInfo.poolSizeCount = static_cast<uint32_t>(std::size(poolSizes));
     descriptorPoolCrateInfo.pPoolSizes = std::data(poolSizes);
-    descriptorPoolCrateInfo.maxSets = 1;
+    descriptorPoolCrateInfo.maxSets = 1024 * std::size(poolSizes);
 
     vkNatureCreate(DescriptorPool, mDevice, &descriptorPoolCrateInfo, VK_NULL_HANDLE, &mDescriptorPool);
 }
@@ -1145,6 +1154,8 @@ void VulkanRenderer::Init_Vulkan_Impl() {
         auto *pVulkanRenderer = (VulkanRenderer *) pNatureWindow->GetWindowUserPointer();
         pVulkanRenderer->RecreateSwapchain();
     });
+    /* 初始化 vulkan 渲染实例上下文 */
+    Init_VulkanR_Instance_Context();
     /* 创建 Vertex buffer */
     mVulkanDevice->AllocateVertexBuffer(ARRAY_TOTAL_SIZE(mVertices), std::data(mVertices), &mVertexBuffer);
     /* 创建 Index buffer */
@@ -1155,6 +1166,20 @@ void VulkanRenderer::Init_Vulkan_Impl() {
     /* 创建 Texture */
     mVulkanDevice->CreateTexture("../Engine/Resource/VulkanHomePage.png", VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
                                VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &mTexture);
+}
+
+void VulkanRenderer::Init_VulkanR_Instance_Context() {
+    mVulkanRenderInstanceContext.Instance = mInstance;
+    mVulkanRenderInstanceContext.Device = mVulkanDevice->GetDevice();
+    mVulkanRenderInstanceContext.PhysicalDevice = mVulkanDevice->GetPhysicalDevice();
+    mVulkanRenderInstanceContext.GraphicsQueue = mVulkanDevice->GetGraphicsQueue();
+    mVulkanRenderInstanceContext.GraphicsQueueFamily = mVulkanDevice->GetGraphicsQueueFamily();
+    mVulkanRenderInstanceContext.PresentQueue = mVulkanDevice->GetPresentQueue();
+    mVulkanRenderInstanceContext.PresentQueueFamily = mVulkanDevice->GetPresentQueueFamily();
+    mVulkanRenderInstanceContext.DescriptorPool = mVulkanDevice->GetDescriptorPool();
+    mVulkanRenderInstanceContext.MinImageCount = mVulkanSwapchainKHR->GetImageCount();
+    mVulkanRenderInstanceContext.RenderPass = mVulkanSwapchainKHR->GetRenderPass();
+    mVulkanRenderInstanceContext.RenderContext = &mVulkanRenderContext;
 }
 
 void VulkanRenderer::CleanupSwapchain() {
@@ -1275,4 +1300,8 @@ void VulkanRenderer::EndRender() {
     EndRecordCommandBuffer();
     /* final submit */
     QueueSubmitBuffer();
+}
+
+const VulkanRenderInstanceContext *VulkanRenderer::GetVulkanRenderInstanceContext() const {
+    return &mVulkanRenderInstanceContext;
 }

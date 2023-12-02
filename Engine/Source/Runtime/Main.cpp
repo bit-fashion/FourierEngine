@@ -21,19 +21,28 @@
 
 #include <stdlib.h>
 #include "Render/Vulkan/VulkanRenderer.h"
+#include "Editor/Editor.h"
 
 int main() {
     system("chcp 65001");
     system("cd ../Bin & spvc.cmd");
     auto window = NatureWindow(1280, 1000, "NatureEngine(vulkan)");
     /* Create VulkanRenderer */
-     std::unique_ptr<VulkanRenderer> pVulkanRenderer = std::make_unique<VulkanRenderer>(&window);
+    std::unique_ptr<VulkanRenderer> pVulkanRenderer = std::make_unique<VulkanRenderer>(&window);
+    std::unique_ptr<Editor> pEditor = std::make_unique<Editor>(&window, pVulkanRenderer.get());
+
     window.SetWindowHintVisible(true);
 
     while (!window.is_close()) {
         NatureWindow::PollEvents();
         pVulkanRenderer->BeginRender();
         {
+            pEditor->BeginEditorFrameRender();
+            {
+                // Nothing
+            }
+            pEditor->EndEditorFrameRender();
+            /* Draw */
             pVulkanRenderer->Draw();
         }
         pVulkanRenderer->EndRender();
