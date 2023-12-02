@@ -64,9 +64,16 @@ struct NVRISwapChainSupportDetails {
 
 /** 缓冲区结构体 */
 struct NVRIbuffer {
-    VkBuffer buffer = VK_NULL_HANDLE;
-    VkDeviceMemory memory = VK_NULL_HANDLE;
-    VkDeviceSize size = 0;
+    VkBuffer buffer;
+    VkDeviceMemory memory;
+    VkDeviceSize size;
+};
+
+/** 渲染上下文 */
+struct NVRIRenderContext {
+    VkCommandBuffer commandBuffer;
+    VkRenderPass renderPass;
+    uint32_t index; /* current frame index */
 };
 
 /** 查询所有物理设备 */
@@ -176,6 +183,7 @@ public:
     NVRIswapchain(NVRIdevice *device, NatureWindow *pNatureWindow, VkSurfaceKHR surface);
     ~NVRIswapchain();
 
+    /* 获取下一帧图像 */
     VkResult AcquireNextImage(VkSemaphore semaphore, uint32_t *pIndex);
 
 public:
@@ -185,7 +193,7 @@ public:
     uint32_t GetImageCount() { return mSwapchainImageCount; }
     VkFramebuffer GetFramebuffer(uint32_t index) { return mSwapchainFramebuffers[index]; }
     VkExtent2D GetExtent2D() { return mSwapchainExtent; }
-    VkSwapchainKHR GetSwapchainKHRHandle() { return mSwapchain; }
+    VkSwapchainKHR GetSwapchainKHR() { return mSwapchain; }
 
 private:
     void CreateSwapchain();
@@ -235,13 +243,15 @@ public:
     void CopyBuffer(NVRIbuffer dest, NVRIbuffer src, VkDeviceSize size);
     void MapMemory(NVRIbuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void **ppData);
     void UnmapMemory(NVRIbuffer buffer);
-    void WaitIdle();
+    void DeviceWaitIdle();
+    void QueueWaitIdle(VkQueue queue);
     void BeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags usageFlags);
     void EndCommandBuffer(VkCommandBuffer commandBuffer);
-    void SyncQueueSubmit(uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers,
-                         uint32_t waitSemaphoreCount, VkSemaphore *pWaitSemaphores,
-                         uint32_t signalSemaphoreCount, VkSemaphore *pSignalSemaphores,
-                         VkPipelineStageFlags *pWaitDstStageMask);
+    void SyncSubmitQueueWithSubmitInfo(uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers,
+                                       uint32_t waitSemaphoreCount, VkSemaphore *pWaitSemaphores,
+                                       uint32_t signalSemaphoreCount, VkSemaphore *pSignalSemaphores,
+                                       VkPipelineStageFlags *pWaitDstStageMask);
+    void SyncSubmitQueueWithPresentInfoKHR(const VkPresentInfoKHR *presentInfoKHR);
     void BeginOneTimeCommandBufferSubmit(VkCommandBuffer *pCommandBuffer);
     void EndOneTimeCommandBufferSubmit();
     void CreateTexture(const char *path, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, NVRItexture *pTexture);
@@ -250,10 +260,8 @@ public:
     void CopyTextureBuffer(NVRIbuffer buffer, NVRItexture texture, uint32_t width, uint32_t height);
 
 public:
-    VkPhysicalDevice GetPhysicalDeviceHandle() { return mNVRIGPU.device; }
-    VkDevice GetDeviceHandle() { return mDevice; }
-    VkQueue GetGraphicsQueue() { return mGraphicsQueue; }
-    VkQueue GetPresentQueue() { return mPresentQueue; }
+    VkPhysicalDevice GetPhysicalDevice() { return mNVRIGPU.device; }
+    VkDevice GetDevice() { return mDevice; }
 
 private:
     void InitAllocateDescriptorSetPool();
@@ -332,8 +340,6 @@ private:
     /* Map */
     std::unordered_map<std::string, VkExtensionProperties> mVkInstanceExtensionPropertiesSupports;
     std::unordered_map<std::string, VkLayerProperties> mVkInstanceLayerPropertiesSupports;
-    /* Context */
-    VkCommandBuffer mCurrentContextCommandBuffer = VK_NULL_HANDLE;
-    VkRenderPass mCurrentContextRenderPass = VK_NULL_HANDLE;
-    uint32_t mCurrentContextImageIndex = 0;
+    /* Render context */
+    struct NVRIRenderContext mNVRIRenderContext = {};
 };

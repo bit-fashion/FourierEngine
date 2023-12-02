@@ -188,9 +188,13 @@ uint32_t FindMemoryType(uint32_t typeFilter, VkPhysicalDevice physicalDevice, Vk
     throw std::runtime_error("failed to find suitable memory type!");
 }
 
-// ----------------------------------------------------------------------------
-// Pipeline
-// ----------------------------------------------------------------------------
+/** ---------------------------------------------------------------------------- */
+// ====
+/**
+ * Pipeline
+ */
+// ====
+/** ---------------------------------------------------------------------------- */
 
 NVRIpipeline::NVRIpipeline(NVRIdevice *device, NVRIswapchain *swapchain, const char *vertex_shader_path, const char *fragment_shader_path)
   : mNVRIdevice(device), mSwapchain(swapchain){
@@ -198,11 +202,11 @@ NVRIpipeline::NVRIpipeline(NVRIdevice *device, NVRIswapchain *swapchain, const c
     Init_Graphics_Pipeline();
     /** Create shader of vertex & fragment module. */
     NATURE_LOGGER_INFO("Loading and create vertex shader module from: {}", vertex_shader_path);
-    VkShaderModule vertex_shader_module = LoadShaderModule(mNVRIdevice->GetDeviceHandle(), vertex_shader_path);
+    VkShaderModule vertex_shader_module = LoadShaderModule(mNVRIdevice->GetDevice(), vertex_shader_path);
     NATURE_LOGGER_INFO("Loading and create vertex shader module success!");
 
     NATURE_LOGGER_INFO("Loading and create fragment shader module from: {}", fragment_shader_path);
-    VkShaderModule fragment_shader_module = LoadShaderModule(mNVRIdevice->GetDeviceHandle(), fragment_shader_path);
+    VkShaderModule fragment_shader_module = LoadShaderModule(mNVRIdevice->GetDevice(), fragment_shader_path);
     NATURE_LOGGER_INFO("Loading and create fragment shader module success!");
 
     /** Create pipeline phase of vertex and fragment shader */
@@ -329,7 +333,7 @@ NVRIpipeline::NVRIpipeline(NVRIdevice *device, NVRIswapchain *swapchain, const c
     pipelineLayoutInfo.pSetLayouts = &mUboDescriptorSetLayout;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
 
-    vkNatureCreate(PipelineLayout, mNVRIdevice->GetDeviceHandle(), &pipelineLayoutInfo, nullptr, &mPipelineLayout);
+    vkNatureCreate(PipelineLayout, mNVRIdevice->GetDevice(), &pipelineLayoutInfo, nullptr, &mPipelineLayout);
 
     /** Create graphics pipeline in vulkan. */
     VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {};
@@ -350,17 +354,17 @@ NVRIpipeline::NVRIpipeline(NVRIdevice *device, NVRIswapchain *swapchain, const c
     graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
     graphicsPipelineCreateInfo.basePipelineIndex = -1; // Optional
 
-    vkNatureCreate(GraphicsPipelines, mNVRIdevice->GetDeviceHandle(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, VK_NULL_HANDLE, &mPipeline);
+    vkNatureCreate(GraphicsPipelines, mNVRIdevice->GetDevice(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, VK_NULL_HANDLE, &mPipeline);
 
     /* 销毁着色器模块 */
-    vkDestroyShaderModule(mNVRIdevice->GetDeviceHandle(), vertex_shader_module, VK_NULL_HANDLE);
-    vkDestroyShaderModule(mNVRIdevice->GetDeviceHandle(), fragment_shader_module, VK_NULL_HANDLE);
+    vkDestroyShaderModule(mNVRIdevice->GetDevice(), vertex_shader_module, VK_NULL_HANDLE);
+    vkDestroyShaderModule(mNVRIdevice->GetDevice(), fragment_shader_module, VK_NULL_HANDLE);
 }
 
 NVRIpipeline::~NVRIpipeline() {
     mNVRIdevice->DestroyDescriptorSetLayout(mUboDescriptorSetLayout);
-    vkDestroyPipelineLayout(mNVRIdevice->GetDeviceHandle(), mPipelineLayout, VK_NULL_HANDLE);
-    vkDestroyPipeline(mNVRIdevice->GetDeviceHandle(), mPipeline, VK_NULL_HANDLE);
+    vkDestroyPipelineLayout(mNVRIdevice->GetDevice(), mPipelineLayout, VK_NULL_HANDLE);
+    vkDestroyPipeline(mNVRIdevice->GetDevice(), mPipeline, VK_NULL_HANDLE);
 }
 
 void NVRIpipeline::Bind(VkCommandBuffer commandBuffer) {
@@ -402,7 +406,7 @@ void NVRIpipeline::Write(VkDeviceSize offset, VkDeviceSize range, NVRIbuffer buf
     descriptorWrites[1].pImageInfo = &imageInfo;
     descriptorWrites[1].pTexelBufferView = nullptr;
 
-    vkUpdateDescriptorSets(mNVRIdevice->GetDeviceHandle(), std::size(descriptorWrites), std::data(descriptorWrites), 0, nullptr);
+    vkUpdateDescriptorSets(mNVRIdevice->GetDevice(), std::size(descriptorWrites), std::data(descriptorWrites), 0, nullptr);
 }
 
 void NVRIpipeline::Init_Graphics_Pipeline() {
@@ -416,14 +420,18 @@ void NVRIpipeline::Init_Graphics_Pipeline() {
     mNVRIdevice->AllocateDescriptorSet(layous, &mUboDescriptorSet);
 }
 
-// ----------------------------------------------------------------------------
-// Swapchain
-// ----------------------------------------------------------------------------
+/** ---------------------------------------------------------------------------- */
+// ====
+/**
+ * Swapchain
+ */
+// ====
+/** ---------------------------------------------------------------------------- */
 
 NVRIswapchain::NVRIswapchain(NVRIdevice *device, NatureWindow *pNatureWindow, VkSurfaceKHR surface)
   : mNVRIdevice(device), mNatureWindow(pNatureWindow), mSurface(surface) {
     /* 查询交换链支持 */
-    mSwapChainDetails = QuerySwapChainSupportDetails(mNVRIdevice->GetPhysicalDeviceHandle(), mSurface);
+    mSwapChainDetails = QuerySwapChainSupportDetails(mNVRIdevice->GetPhysicalDevice(), mSurface);
 
     mSurfaceFormatKHR = SelectSwapSurfaceFormat(mSwapChainDetails.formats);
     mSwapchainFormat = mSurfaceFormatKHR.format;
@@ -467,7 +475,7 @@ NVRIswapchain::NVRIswapchain(NVRIdevice *device, NatureWindow *pNatureWindow, Vk
     renderPassCreateInfo.dependencyCount = 1;
     renderPassCreateInfo.pDependencies = &subpassDependency;
 
-    vkNatureCreate(RenderPass, mNVRIdevice->GetDeviceHandle(), &renderPassCreateInfo, VK_NULL_HANDLE, &mRenderPass);
+    vkNatureCreate(RenderPass, mNVRIdevice->GetDevice(), &renderPassCreateInfo, VK_NULL_HANDLE, &mRenderPass);
 
     /* 创建交换链 */
     CreateSwapchain();
@@ -478,7 +486,7 @@ NVRIswapchain::~NVRIswapchain() {
 }
 
 VkResult NVRIswapchain::AcquireNextImage(VkSemaphore semaphore, uint32_t *pIndex) {
-    return vkAcquireNextImageKHR(mNVRIdevice->GetDeviceHandle(), mSwapchain, std::numeric_limits<uint64_t>::max(),
+    return vkAcquireNextImageKHR(mNVRIdevice->GetDevice(), mSwapchain, std::numeric_limits<uint64_t>::max(),
                           semaphore, VK_NULL_HANDLE, pIndex);
 }
 
@@ -502,11 +510,11 @@ void NVRIswapchain::CreateSwapchain() {
     swapchainCreateInfoKhr.presentMode = mSwapchainPresentModeKHR;
     swapchainCreateInfoKhr.clipped = VK_TRUE;
     swapchainCreateInfoKhr.oldSwapchain = VK_NULL_HANDLE;
-    vkNatureCreate(SwapchainKHR, mNVRIdevice->GetDeviceHandle(), &swapchainCreateInfoKhr, VK_NULL_HANDLE, &mSwapchain);
+    vkNatureCreate(SwapchainKHR, mNVRIdevice->GetDevice(), &swapchainCreateInfoKhr, VK_NULL_HANDLE, &mSwapchain);
 
-    vkGetSwapchainImagesKHR(mNVRIdevice->GetDeviceHandle(), mSwapchain, &mSwapchainImageCount, VK_NULL_HANDLE);
+    vkGetSwapchainImagesKHR(mNVRIdevice->GetDevice(), mSwapchain, &mSwapchainImageCount, VK_NULL_HANDLE);
     mSwapchainImages.resize(mSwapchainImageCount);
-    vkGetSwapchainImagesKHR(mNVRIdevice->GetDeviceHandle(), mSwapchain, &mSwapchainImageCount, std::data(mSwapchainImages));
+    vkGetSwapchainImagesKHR(mNVRIdevice->GetDevice(), mSwapchain, &mSwapchainImageCount, std::data(mSwapchainImages));
 
     /** Create image views. */
     mSwapchainImageViews.resize(mSwapchainImageCount);
@@ -525,7 +533,7 @@ void NVRIswapchain::CreateSwapchain() {
         imageViewCreateInfo.subresourceRange.levelCount = 1;
         imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
         imageViewCreateInfo.subresourceRange.layerCount = 1;
-        vkNatureCreate(ImageView, mNVRIdevice->GetDeviceHandle(), &imageViewCreateInfo, VK_NULL_HANDLE, &mSwapchainImageViews[i]);
+        vkNatureCreate(ImageView, mNVRIdevice->GetDevice(), &imageViewCreateInfo, VK_NULL_HANDLE, &mSwapchainImageViews[i]);
     }
 
     /* 帧缓冲区 */
@@ -542,22 +550,26 @@ void NVRIswapchain::CreateSwapchain() {
         framebufferCreateInfo.height = mSwapchainExtent.height;
         framebufferCreateInfo.layers = 1;
 
-        vkNatureCreate(Framebuffer, mNVRIdevice->GetDeviceHandle(), &framebufferCreateInfo, nullptr, &mSwapchainFramebuffers[i]);
+        vkNatureCreate(Framebuffer, mNVRIdevice->GetDevice(), &framebufferCreateInfo, nullptr, &mSwapchainFramebuffers[i]);
     }
 }
 
 void NVRIswapchain::CleanupSwapchain() {
-    vkDestroyRenderPass(mNVRIdevice->GetDeviceHandle(), mRenderPass, VK_NULL_HANDLE);
+    vkDestroyRenderPass(mNVRIdevice->GetDevice(), mRenderPass, VK_NULL_HANDLE);
     for (const auto &imageView: mSwapchainImageViews)
-        vkDestroyImageView(mNVRIdevice->GetDeviceHandle(), imageView, VK_NULL_HANDLE);
+        vkDestroyImageView(mNVRIdevice->GetDevice(), imageView, VK_NULL_HANDLE);
     for (const auto &framebuffer: mSwapchainFramebuffers)
-        vkDestroyFramebuffer(mNVRIdevice->GetDeviceHandle(), framebuffer, VK_NULL_HANDLE);
-    vkDestroySwapchainKHR(mNVRIdevice->GetDeviceHandle(), mSwapchain, VK_NULL_HANDLE);
+        vkDestroyFramebuffer(mNVRIdevice->GetDevice(), framebuffer, VK_NULL_HANDLE);
+    vkDestroySwapchainKHR(mNVRIdevice->GetDevice(), mSwapchain, VK_NULL_HANDLE);
 }
 
-// ----------------------------------------------------------------------------
-// Device
-// ----------------------------------------------------------------------------
+/** ---------------------------------------------------------------------------- */
+// ====
+/**
+ * Device
+ */
+// ====
+/** ---------------------------------------------------------------------------- */
 
 NVRIdevice::NVRIdevice(VkInstance instance, VkSurfaceKHR surface, NatureWindow *pNatureWindow)
   : mInstance(instance), mSurfaceKHR(surface), mNatureWindow(pNatureWindow) {
@@ -758,8 +770,12 @@ void NVRIdevice::UnmapMemory(NVRIbuffer buffer) {
     vkUnmapMemory(mDevice, buffer.memory);
 }
 
-void NVRIdevice::WaitIdle() {
+void NVRIdevice::DeviceWaitIdle() {
     vkDeviceWaitIdle(mDevice);
+}
+
+void NVRIdevice::QueueWaitIdle(VkQueue queue) {
+    vkQueueWaitIdle(queue);
 }
 
 void NVRIdevice::BeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags usageFlags) {
@@ -778,10 +794,10 @@ void NVRIdevice::EndCommandBuffer(VkCommandBuffer commandBuffer) {
         throw std::runtime_error("failed to record command buffer!");
 }
 
-void NVRIdevice::SyncQueueSubmit(uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers,
-                                 uint32_t waitSemaphoreCount, VkSemaphore *pWaitSemaphores,
-                                 uint32_t signalSemaphoreCount, VkSemaphore *pSignalSemaphores,
-                                 VkPipelineStageFlags *pWaitDstStageMask) {
+void NVRIdevice::SyncSubmitQueueWithSubmitInfo(uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers,
+                                               uint32_t waitSemaphoreCount, VkSemaphore *pWaitSemaphores,
+                                               uint32_t signalSemaphoreCount, VkSemaphore *pSignalSemaphores,
+                                               VkPipelineStageFlags *pWaitDstStageMask) {
     /* submit command buffer */
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -801,6 +817,11 @@ void NVRIdevice::SyncQueueSubmit(uint32_t commandBufferCount, VkCommandBuffer *p
     vkQueueWaitIdle(mGraphicsQueue);
 }
 
+void NVRIdevice::SyncSubmitQueueWithPresentInfoKHR(const VkPresentInfoKHR *presentInfoKHR) {
+    vkQueuePresentKHR(mPresentQueue, presentInfoKHR);
+    QueueWaitIdle(mPresentQueue);
+}
+
 void NVRIdevice::BeginOneTimeCommandBufferSubmit(VkCommandBuffer *pCommandBuffer) {
     AllocateCommandBuffer(1, &mSingleTimeCommandBuffer);
     *pCommandBuffer = mSingleTimeCommandBuffer;
@@ -811,7 +832,7 @@ void NVRIdevice::BeginOneTimeCommandBufferSubmit(VkCommandBuffer *pCommandBuffer
 void NVRIdevice::EndOneTimeCommandBufferSubmit() {
     EndCommandBuffer(mSingleTimeCommandBuffer);
     /* submit */
-    SyncQueueSubmit(1, &mSingleTimeCommandBuffer, 0, NULL, 0, NULL, NULL);
+    SyncSubmitQueueWithSubmitInfo(1, &mSingleTimeCommandBuffer, 0, NULL, 0, NULL, NULL);
     FreeCommandBuffer(1, &mSingleTimeCommandBuffer);
 }
 
@@ -1028,9 +1049,13 @@ void NVRIdevice::InitCommandPool() {
     vkNatureCreate(CommandPool, mDevice, &commandPoolCreateInfo, VK_NULL_HANDLE, &mCommandPool);
 }
 
-// ----------------------------------------------------------------------------
-// NVRIrenderer
-// ----------------------------------------------------------------------------
+/** ---------------------------------------------------------------------------- */
+// ====
+/**
+ * NVRIrenderer
+ */
+// ====
+/** ---------------------------------------------------------------------------- */
 
 NVRIrenderer::NVRIrenderer(NatureWindow *pNatureWindow) : mNatureWindow(pNatureWindow) {
     /* Enumerate instance available extensions. */
@@ -1116,8 +1141,8 @@ void NVRIrenderer::Init_Vulkan_Impl() {
     /* 设置监听窗口变化回调 */
     mNatureWindow->SetWindowUserPointer(this);
     mNatureWindow->SetEngineWindowResizableWindowCallback([](NatureWindow *pNatureWindow, int width, int height) {
-        NVRIrenderer *pNVRI = (NVRIrenderer *) pNatureWindow->GetWindowUserPointer();
-        pNVRI->RecreateSwapchain();
+        auto *pNVRIrenderer = (NVRIrenderer *) pNatureWindow->GetWindowUserPointer();
+        pNVRIrenderer->RecreateSwapchain();
     });
     /* 创建 Vertex buffer */
     mNVRIdevice->AllocateVertexBuffer(ARRAY_TOTAL_SIZE(mVertices), std::data(mVertices), &mVertexBuffer);
@@ -1144,7 +1169,7 @@ void NVRIrenderer::CreateSwapchain() {
 }
 
 void NVRIrenderer::RecreateSwapchain() {
-    mNVRIdevice->WaitIdle();
+    mNVRIdevice->DeviceWaitIdle();
     CleanupSwapchain();
     CreateSwapchain();
     mNVRIdevice->FreeCommandBuffer(std::size(mCommandBuffers), std::data(mCommandBuffers));
@@ -1152,34 +1177,34 @@ void NVRIrenderer::RecreateSwapchain() {
 }
 
 void NVRIrenderer::BeginRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t index) {
-    mCurrentContextCommandBuffer = commandBuffer;
-    mCurrentContextImageIndex = index;
-    mNVRIdevice->BeginCommandBuffer(mCurrentContextCommandBuffer, VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
+    mNVRIRenderContext.commandBuffer = commandBuffer;
+    mNVRIRenderContext.index = index;
+    mNVRIdevice->BeginCommandBuffer(mNVRIRenderContext.commandBuffer, VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
 }
 
 void NVRIrenderer::EndRecordCommandBuffer() {
-    mNVRIdevice->EndCommandBuffer(mCurrentContextCommandBuffer);
+    mNVRIdevice->EndCommandBuffer(mNVRIRenderContext.commandBuffer);
 }
 
 void NVRIrenderer::BeginRenderPass(VkRenderPass renderPass) {
-    mCurrentContextRenderPass = renderPass;
+    mNVRIRenderContext.renderPass = renderPass;
     /* start render pass. */
     VkRenderPassBeginInfo renderPassBeginInfo = {};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.renderPass = mCurrentContextRenderPass;
-    renderPassBeginInfo.framebuffer = mNVRIswapchain->GetFramebuffer(mCurrentContextImageIndex);
+    renderPassBeginInfo.renderPass = mNVRIRenderContext.renderPass;
+    renderPassBeginInfo.framebuffer = mNVRIswapchain->GetFramebuffer(mNVRIRenderContext.index);
     renderPassBeginInfo.renderArea.offset = {0, 0};
     renderPassBeginInfo.renderArea.extent = mNVRIswapchain->GetExtent2D();
 
     VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
     renderPassBeginInfo.clearValueCount = 1;
     renderPassBeginInfo.pClearValues = &clearColor;
-    vkCmdBeginRenderPass(mCurrentContextCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(mNVRIRenderContext.commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 
 void NVRIrenderer::EndRenderPass() {
     /* end render pass */
-    vkCmdEndRenderPass(mCurrentContextCommandBuffer);
+    vkCmdEndRenderPass(mNVRIRenderContext.commandBuffer);
 }
 
 void NVRIrenderer::BeginRender() {
@@ -1194,24 +1219,23 @@ void NVRIrenderer::QueueSubmitBuffer() {
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     VkSemaphore signalSemaphores[] = { mRenderFinishedSemaphore };
 
-    mNVRIdevice->SyncQueueSubmit(1, &mCurrentContextCommandBuffer,
-                                 1, waitSemaphores,
-                                 1, signalSemaphores,
-                                 waitStages);
+    mNVRIdevice->SyncSubmitQueueWithSubmitInfo(1, &mNVRIRenderContext.commandBuffer,
+                                                 1, waitSemaphores,
+                                                 1, signalSemaphores,
+                                                 waitStages);
 
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphores;
 
-    VkSwapchainKHR swapChains[] = { mNVRIswapchain->GetSwapchainKHRHandle() };
+    VkSwapchainKHR swapChains[] = { mNVRIswapchain->GetSwapchainKHR() };
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
-    presentInfo.pImageIndices = &mCurrentContextImageIndex;
+    presentInfo.pImageIndices = &mNVRIRenderContext.index;
     presentInfo.pResults = nullptr; // Optional
 
-    vkQueuePresentKHR(mNVRIdevice->GetPresentQueue(), &presentInfo);
-    vkQueueWaitIdle(mNVRIdevice->GetPresentQueue());
+    mNVRIdevice->SyncSubmitQueueWithPresentInfoKHR(&presentInfo);
 }
 
 void NVRIrenderer::UpdateUniformBuffer() {
@@ -1223,7 +1247,7 @@ void NVRIrenderer::UpdateUniformBuffer() {
     ubo.v = glm::lookAt(glm::vec3(1.0f), glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.p = glm::perspective(glm::radians(45.0f), mNVRIswapchain->GetWidth() / (float) mNVRIswapchain->GetHeight(), 0.1f, 10.0f);
     ubo.p[1][1] *= -1;
-    ubo.t = glfwGetTime();
+    ubo.t = (float) glfwGetTime();
     void* data;
     mNVRIdevice->MapMemory(mUniformBuffer, 0, sizeof(ubo), 0, &data);
     memcpy(data, &ubo, sizeof(ubo));
@@ -1233,16 +1257,16 @@ void NVRIrenderer::UpdateUniformBuffer() {
 void NVRIrenderer::Draw() {
     UpdateUniformBuffer();
     /* bind graphics pipeline. */
-    mNVRIpipeline->Bind(mCurrentContextCommandBuffer);
+    mNVRIpipeline->Bind(mNVRIRenderContext.commandBuffer);
     mNVRIpipeline->Write(0, sizeof(NVRIUniformBufferObject), mUniformBuffer, mTexture);
     /* bind vertex buffer */
     VkBuffer buffers[] = {mVertexBuffer.buffer};
     VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(mCurrentContextCommandBuffer, 0, 1, buffers, offsets);
-    vkCmdBindIndexBuffer(mCurrentContextCommandBuffer, mIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(mNVRIRenderContext.commandBuffer, 0, 1, buffers, offsets);
+    vkCmdBindIndexBuffer(mNVRIRenderContext.commandBuffer, mIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
     /* draw call */
-    // vkCmdDraw(mCurrentContextCommandBuffer, 3, 1, 0, 0);
-    vkCmdDrawIndexed(mCurrentContextCommandBuffer, static_cast<uint32_t>(std::size(mIndices)), 1, 0, 0, 0);
+    // vkCmdDraw(mNVRIRenderContext.commandBuffer, 3, 1, 0, 0);
+    vkCmdDrawIndexed(mNVRIRenderContext.commandBuffer, static_cast<uint32_t>(std::size(mIndices)), 1, 0, 0, 0);
 }
 
 void NVRIrenderer::EndRender() {
