@@ -322,7 +322,7 @@ private:
     NatureWindow *mNatureWindow;
     std::unique_ptr<NVRIdevice> mNVRIdevice = NULL;
     std::unique_ptr<NVRIpipeline> mNVRIpipeline = NULL;
-    NVRIswapchain *mSwapchain = NULL;
+    NVRIswapchain *mNVRISwapchain = NULL;
     VkSemaphore mImageAvailableSemaphore = VK_NULL_HANDLE;
     VkSemaphore mRenderFinishedSemaphore = VK_NULL_HANDLE;
     /* Vectors. */
