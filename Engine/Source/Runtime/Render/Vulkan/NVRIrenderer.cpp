@@ -1109,7 +1109,7 @@ NVRIrenderer::~NVRIrenderer() {
 void NVRIrenderer::Init_Vulkan_Impl() {
     mNVRIdevice = std::make_unique<NVRIdevice>(mInstance, mSurface, mNatureWindow);
     CreateSwapchain();
-    mCommandBuffers.resize(mNVRISwapchain->GetImageCount());
+    mCommandBuffers.resize(mNVRIswapchain->GetImageCount());
     mNVRIdevice->AllocateCommandBuffer(std::size(mCommandBuffers), std::data(mCommandBuffers));
     mNVRIdevice->CreateSemaphore(&mImageAvailableSemaphore);
     mNVRIdevice->CreateSemaphore(&mRenderFinishedSemaphore);
@@ -1133,12 +1133,12 @@ void NVRIrenderer::Init_Vulkan_Impl() {
 
 void NVRIrenderer::CleanupSwapchain() {
     NATURE_FREE_POINTER(mNVRIpipeline);
-    mNVRIdevice->DestroySwapchain(mNVRISwapchain);
+    mNVRIdevice->DestroySwapchain(mNVRIswapchain);
 }
 
 void NVRIrenderer::CreateSwapchain() {
-    mNVRIdevice->CreateSwapchain(&mNVRISwapchain);
-    mNVRIpipeline = std::make_unique<NVRIpipeline>(mNVRIdevice.get(), mNVRISwapchain,
+    mNVRIdevice->CreateSwapchain(&mNVRIswapchain);
+    mNVRIpipeline = std::make_unique<NVRIpipeline>(mNVRIdevice.get(), mNVRIswapchain,
                                                    NATURE_SHADER_MODULE_OF_VERTEX_BINARY_FILE,
                                                    NATURE_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE);
 }
@@ -1167,9 +1167,9 @@ void NVRIrenderer::BeginRenderPass(VkRenderPass renderPass) {
     VkRenderPassBeginInfo renderPassBeginInfo = {};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassBeginInfo.renderPass = mCurrentContextRenderPass;
-    renderPassBeginInfo.framebuffer = mNVRISwapchain->GetFramebuffer(mCurrentContextImageIndex);
+    renderPassBeginInfo.framebuffer = mNVRIswapchain->GetFramebuffer(mCurrentContextImageIndex);
     renderPassBeginInfo.renderArea.offset = {0, 0};
-    renderPassBeginInfo.renderArea.extent = mNVRISwapchain->GetExtent2D();
+    renderPassBeginInfo.renderArea.extent = mNVRIswapchain->GetExtent2D();
 
     VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
     renderPassBeginInfo.clearValueCount = 1;
@@ -1184,9 +1184,9 @@ void NVRIrenderer::EndRenderPass() {
 
 void NVRIrenderer::BeginRender() {
     uint32_t index;
-    mNVRISwapchain->AcquireNextImage(mImageAvailableSemaphore, &index);
+    mNVRIswapchain->AcquireNextImage(mImageAvailableSemaphore, &index);
     BeginRecordCommandBuffer(mCommandBuffers[index], index);
-    BeginRenderPass(mNVRISwapchain->GetRenderPass());
+    BeginRenderPass(mNVRIswapchain->GetRenderPass());
 }
 
 void NVRIrenderer::QueueSubmitBuffer() {
@@ -1204,7 +1204,7 @@ void NVRIrenderer::QueueSubmitBuffer() {
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphores;
 
-    VkSwapchainKHR swapChains[] = { mNVRISwapchain->GetSwapchainKHRHandle() };
+    VkSwapchainKHR swapChains[] = { mNVRIswapchain->GetSwapchainKHRHandle() };
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
     presentInfo.pImageIndices = &mCurrentContextImageIndex;
@@ -1221,7 +1221,7 @@ void NVRIrenderer::UpdateUniformBuffer() {
     NVRIUniformBufferObject ubo = {};
     ubo.m = glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(1.0f, 0.5f, 2.0f));
     ubo.v = glm::lookAt(glm::vec3(1.0f), glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.p = glm::perspective(glm::radians(45.0f), mNVRISwapchain->GetWidth() / (float) mNVRISwapchain->GetHeight(), 0.1f, 10.0f);
+    ubo.p = glm::perspective(glm::radians(45.0f), mNVRIswapchain->GetWidth() / (float) mNVRIswapchain->GetHeight(), 0.1f, 10.0f);
     ubo.p[1][1] *= -1;
     ubo.t = glfwGetTime();
     void* data;
