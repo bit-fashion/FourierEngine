@@ -16,29 +16,23 @@
  *
  * ************************************************************************/
 
-/* Creates on 2022/11/23. */
+/* Creates on 2023/11/21. */
 #pragma once
 
-#include <malloc.h>
-#include <fstream>
-#include <vector>
-#include <VRRT.h>
+#include <iostream>
+#include <stdexcept>
+#include <format>
+#include <memory>
 
-static char *vrrt_load_file(const char *file_path, size_t *size) {
-    std::ifstream file(file_path, std::ios::ate | std::ios::binary);
-    if (!file.is_open())
-        VRRT_LOGGER_ERROR("Error: open {} file failed!", file_path);
-    *size = file.tellg();
-    file.seekg(0);
+#include "Config.h"
 
-    /* malloc buffer */
-    char *buf = (char *) malloc(*size);
-    file.read(buf, *size);
-    file.close();
+#define VRRT_ENGINE_NAME "NatureEngine"
 
-    return buf;
-}
+#define VRRT_LOGGER_INFO(fmt, ...) printf("%s\n", std::format(fmt, ##__VA_ARGS__).c_str())
+#define VRRT_LOGGER_ERROR(fmt, ...) printf("%s\n", std::format(fmt, ##__VA_ARGS__).c_str())
+#define VRRT_THROW_ERROR(fmt, ...) throw std::runtime_error(std::format(fmt, ##__VA_ARGS__))
 
-static void vrrt_free_buffer(char *binaries) {
-    free(binaries);
-}
+#define VRRT_FREE_POINTER(ptr) (ptr = nullptr)
+
+/* Get total byte size of array. */
+#define ARRAY_TOTAL_SIZE(a) (sizeof(a[0]) * std::size(a))

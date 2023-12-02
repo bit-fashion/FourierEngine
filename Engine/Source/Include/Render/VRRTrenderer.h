@@ -22,7 +22,7 @@
 #include <vulkan/vulkan.h>
 #include <memory>
 #include <vector>
-#include <VRRT.h>
+#include <Engine.h>
 #include <unordered_map>
 #include <array>
 #include <stddef.h>
@@ -31,7 +31,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-class VRRTwindow;
+class NATwindow;
 
 #define VK_LAYER_KHRONOS_validation "VK_LAYER_KHRONOS_validation"
 
@@ -173,7 +173,7 @@ private:
  */
 class VRHIswapchain {
 public:
-    VRHIswapchain(VRHIdevice *device, VRRTwindow *pVRRTwindow, VkSurfaceKHR surface);
+    VRHIswapchain(VRHIdevice *device, NATwindow *pVRRTwindow, VkSurfaceKHR surface);
     ~VRHIswapchain();
 
     VkResult AcquireNextImage(VkSemaphore semaphore, uint32_t *pIndex);
@@ -193,7 +193,7 @@ private:
 
 private:
     VRHIdevice *mVRHIdevice;
-    VRRTwindow *mVRRTwindow;
+    NATwindow *mVRRTwindow;
     VkSurfaceKHR mSurface = VK_NULL_HANDLE;
     VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;
     VkRenderPass mRenderPass = VK_NULL_HANDLE;
@@ -214,7 +214,7 @@ private:
 class VRHIdevice {
 public:
     /* init and destroy function */
-    explicit VRHIdevice(VkInstance instance, VkSurfaceKHR surface, VRRTwindow *pVRRTwidnow);
+    explicit VRHIdevice(VkInstance instance, VkSurfaceKHR surface, NATwindow *pVRRTwidnow);
     ~VRHIdevice();
 
     void CreateSwapchain(VRHIswapchain **pSwapchain);
@@ -265,7 +265,7 @@ private:
     VkDevice mDevice = VK_NULL_HANDLE;
     VkSurfaceKHR mSurfaceKHR = VK_NULL_HANDLE;
     VRHIGPU mVRHIGPU = {};
-    VRRTwindow *mVRRTwindow;
+    NATwindow *mVRRTwindow;
     VkDescriptorPool mDescriptorPool = VK_NULL_HANDLE;
     VkCommandPool mCommandPool = VK_NULL_HANDLE;
     VkMemoryRequirements mMemoryRequirements;
@@ -283,7 +283,7 @@ private:
  */
 class VRRTrenderer {
 public:
-    explicit VRRTrenderer(VRRTwindow *pVRRTwidnow);
+    explicit VRRTrenderer(NATwindow *pVRRTwidnow);
     ~VRRTrenderer();
 
     /* Render interface. */
@@ -319,7 +319,7 @@ private:
     VRHItexture mTexture;
     VkInstance mInstance = VK_NULL_HANDLE;
     VkSurfaceKHR mSurface = VK_NULL_HANDLE;
-    VRRTwindow *mVRRTwindow;
+    NATwindow *mVRRTwindow;
     std::unique_ptr<VRHIdevice> mVRHIdevice = NULL;
     std::unique_ptr<VRHIpipeline> mVRHIpipeline = NULL;
     VRHIswapchain *mSwapchain = NULL;

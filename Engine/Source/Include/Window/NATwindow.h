@@ -19,18 +19,18 @@
 /* Creates on 2023/11/21. */
 #pragma once
 
-#include <VRRT.h>
+#include <Engine.h>
 #include <GLFW/glfw3.h>
 
-class VRRTwindow;
+class NATwindow;
 
-typedef void (* PFN_VRRTwindowResizableWindowCallback)(VRRTwindow *pVRRTwindow, int width, int height);
+typedef void (* PFN_VRRTwindowResizableWindowCallback)(NATwindow *pVRRTwindow, int width, int height);
 
-class VRRTwindow {
+class NATwindow {
 public:
     /* Init and create window. */
-    VRRTwindow(int width, int height, const char *title);
-    ~VRRTwindow();
+    NATwindow(int width, int height, const char *title);
+    ~NATwindow();
     /* Support functions. */
     bool ShouldClose();
     void SetWindowHintVisible(bool isVisible);

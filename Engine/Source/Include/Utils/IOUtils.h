@@ -16,8 +16,29 @@
  *
  * ************************************************************************/
 
-/* Creates on 2023/11/21. */
+/* Creates on 2022/11/23. */
 #pragma once
 
-/** this macro define is used for switch debugging code. */
-#define VRRT_ENGINE_CONFIG_ENABLE_DEBUG
+#include <malloc.h>
+#include <fstream>
+#include <vector>
+#include <Engine.h>
+
+static char *vrrt_load_file(const char *file_path, size_t *size) {
+    std::ifstream file(file_path, std::ios::ate | std::ios::binary);
+    if (!file.is_open())
+        VRRT_LOGGER_ERROR("Error: open {} file failed!", file_path);
+    *size = file.tellg();
+    file.seekg(0);
+
+    /* malloc buffer */
+    char *buf = (char *) malloc(*size);
+    file.read(buf, *size);
+    file.close();
+
+    return buf;
+}
+
+static void vrrt_free_buffer(char *binaries) {
+    free(binaries);
+}

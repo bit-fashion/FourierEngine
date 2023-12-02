@@ -34,7 +34,7 @@ include_directories(SYSTEM
 )
 
 include_directories(
-        "${CMAKE_SOURCE_DIR}/Engine/Source/Runtime"
+        "${CMAKE_SOURCE_DIR}/Engine/Source/Include"
 )
 
 # Configure link directories.
@@ -45,7 +45,7 @@ link_directories(
 
 add_executable(${PROJECT_NAME}
         "Engine/Source/Runtime/Main.cpp"
-        "Engine/Source/Runtime/Window/VRRTwindow.cpp"
+        "Engine/Source/Runtime/Window/NATwindow.cpp"
         "Engine/Source/Runtime/Render/VRRTrenderer.cpp"
 )
 

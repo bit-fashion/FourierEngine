@@ -17,9 +17,9 @@
  * ************************************************************************/
 
 /* Creates on 2022/11/23. */
-#include "VRRTrenderer.h"
+#include "Render/VRRTrenderer.h"
 
-#include "Window/VRRTwindow.h"
+#include "Window/NATwindow.h"
 #include "Utils/IOUtils.h"
 
 // stb
@@ -43,7 +43,7 @@ void VRHIGetRequiredInstanceExtensions(std::vector<const char *> &vec,
 /* Get required instance layers for vulkan. */
 void VRHIGetRequiredInstanceLayers(std::vector<const char *> &vec,
                                       std::unordered_map<std::string, VkLayerProperties> &supports) {
-#ifdef VRRT_ENGINE_CONFIG_ENABLE_DEBUG
+#ifdef NATURE_ENGINE_CONFIG_ENABLE_DEBUG
     if (supports.count(VK_LAYER_KHRONOS_validation) != 0)
         vec.push_back(VK_LAYER_KHRONOS_validation);
 #endif
@@ -144,7 +144,7 @@ VkPresentModeKHR SelectSwapSurfacePresentMode(const std::vector<VkPresentModeKHR
 }
 
 /* Select swap chain extent. */
-VkExtent2D SelectSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, VRRTwindow *pRIVwindow) {
+VkExtent2D SelectSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, NATwindow *pRIVwindow) {
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
         return capabilities.currentExtent;
     } else {
@@ -420,7 +420,7 @@ void VRHIpipeline::Init_Graphics_Pipeline() {
 // Swapchain
 // ----------------------------------------------------------------------------
 
-VRHIswapchain::VRHIswapchain(VRHIdevice *device, VRRTwindow *pVRRTwindow, VkSurfaceKHR surface)
+VRHIswapchain::VRHIswapchain(VRHIdevice *device, NATwindow *pVRRTwindow, VkSurfaceKHR surface)
   : mVRHIdevice(device), mVRRTwindow(pVRRTwindow), mSurface(surface) {
     /* 查询交换链支持 */
     mSwapChainDetails = QuerySwapChainSupportDetails(mVRHIdevice->GetPhysicalDeviceHandle(), mSurface);
@@ -559,7 +559,7 @@ void VRHIswapchain::CleanupSwapchain() {
 // Device
 // ----------------------------------------------------------------------------
 
-VRHIdevice::VRHIdevice(VkInstance instance, VkSurfaceKHR surface, VRRTwindow *pVRRTwindow)
+VRHIdevice::VRHIdevice(VkInstance instance, VkSurfaceKHR surface, NATwindow *pVRRTwindow)
   : mInstance(instance), mSurfaceKHR(surface), mVRRTwindow(pVRRTwindow) {
     /* 选择一个牛逼的 GPU 设备 */
     std::vector<VRHIGPU> vGPU;
@@ -1032,7 +1032,7 @@ void VRHIdevice::InitCommandPool() {
 // VRRTrenderer
 // ----------------------------------------------------------------------------
 
-VRRTrenderer::VRRTrenderer(VRRTwindow *pVRRTwindow) : mVRRTwindow(pVRRTwindow) {
+VRRTrenderer::VRRTrenderer(NATwindow *pVRRTwindow) : mVRRTwindow(pVRRTwindow) {
     /* Enumerate instance available extensions. */
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, NULL);
@@ -1115,7 +1115,7 @@ void VRRTrenderer::Init_Vulkan_Impl() {
     mVRHIdevice->CreateSemaphore(&mRenderFinishedSemaphore);
     /* 设置监听窗口变化回调 */
     mVRRTwindow->SetWindowUserPointer(this);
-    mVRRTwindow->SetVRRTwindowResizableWindowCallback([](VRRTwindow *pVRRTwindow, int width, int height) {
+    mVRRTwindow->SetVRRTwindowResizableWindowCallback([](NATwindow *pVRRTwindow, int width, int height) {
         VRRTrenderer *pVRHI = (VRRTrenderer *) pVRRTwindow->GetWindowUserPointer();
         pVRHI->RecreateSwapchain();
     });

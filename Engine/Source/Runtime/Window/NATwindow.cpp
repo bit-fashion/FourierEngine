@@ -17,9 +17,9 @@
  * ************************************************************************/
 
 /* Creates on 2023/11/21. */
-#include "VRRTwindow.h"
+#include "Window/NATwindow.h"
 
-VRRTwindow::VRRTwindow(int width, int height, const char *title) : m_Width(width), m_Height(height) {
+NATwindow::NATwindow(int width, int height, const char *title) : m_Width(width), m_Height(height) {
     glfwInit();
 
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -37,7 +37,7 @@ VRRTwindow::VRRTwindow(int width, int height, const char *title) : m_Width(width
 
     /* Set resize callback. */
     glfwSetWindowSizeCallback(m_Window, [](GLFWwindow *window, int width, int height) {
-        VRRTwindow *pRIVwindow = ((VRRTwindow *) glfwGetWindowUserPointer(window));
+        NATwindow *pRIVwindow = ((NATwindow *) glfwGetWindowUserPointer(window));
         pRIVwindow->SetWidth(width);
         pRIVwindow->SetHeight(height);
         if (pRIVwindow->m_FnVRRTResizableWindowCallback != NULL)
@@ -45,16 +45,16 @@ VRRTwindow::VRRTwindow(int width, int height, const char *title) : m_Width(width
     });
 }
 
-VRRTwindow::~VRRTwindow() {
+NATwindow::~NATwindow() {
     glfwTerminate();
     glfwDestroyWindow(m_Window);
 }
 
-bool VRRTwindow::ShouldClose() {
+bool NATwindow::ShouldClose() {
     return glfwWindowShouldClose(m_Window);
 }
 
-void VRRTwindow::SetWindowHintVisible(bool isVisible) {
+void NATwindow::SetWindowHintVisible(bool isVisible) {
     if (isVisible)
         glfwShowWindow(m_Window);
     else
