@@ -21,6 +21,9 @@
 
 #include "Render/Vulkan/VulkanRenderer.h"
 #include "Editor/DearImGuiEditor.h"
+#include "Render/Renderable.h"
+
+#include <glm/gtc/type_ptr.hpp>
 
 int main() {
     system("chcp 65001");
@@ -29,7 +32,6 @@ int main() {
     /* Create VulkanRenderer */
     std::unique_ptr<VulkanRenderer> pVulkanRenderer = std::make_unique<VulkanRenderer>(&window);
     std::unique_ptr<DearImGuiEditor> pDearImGuiEditor = std::make_unique<DearImGuiEditor>(&window, pVulkanRenderer.get());
-
     window.SetWindowHintVisible(true);
 
     while (!window.is_close()) {
@@ -40,6 +42,11 @@ int main() {
             pVulkanRenderer->Draw();
             /* Editor */
             pDearImGuiEditor->BeginEditorFrameRender();
+            {
+                ImGui::Begin("Draw");
+                ImGui::DragFloat3("Rotate V", glm::value_ptr(pVulkanRenderer->rotateV));
+                ImGui::End();
+            }
             pDearImGuiEditor->EndEditorFrameRender();
         }
         pVulkanRenderer->EndRender();

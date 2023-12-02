@@ -322,6 +322,13 @@ public:
 public:
     const VulkanRenderInstanceContext *GetVulkanRenderInstanceContext() const;
 
+    glm::vec3 lookAtEye{1.0f};
+    glm::vec3 lookAtCenter{0.0f};
+    glm::vec3 lookAtUp{0.0f, 0.0f ,1.0f};
+    float rotateM = 1.0f;
+    float rotateRadians = 45.0f;
+    glm::vec3 rotateV{1.0f, 0.5f, 2.0f};
+
 private:
     void Init_Vulkan_Impl();
     void Init_VulkanR_Instance_Context();

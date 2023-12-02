@@ -1269,8 +1269,8 @@ void VulkanRenderer::UpdateUniformBuffer() {
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.0f;
     UniformBufferObject ubo = {};
-    ubo.m = glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(1.0f, 0.5f, 2.0f));
-    ubo.v = glm::lookAt(glm::vec3(1.0f), glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.m = glm::rotate(glm::mat4(rotateM), time * glm::radians(rotateRadians), rotateV);
+    ubo.v = glm::lookAt(lookAtEye, lookAtCenter, lookAtUp);
     ubo.p = glm::perspective(glm::radians(45.0f), mVulkanSwapchainKHR->GetWidth() / (float) mVulkanSwapchainKHR->GetHeight(), 0.1f, 10.0f);
     ubo.p[1][1] *= -1;
     ubo.t = (float) glfwGetTime();
