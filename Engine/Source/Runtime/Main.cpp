@@ -17,26 +17,26 @@
  * ************************************************************************/
 
 /* Creates on 2022/9/14. */
-#include "Window/NATwindow.h"
+#include "Window/NatureWindow.h"
 
 #include <stdlib.h>
-#include "Render/VRRTrenderer.h"
+#include "Render/Vulkan/NVRIrenderer.h"
 
 int main() {
     system("chcp 65001");
     system("cd ../Bin & spvc.cmd");
-    auto window = NATwindow(1280, 1000, "NatureEngine(vulkan)");
-    /* Create VRRTrenderer */
-     std::unique_ptr<VRRTrenderer> pVRRTrenderer = std::make_unique<VRRTrenderer>(&window);
+    auto window = NatureWindow(1280, 1000, "NatureEngine(vulkan)");
+    /* Create NVRIrenderer */
+     std::unique_ptr<NVRIrenderer> pNVRIrenderer = std::make_unique<NVRIrenderer>(&window);
     window.SetWindowHintVisible(true);
 
     while (!window.ShouldClose()) {
         NRIVPollEvents();
-        pVRRTrenderer->BeginRender();
+        pNVRIrenderer->BeginRender();
         {
-            pVRRTrenderer->Draw();
+            pNVRIrenderer->Draw();
         }
-        pVRRTrenderer->EndRender();
+        pNVRIrenderer->EndRender();
     }
 
     return 0;

@@ -22,15 +22,15 @@
 #include <Engine.h>
 #include <GLFW/glfw3.h>
 
-class NATwindow;
+class NatureWindow;
 
-typedef void (* PFN_VRRTwindowResizableWindowCallback)(NATwindow *pVRRTwindow, int width, int height);
+typedef void (* PFN_EngineWindowResizableWindowCallback)(NatureWindow *pNatureWindow, int width, int height);
 
-class NATwindow {
+class NatureWindow {
 public:
     /* Init and create window. */
-    NATwindow(int width, int height, const char *title);
-    ~NATwindow();
+    NatureWindow(int width, int height, const char *title);
+    ~NatureWindow();
     /* Support functions. */
     bool ShouldClose();
     void SetWindowHintVisible(bool isVisible);
@@ -43,8 +43,8 @@ public:
     void SetHeight(int height) { m_Height = height; }
     void SetWindowUserPointer(void *pointer) { m_UserPointer = pointer; }
     void *GetWindowUserPointer() { return m_UserPointer; }
-    void SetVRRTwindowResizableWindowCallback(PFN_VRRTwindowResizableWindowCallback fnVRRTwindowResizableWindowCallback) /* Set resizable callback. */
-      { m_FnVRRTResizableWindowCallback = fnVRRTwindowResizableWindowCallback; };
+    void SetEngineWindowResizableWindowCallback(PFN_EngineWindowResizableWindowCallback fnEngineWindowResizableWindowCallback) /* Set resizable callback. */
+      { m_FnNATUREResizableWindowCallback = fnEngineWindowResizableWindowCallback; };
     GLFWwindow *GetWindowHandle() { return m_Window; };
 
 private:
@@ -52,7 +52,7 @@ private:
     int m_Height;
     GLFWwindow *m_Window;
     void *m_UserPointer = NULL;
-    PFN_VRRTwindowResizableWindowCallback m_FnVRRTResizableWindowCallback = NULL;
+    PFN_EngineWindowResizableWindowCallback m_FnNATUREResizableWindowCallback = NULL;
 };
 
 static void NRIVPollEvents() {

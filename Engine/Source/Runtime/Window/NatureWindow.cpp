@@ -17,9 +17,9 @@
  * ************************************************************************/
 
 /* Creates on 2023/11/21. */
-#include "Window/NATwindow.h"
+#include "Window/NatureWindow.h"
 
-NATwindow::NATwindow(int width, int height, const char *title) : m_Width(width), m_Height(height) {
+NatureWindow::NatureWindow(int width, int height, const char *title) : m_Width(width), m_Height(height) {
     glfwInit();
 
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -30,31 +30,31 @@ NATwindow::NATwindow(int width, int height, const char *title) : m_Width(width),
 
     if (m_Window == NULL) {
         glfwTerminate();
-        VRRT_THROW_ERROR("NatureEngine Error: create window failed, cause window pointer is NULL!");
+        NATURE_THROW_ERROR("NatureEngine Error: create window failed, cause window pointer is NULL!");
     }
 
     glfwSetWindowUserPointer(m_Window, this);
 
     /* Set resize callback. */
     glfwSetWindowSizeCallback(m_Window, [](GLFWwindow *window, int width, int height) {
-        NATwindow *pRIVwindow = ((NATwindow *) glfwGetWindowUserPointer(window));
+        NatureWindow *pRIVwindow = ((NatureWindow *) glfwGetWindowUserPointer(window));
         pRIVwindow->SetWidth(width);
         pRIVwindow->SetHeight(height);
-        if (pRIVwindow->m_FnVRRTResizableWindowCallback != NULL)
-            pRIVwindow->m_FnVRRTResizableWindowCallback(pRIVwindow, width, height);
+        if (pRIVwindow->m_FnNATUREResizableWindowCallback != NULL)
+            pRIVwindow->m_FnNATUREResizableWindowCallback(pRIVwindow, width, height);
     });
 }
 
-NATwindow::~NATwindow() {
+NatureWindow::~NatureWindow() {
     glfwTerminate();
     glfwDestroyWindow(m_Window);
 }
 
-bool NATwindow::ShouldClose() {
+bool NatureWindow::ShouldClose() {
     return glfwWindowShouldClose(m_Window);
 }
 
-void NATwindow::SetWindowHintVisible(bool isVisible) {
+void NatureWindow::SetWindowHintVisible(bool isVisible) {
     if (isVisible)
         glfwShowWindow(m_Window);
     else
