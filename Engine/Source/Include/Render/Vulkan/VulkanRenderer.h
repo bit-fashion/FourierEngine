@@ -247,7 +247,7 @@ public:
                                    VkDescriptorSetLayout *pDescriptorSetLayout);
     void DestroyDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout);
     void AllocateDescriptorSet(std::vector<VkDescriptorSetLayout> &descriptorSetLayouts, VkDescriptorSet *pDescriptorSet);
-    void FreeDescriptorSet(uint32_t count, VkDescriptorSet *pDescriptorSet);
+    void FreeDescriptorSets(uint32_t count, VkDescriptorSet *pDescriptorSet);
     void AllocateCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer);
     void FreeCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer);
     void CreateSemaphore(VkSemaphore *pSemaphore);

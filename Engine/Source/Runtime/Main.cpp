@@ -21,7 +21,6 @@
 
 #include "Render/Vulkan/VulkanRenderer.h"
 #include "Editor/DearImGuiEditor.h"
-#include "Render/Renderable/GameModel.h"
 
 int main() {
     system("chcp 65001");
@@ -42,7 +41,15 @@ int main() {
             pDearImGuiEditor->BeginEditorFrameRender();
             {
                 ImGui::Begin("Draw");
-                ImGui::DragFloat3("Rotate V", glm::value_ptr(pVulkanRenderer->rotateV));
+                {
+                    ImGui::DragFloat3("Lookat Center", glm::value_ptr(pVulkanRenderer->lookAtCenter));
+                    ImGui::DragFloat3("Lookat Eye", glm::value_ptr(pVulkanRenderer->lookAtEye));
+                    ImGui::DragFloat3("Lookat Up", glm::value_ptr(pVulkanRenderer->lookAtUp));
+
+                    ImGui::DragFloat3("Rotate V", glm::value_ptr(pVulkanRenderer->rotateV));
+                    ImGui::DragFloat("Rotate Radians", &pVulkanRenderer->rotateRadians);
+                    ImGui::DragFloat("Rotate M", &pVulkanRenderer->rotateM);
+                }
                 ImGui::End();
             }
             pDearImGuiEditor->EndEditorFrameRender();

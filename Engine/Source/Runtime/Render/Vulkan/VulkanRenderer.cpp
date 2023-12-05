@@ -362,6 +362,7 @@ VulkanPipeline::VulkanPipeline(VulkanDevice *device, VulkanSwapchainKHR *swapcha
 }
 
 VulkanPipeline::~VulkanPipeline() {
+    mVulkanDevice->FreeDescriptorSets(1, &mUboDescriptorSet);
     mVulkanDevice->DestroyDescriptorSetLayout(mUboDescriptorSetLayout);
     vkDestroyPipelineLayout(mVulkanDevice->GetDevice(), mPipelineLayout, VK_NULL_HANDLE);
     vkDestroyPipeline(mVulkanDevice->GetDevice(), mPipeline, VK_NULL_HANDLE);
@@ -662,7 +663,7 @@ void VulkanDevice::AllocateDescriptorSet(std::vector<VkDescriptorSetLayout> &des
     vkAllocateDescriptorSets(mDevice, &descriptorAllocateInfo, pDescriptorSet);
 }
 
-void VulkanDevice::FreeDescriptorSet(uint32_t count, VkDescriptorSet *pDescriptorSet) {
+void VulkanDevice::FreeDescriptorSets(uint32_t count, VkDescriptorSet *pDescriptorSet) {
     vkFreeDescriptorSets(mDevice, mDescriptorPool, count, pDescriptorSet);
 }
 
