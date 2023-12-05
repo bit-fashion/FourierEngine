@@ -17,17 +17,4 @@
  * ************************************************************************/
 
 /* Creates on 2022/11/23. */
-#pragma once
-
-#include <glm/glm.hpp>
-
-namespace Renderable {
-
-    struct Model {
-        glm::vec3 position;
-        glm::vec3 color;
-        glm::vec2 uv;
-        glm::mat4 transform;
-    };
-
-}
+#include "Render/Camera/OrthoCamera.h"

@@ -19,6 +19,7 @@
 /* Creates on 2022/11/23. */
 #pragma once
 
-class Camera {
+#include "Camera.h"
 
+class OrthoCamera : public Camera {
 };

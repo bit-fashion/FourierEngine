@@ -21,9 +21,7 @@
 
 #include "Render/Vulkan/VulkanRenderer.h"
 #include "Editor/DearImGuiEditor.h"
-#include "Render/Renderable.h"
-
-#include <glm/gtc/type_ptr.hpp>
+#include "Render/Renderable/GameModel.h"
 
 int main() {
     system("chcp 65001");
