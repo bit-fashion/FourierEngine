@@ -1046,6 +1046,7 @@ void VulkanDevice::InitAllocateDescriptorSetPool() {
     descriptorPoolCrateInfo.poolSizeCount = static_cast<uint32_t>(std::size(poolSizes));
     descriptorPoolCrateInfo.pPoolSizes = std::data(poolSizes);
     descriptorPoolCrateInfo.maxSets = 1024 * std::size(poolSizes);
+    descriptorPoolCrateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
     vkNatureCreate(DescriptorPool, mDevice, &descriptorPoolCrateInfo, VK_NULL_HANDLE, &mDescriptorPool);
 }
