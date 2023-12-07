@@ -24,7 +24,7 @@
 #include <format>
 #include <memory>
 
-#include "Config.h"
+#include "EngineConfig.h"
 
 #define NATURE_ENGINE_NAME "NatureEngine"
 

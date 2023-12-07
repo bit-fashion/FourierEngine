@@ -19,7 +19,7 @@
 /* Creates on 2022/11/23. */
 #include "Render/Vulkan/VulkanRenderer.h"
 
-#include "Window/NatureWindow.h"
+#include "Window/Window.h"
 #include "Utils/IOUtils.h"
 
 // stb
@@ -144,7 +144,7 @@ VkPresentModeKHR SelectSwapSurfacePresentMode(const std::vector<VkPresentModeKHR
 }
 
 /* Select swap chain extent. */
-VkExtent2D SelectSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, NatureWindow *pRIVwindow) {
+VkExtent2D SelectSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, Window *pRIVwindow) {
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
         return capabilities.currentExtent;
     } else {
@@ -430,15 +430,15 @@ void VulkanPipeline::Init_Graphics_Pipeline() {
 // ====
 /** ---------------------------------------------------------------------------- */
 
-VulkanSwapchainKHR::VulkanSwapchainKHR(VulkanDevice *device, NatureWindow *pNatureWindow, VkSurfaceKHR surface)
-  : mVulkanDevice(device), mNatureWindow(pNatureWindow), mSurface(surface) {
+VulkanSwapchainKHR::VulkanSwapchainKHR(VulkanDevice *device, Window *pWindow, VkSurfaceKHR surface)
+  : mVulkanDevice(device), mWindow(pWindow), mSurface(surface) {
     /* 查询交换链支持 */
     mSwapChainDetails = QuerySwapChainSupportDetails(mVulkanDevice->GetPhysicalDevice(), mSurface);
 
     mSurfaceFormatKHR = SelectSwapSurfaceFormat(mSwapChainDetails.formats);
     mSwapchainFormat = mSurfaceFormatKHR.format;
     mSwapchainPresentModeKHR = SelectSwapSurfacePresentMode(mSwapChainDetails.presentModes);
-    mSwapchainExtent = SelectSwapExtent(mSwapChainDetails.capabilities, mNatureWindow);
+    mSwapchainExtent = SelectSwapExtent(mSwapChainDetails.capabilities, mWindow);
 
     /** Create render pass. */
     VkAttachmentDescription colorAttachmentDescription = {};
@@ -573,8 +573,8 @@ void VulkanSwapchainKHR::CleanupSwapchain() {
 // ====
 /** ---------------------------------------------------------------------------- */
 
-VulkanDevice::VulkanDevice(VkInstance instance, VkSurfaceKHR surface, NatureWindow *pNatureWindow)
-  : mInstance(instance), mSurfaceKHR(surface), mNatureWindow(pNatureWindow) {
+VulkanDevice::VulkanDevice(VkInstance instance, VkSurfaceKHR surface, Window *pWindow)
+  : mInstance(instance), mSurfaceKHR(surface), mWindow(pWindow) {
     /* 选择一个牛逼的 GPU 设备 */
     std::vector<VulkanPhysicalDevice> vGPU;
     EnumerateVulkanPhysicalDevice(mInstance, &vGPU);
@@ -632,7 +632,7 @@ VulkanDevice::~VulkanDevice() {
 }
 
 void VulkanDevice::CreateSwapchain(VulkanSwapchainKHR **pSwapchain) {
-    *pSwapchain = new VulkanSwapchainKHR(this, mNatureWindow, mSurfaceKHR);
+    *pSwapchain = new VulkanSwapchainKHR(this, mWindow, mSurfaceKHR);
 }
 
 void VulkanDevice::DestroySwapchain(VulkanSwapchainKHR *swapchain) {
@@ -1069,7 +1069,7 @@ void VulkanDevice::InitCommandPool() {
 // ====
 /** ---------------------------------------------------------------------------- */
 
-VulkanRenderer::VulkanRenderer(NatureWindow *pNatureWindow) : mNatureWindow(pNatureWindow) {
+VulkanRenderer::VulkanRenderer(Window *pWindow) : mWindow(pWindow) {
     /* Enumerate instance available extensions. */
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, NULL);
@@ -1121,7 +1121,7 @@ VulkanRenderer::VulkanRenderer(NatureWindow *pNatureWindow) : mNatureWindow(pNat
     vkNatureCreate(Instance, &instanceCreateInfo, VK_NULL_HANDLE, &mInstance);
 
     /** 创建 Surface 接口对象 */
-    if (glfwCreateWindowSurface(mInstance, pNatureWindow->GetWindowHandle(),VK_NULL_HANDLE,
+    if (glfwCreateWindowSurface(mInstance, pWindow->GetWindowHandle(),VK_NULL_HANDLE,
                                 &mSurface) != VK_SUCCESS) {
         NATURE_LOGGER_INFO("Create glfw surface failed!");
     }
@@ -1144,16 +1144,16 @@ VulkanRenderer::~VulkanRenderer() {
 }
 
 void VulkanRenderer::Init_Vulkan_Impl() {
-    mVulkanDevice = std::make_unique<VulkanDevice>(mInstance, mSurface, mNatureWindow);
+    mVulkanDevice = std::make_unique<VulkanDevice>(mInstance, mSurface, mWindow);
     CreateSwapchain();
     mCommandBuffers.resize(mVulkanSwapchainKHR->GetImageCount());
     mVulkanDevice->AllocateCommandBuffer(std::size(mCommandBuffers), std::data(mCommandBuffers));
     mVulkanDevice->CreateSemaphore(&mImageAvailableSemaphore);
     mVulkanDevice->CreateSemaphore(&mRenderFinishedSemaphore);
     /* 设置监听窗口变化回调 */
-    mNatureWindow->SetWindowUserPointer(this);
-    mNatureWindow->SetEngineWindowResizableWindowCallback([](NatureWindow *pNatureWindow, int width, int height) {
-        auto *pVulkanRenderer = (VulkanRenderer *) pNatureWindow->GetWindowUserPointer();
+    mWindow->SetWindowUserPointer(this);
+    mWindow->SetEngineWindowResizableWindowCallback([](Window *pWindow, int width, int height) {
+        auto *pVulkanRenderer = (VulkanRenderer *) pWindow->GetWindowUserPointer();
         pVulkanRenderer->RecreateSwapchain();
     });
     /* 初始化 vulkan 渲染实例上下文 */
@@ -1271,8 +1271,8 @@ void VulkanRenderer::UpdateUniformBuffer() {
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.0f;
     UniformBufferObject ubo = {};
-    ubo.m = glm::rotate(glm::mat4(rotateM), time * glm::radians(rotateRadians), rotateV);
-    ubo.v = glm::lookAt(lookAtEye, lookAtCenter, lookAtUp);
+    ubo.m = glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(1.0f, 0.5f, 2.0f));
+    ubo.v = glm::lookAt(glm::vec3(1.0f), glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.p = glm::perspective(glm::radians(45.0f), mVulkanSwapchainKHR->GetWidth() / (float) mVulkanSwapchainKHR->GetHeight(), 0.1f, 10.0f);
     ubo.p[1][1] *= -1;
     ubo.t = (float) glfwGetTime();

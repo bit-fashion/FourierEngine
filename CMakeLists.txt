@@ -45,7 +45,7 @@ link_directories(
 
 add_executable(${PROJECT_NAME}
         "Engine/Source/Runtime/Main.cpp"
-        "Engine/Source/Runtime/Window/NatureWindow.cpp"
+        "Engine/Source/Runtime/Window/Window.cpp"
         "Engine/Source/Runtime/Render/Vulkan/VulkanRenderer.cpp"
         "Engine/Source/Runtime/Editor/DearImGuiEditor.cpp"
         "Engine/Source/Runtime/Render/Camera/OrthoCamera.cpp"

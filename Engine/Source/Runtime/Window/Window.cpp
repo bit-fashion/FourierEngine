@@ -17,9 +17,9 @@
  * ************************************************************************/
 
 /* Creates on 2023/11/21. */
-#include "Window/NatureWindow.h"
+#include "Window/Window.h"
 
-NatureWindow::NatureWindow(int width, int height, const char *title) : m_Width(width), m_Height(height) {
+Window::Window(int width, int height, const char *title) : m_Width(width), m_Height(height) {
     glfwInit();
 
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -37,7 +37,7 @@ NatureWindow::NatureWindow(int width, int height, const char *title) : m_Width(w
 
     /* Set resize callback. */
     glfwSetWindowSizeCallback(m_Window, [](GLFWwindow *window, int width, int height) {
-        NatureWindow *pRIVwindow = ((NatureWindow *) glfwGetWindowUserPointer(window));
+        Window *pRIVwindow = ((Window *) glfwGetWindowUserPointer(window));
         pRIVwindow->SetWidth(width);
         pRIVwindow->SetHeight(height);
         if (pRIVwindow->m_FnNATUREResizableWindowCallback != NULL)
@@ -45,22 +45,18 @@ NatureWindow::NatureWindow(int width, int height, const char *title) : m_Width(w
     });
 }
 
-NatureWindow::~NatureWindow() {
+Window::~Window() {
     glfwTerminate();
     glfwDestroyWindow(m_Window);
 }
 
-bool NatureWindow::is_close() {
+bool Window::is_close() {
     return glfwWindowShouldClose(m_Window);
 }
 
-void NatureWindow::SetWindowHintVisible(bool isVisible) {
+void Window::SetWindowHintVisible(bool isVisible) {
     if (isVisible)
         glfwShowWindow(m_Window);
     else
         glfwHideWindow(m_Window);
-}
-
-void NatureWindow::SetWindowHintFullScreen(bool isFullScreen, uint32_t width, uint32_t height) {
-
 }

@@ -17,20 +17,20 @@
  * ************************************************************************/
 
 /* Creates on 2022/9/14. */
-#include "Window/NatureWindow.h"
+#include "Window/Window.h"
 
 #include "Render/Vulkan/VulkanRenderer.h"
 
 int main() {
     system("chcp 65001");
     system("cd ../Bin & spvc.cmd");
-    auto window = NatureWindow(1280, 1000, "NatureEngine(vulkan)");
+    auto window = Window(800, 600, "NatureEngine(vulkan)");
     /* Create VulkanRenderer */
     std::unique_ptr<VulkanRenderer> pVulkanRenderer = std::make_unique<VulkanRenderer>(&window);
     window.SetWindowHintVisible(true);
 
     while (!window.is_close()) {
-        NatureWindow::PollEvents();
+        Window::PollEvents();
         pVulkanRenderer->BeginRender();
         {
             /* Draw */

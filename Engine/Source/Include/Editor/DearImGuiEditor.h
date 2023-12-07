@@ -27,7 +27,7 @@
  */
 class DearImGuiEditor {
 public:
-    DearImGuiEditor(const NatureWindow *pNatureWindow, const VulkanRenderer *pVulkanRenderer);
+    DearImGuiEditor(const Window *pWindow, const VulkanRenderer *pVulkanRenderer);
     ~DearImGuiEditor();
     /* function */
     void BeginEditorFrameRender();

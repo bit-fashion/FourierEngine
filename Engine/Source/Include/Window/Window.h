@@ -22,20 +22,20 @@
 #include <Engine.h>
 #include <GLFW/glfw3.h>
 
-class NatureWindow;
+class Window;
 
-typedef void (* PFN_EngineWindowResizableWindowCallback)(NatureWindow *pNatureWindow, int width, int height);
+typedef void (* PFN_EngineWindowResizableWindowCallback)(Window *pWindow, int width, int height);
 
-class NatureWindow {
+class Window {
 public:
     /* Init and create window. */
-    NatureWindow(int width, int height, const char *title);
-    ~NatureWindow();
+    Window(int width, int height, const char *title);
+    ~Window();
     /* Support functions. */
     bool is_close();
+    int GetKey(int key) { return glfwGetKey(m_Window, key); }
     /* hint */
     void SetWindowHintVisible(bool isVisible);
-    void SetWindowHintFullScreen(bool isFullScreen, uint32_t width, uint32_t height);
 
 public:
     /* Get/Set member variables. */

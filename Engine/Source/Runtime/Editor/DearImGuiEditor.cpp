@@ -20,11 +20,11 @@
 #include <Editor/DearImGuiEditor.h>
 #include <imgui/backends/imgui_impl_glfw.h>
 #include <imgui/backends/imgui_impl_vulkan.h>
-#include <Window/NatureWindow.h>
+#include <Window/Window.h>
 
 const static VulkanRenderContext *pVulkanRenderContext = VK_NULL_HANDLE;
 
-DearImGuiEditor::DearImGuiEditor(const NatureWindow *pNatureWindow, const VulkanRenderer *pVulkanRenderer) {
+DearImGuiEditor::DearImGuiEditor(const Window *pWindow, const VulkanRenderer *pVulkanRenderer) {
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -49,7 +49,7 @@ DearImGuiEditor::DearImGuiEditor(const NatureWindow *pNatureWindow, const Vulkan
     }
 
     // Setup Platform/Renderer backends
-    ImGui_ImplGlfw_InitForVulkan(pNatureWindow->GetWindowHandle(), true);
+    ImGui_ImplGlfw_InitForVulkan(pWindow->GetWindowHandle(), true);
 
     const VulkanRenderInstanceContext *vulkanRenderInstanceContext = pVulkanRenderer->GetVulkanRenderInstanceContext();
     ImGui_ImplVulkan_InitInfo init_info = {};

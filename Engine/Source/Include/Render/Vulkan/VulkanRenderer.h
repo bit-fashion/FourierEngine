@@ -32,7 +32,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-class NatureWindow;
+class Window;
 
 #define VK_LAYER_KHRONOS_validation "VK_LAYER_KHRONOS_validation"
 
@@ -196,7 +196,7 @@ private:
  */
 class VulkanSwapchainKHR {
 public:
-    VulkanSwapchainKHR(VulkanDevice *device, NatureWindow *pNatureWindow, VkSurfaceKHR surface);
+    VulkanSwapchainKHR(VulkanDevice *device, Window *pWindow, VkSurfaceKHR surface);
     ~VulkanSwapchainKHR();
 
     /* 获取下一帧图像 */
@@ -217,7 +217,7 @@ private:
 
 private:
     VulkanDevice *mVulkanDevice;
-    NatureWindow *mNatureWindow;
+    Window *mWindow;
     VkSurfaceKHR mSurface = VK_NULL_HANDLE;
     VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;
     VkRenderPass mRenderPass = VK_NULL_HANDLE;
@@ -238,7 +238,7 @@ private:
 class VulkanDevice {
 public:
     /* init and destroy function */
-    explicit VulkanDevice(VkInstance instance, VkSurfaceKHR surface, NatureWindow *pNatureWindow);
+    explicit VulkanDevice(VkInstance instance, VkSurfaceKHR surface, Window *pWindow);
     ~VulkanDevice();
 
     void CreateSwapchain(VulkanSwapchainKHR **pSwapchain);
@@ -294,7 +294,7 @@ private:
     VkDevice mDevice = VK_NULL_HANDLE;
     VkSurfaceKHR mSurfaceKHR = VK_NULL_HANDLE;
     VulkanPhysicalDevice mVulkanPhysicalDevice = {};
-    NatureWindow *mNatureWindow;
+    Window *mWindow;
     VkDescriptorPool mDescriptorPool = VK_NULL_HANDLE;
     VkCommandPool mCommandPool = VK_NULL_HANDLE;
     VkMemoryRequirements mMemoryRequirements;
@@ -312,7 +312,7 @@ private:
  */
 class VulkanRenderer {
 public:
-    explicit VulkanRenderer(NatureWindow *pNatureWindow);
+    explicit VulkanRenderer(Window *pWindow);
     ~VulkanRenderer();
 
     /* Render interface. */
@@ -322,13 +322,6 @@ public:
 
 public:
     const VulkanRenderInstanceContext *GetVulkanRenderInstanceContext() const;
-
-    glm::vec3 lookAtEye{1.0f};
-    glm::vec3 lookAtCenter{0.0f};
-    glm::vec3 lookAtUp{0.0f, 0.0f ,1.0f};
-    float rotateM = 1.0f;
-    float rotateRadians = 45.0f;
-    glm::vec3 rotateV{1.0f, 0.5f, 2.0f};
 
 private:
     void Init_Vulkan_Impl();
@@ -359,7 +352,7 @@ private:
     VulkanTexture2D mTexture;
     VkInstance mInstance = VK_NULL_HANDLE;
     VkSurfaceKHR mSurface = VK_NULL_HANDLE;
-    NatureWindow *mNatureWindow;
+    Window *mWindow;
     std::unique_ptr<VulkanDevice> mVulkanDevice = NULL;
     std::unique_ptr<VulkanPipeline> mVulkanPipeline = NULL;
     VulkanSwapchainKHR *mVulkanSwapchainKHR = NULL;
