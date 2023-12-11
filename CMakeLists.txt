@@ -21,37 +21,43 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.26)
 PROJECT(NatureEngine)
 
 SET(CMAKE_CXX_STANDARD 23)
+SET(ENGINE_SOURCE_DIRECTORY "${PROJECT_SOURCE_DIR}/Engine/Source")
+SET(ENGINE_RUNTIME_SOURCE_DIRECTORY "${ENGINE_SOURCE_DIRECTORY}/Runtime")
+SET(ENGINE_THIRD_PARTY_SOURCE_DIRECTORY "${ENGINE_SOURCE_DIRECTORY}/ThirdParty")
 
 # Configure third party include of system.
 INCLUDE_DIRECTORIES(SYSTEM
-  "Engine/Source/Include"
-  "Engine/Source/ThirdParty"
-  "Engine/Source/ThirdParty/vulkan/include"
-  "Engine/Source/ThirdParty/glfw/include"
-  "Engine/Source/ThirdParty/glad/include"
-  "Engine/Source/ThirdParty/glm"
-  "Engine/Source/ThirdParty/imgui"
+  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}"
+  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/vulkan/include"
+  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/glfw/include"
+  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/glad/include"
+  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/glm"
+  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui"
 )
 
 INCLUDE_DIRECTORIES(
-  "${CMAKE_SOURCE_DIR}/Engine/Source/Include"
+  "${ENGINE_SOURCE_DIRECTORY}/Include"
+  "${ENGINE_SOURCE_DIRECTORY}/Runtime"
 )
 
 # Configure link directories.
 LINK_DIRECTORIES(
-  "Engine/Source/ThirdParty/vulkan"
-  "Engine/Source/ThirdParty/glfw/lib-mingw-w64"
+  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/vulkan"
+  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/glfw/lib-mingw-w64"
 )
 
 ADD_EXECUTABLE(${PROJECT_NAME}
+  "${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Main.cpp"
+  "${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Render/Vulkan/VulkanContext.cpp"
+  "${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Window/GLWIN.cpp"
   #[[ Dear ImGUI ]]
-  "Engine/Source/ThirdParty/imgui/imgui.cpp"
-  "Engine/Source/ThirdParty/imgui/imgui_draw.cpp"
-  "Engine/Source/ThirdParty/imgui/imgui_demo.cpp"
-  "Engine/Source/ThirdParty/imgui/imgui_tables.cpp"
-  "Engine/Source/ThirdParty/imgui/imgui_widgets.cpp"
-  "Engine/Source/ThirdParty/imgui/backends/imgui_impl_vulkan.cpp"
-  "Engine/Source/ThirdParty/imgui/backends/imgui_impl_glfw.cpp"
+  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/imgui.cpp"
+  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/imgui_draw.cpp"
+  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/imgui_demo.cpp"
+  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/imgui_tables.cpp"
+  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/imgui_widgets.cpp"
+  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/backends/imgui_impl_vulkan.cpp"
+  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/backends/imgui_impl_glfw.cpp"
 )
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
