@@ -38,10 +38,10 @@ class Window;
 
 #define vkNatureCreate(name, ...) \
     if (vkCreate##name(__VA_ARGS__) != VK_SUCCESS) \
-        NATURE_THROW_ERROR("[VERIRRT ENGINE] [INIT_VULKAN_API] ERR/ - Create [{}] handle failed!", #name)
+        SPORTS_THROW_ERROR("[VERIRRT ENGINE] [INIT_VULKAN_API] ERR/ - Create [{}] handle failed!", #name)
 #define vkNatureAllocate(name, ...) \
     if (vkAllocate##name(__VA_ARGS__) != VK_SUCCESS) \
-        NATURE_THROW_ERROR("[VERIRRT ENGINE] [INIT_VULKAN_API] ERR/ - Create [{}] handle failed!", #name)
+        SPORTS_THROW_ERROR("[VERIRRT ENGINE] [INIT_VULKAN_API] ERR/ - Create [{}] handle failed!", #name)
 
 /** GPU 设备信息 */
 struct VulkanPhysicalDevice {

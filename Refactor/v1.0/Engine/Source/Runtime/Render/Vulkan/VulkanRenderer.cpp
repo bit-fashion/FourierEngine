@@ -26,8 +26,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
-#define NATURE_SHADER_MODULE_OF_VERTEX_BINARY_FILE "../Engine/Binaries/simple_shader.vert.spv"
-#define NATURE_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE "../Engine/Binaries/simple_shader.frag.spv"
+#define SPORTS_SHADER_MODULE_OF_VERTEX_BINARY_FILE "../Engine/Binaries/simple_shader.vert.spv"
+#define SPORTS_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE "../Engine/Binaries/simple_shader.frag.spv"
 
 /* Get required instance extensions for vulkan. */
 void GetRequiredInstanceExtensions(std::vector<const char *> &vec,
@@ -43,7 +43,7 @@ void GetRequiredInstanceExtensions(std::vector<const char *> &vec,
 /* Get required instance layers for vulkan. */
 void GetRequiredInstanceLayers(std::vector<const char *> &vec,
                                       std::unordered_map<std::string, VkLayerProperties> &supports) {
-#ifdef NATURE_ENGINE_CONFIG_ENABLE_DEBUG
+#ifdef SPORTS_ENGINE_CONFIG_ENABLE_DEBUG
     if (supports.count(VK_LAYER_KHRONOS_validation) != 0)
         vec.push_back(VK_LAYER_KHRONOS_validation);
 #endif
@@ -201,13 +201,13 @@ VulkanPipeline::VulkanPipeline(VulkanDevice *device, VulkanSwapchainKHR *swapcha
     /* init */
     Init_Graphics_Pipeline();
     /** Create shader of vertex & fragment module. */
-    NATURE_LOGGER_INFO("Loading and create vertex shader module from: {}", vertex_shader_path);
+    SPORTS_LOGGER_INFO("Loading and create vertex shader module from: {}", vertex_shader_path);
     VkShaderModule vertex_shader_module = LoadShaderModule(mVulkanDevice->GetDevice(), vertex_shader_path);
-    NATURE_LOGGER_INFO("Loading and create vertex shader module success!");
+    SPORTS_LOGGER_INFO("Loading and create vertex shader module success!");
 
-    NATURE_LOGGER_INFO("Loading and create fragment shader module from: {}", fragment_shader_path);
+    SPORTS_LOGGER_INFO("Loading and create fragment shader module from: {}", fragment_shader_path);
     VkShaderModule fragment_shader_module = LoadShaderModule(mVulkanDevice->GetDevice(), fragment_shader_path);
-    NATURE_LOGGER_INFO("Loading and create fragment shader module success!");
+    SPORTS_LOGGER_INFO("Loading and create fragment shader module success!");
 
     /** Create pipeline phase of vertex and fragment shader */
     VkPipelineShaderStageCreateInfo pipelineVertexShaderStageCreateInfo = {};
@@ -844,7 +844,7 @@ void VulkanDevice::CreateTexture(const char *path, VkFormat format, VkImageTilin
     stbi_uc* pixels = stbi_load(path, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
     if (!pixels)
-        NATURE_THROW_ERROR("failed to load texture image!");
+        SPORTS_THROW_ERROR("failed to load texture image!");
 
     VulkanBuffer stagingBuffer;
     AllocateBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer);
@@ -1075,9 +1075,9 @@ VulkanRenderer::VulkanRenderer(Window *pWindow) : mWindow(pWindow) {
     vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, NULL);
     std::vector<VkExtensionProperties> extensions(extensionCount);
     vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, std::data(extensions));
-    NATURE_LOGGER_INFO("Vulkan render api available extensions for instance:");
+    SPORTS_LOGGER_INFO("Vulkan render api available extensions for instance:");
     for (auto &extension : extensions) {
-        NATURE_LOGGER_INFO("    {}", extension.extensionName);
+        SPORTS_LOGGER_INFO("    {}", extension.extensionName);
         mVkInstanceExtensionPropertiesSupports.insert({extension.extensionName, extension});
     }
 
@@ -1086,9 +1086,9 @@ VulkanRenderer::VulkanRenderer(Window *pWindow) : mWindow(pWindow) {
     vkEnumerateInstanceLayerProperties(&layerCount, NULL);
     std::vector<VkLayerProperties> layers(layerCount);
     vkEnumerateInstanceLayerProperties(&layerCount, std::data(layers));
-    NATURE_LOGGER_INFO("Vulkan render api available layer list: ");
+    SPORTS_LOGGER_INFO("Vulkan render api available layer list: ");
     for (auto &layer : layers) {
-        NATURE_LOGGER_INFO("    {}", layer.layerName);
+        SPORTS_LOGGER_INFO("    {}", layer.layerName);
         mVkInstanceLayerPropertiesSupports.insert({layer.layerName, layer});
     }
 
@@ -1101,9 +1101,9 @@ VulkanRenderer::VulkanRenderer(Window *pWindow) : mWindow(pWindow) {
     applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     applicationInfo.apiVersion = VK_VERSION_1_3;
     applicationInfo.apiVersion = VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.pApplicationName = NATURE_ENGINE_NAME;
+    applicationInfo.pApplicationName = SPORTS_ENGINE_NAME;
     applicationInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.pEngineName = NATURE_ENGINE_NAME;
+    applicationInfo.pEngineName = SPORTS_ENGINE_NAME;
 
     struct VkInstanceCreateInfo instanceCreateInfo = {};
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -1111,9 +1111,9 @@ VulkanRenderer::VulkanRenderer(Window *pWindow) : mWindow(pWindow) {
 
     instanceCreateInfo.enabledExtensionCount = std::size(mRequiredInstanceExtensions);
     instanceCreateInfo.ppEnabledExtensionNames = std::data(mRequiredInstanceExtensions);
-    NATURE_LOGGER_INFO("Used vulkan extension for instance count: {}", std::size(mRequiredInstanceExtensions));
+    SPORTS_LOGGER_INFO("Used vulkan extension for instance count: {}", std::size(mRequiredInstanceExtensions));
     for (const auto& name : mRequiredInstanceExtensions)
-        NATURE_LOGGER_INFO("    {}", name);
+        SPORTS_LOGGER_INFO("    {}", name);
 
     instanceCreateInfo.enabledLayerCount = std::size(mRequiredInstanceLayers);
     instanceCreateInfo.ppEnabledLayerNames = std::data(mRequiredInstanceLayers);
@@ -1123,7 +1123,7 @@ VulkanRenderer::VulkanRenderer(Window *pWindow) : mWindow(pWindow) {
     /** 创建 Surface 接口对象 */
     if (glfwCreateWindowSurface(mInstance, pWindow->GetWindowHandle(),VK_NULL_HANDLE,
                                 &mSurface) != VK_SUCCESS) {
-        NATURE_LOGGER_INFO("Create glfw surface failed!");
+        SPORTS_LOGGER_INFO("Create glfw surface failed!");
     }
 
     /* init */
@@ -1138,7 +1138,7 @@ VulkanRenderer::~VulkanRenderer() {
     mVulkanDevice->DestroySemaphore(mImageAvailableSemaphore);
     mVulkanDevice->DestroySemaphore(mRenderFinishedSemaphore);
     CleanupSwapchain();
-    NATURE_FREE_POINTER(mVulkanDevice);
+    SPORTS_FREE_POINTER(mVulkanDevice);
     vkDestroySurfaceKHR(mInstance, mSurface, VK_NULL_HANDLE);
     vkDestroyInstance(mInstance, VK_NULL_HANDLE);
 }
@@ -1185,15 +1185,15 @@ void VulkanRenderer::Init_VulkanR_Instance_Context() {
 }
 
 void VulkanRenderer::CleanupSwapchain() {
-    NATURE_FREE_POINTER(mVulkanPipeline);
+    SPORTS_FREE_POINTER(mVulkanPipeline);
     mVulkanDevice->DestroySwapchain(mVulkanSwapchainKHR);
 }
 
 void VulkanRenderer::CreateSwapchain() {
     mVulkanDevice->CreateSwapchain(&mVulkanSwapchainKHR);
     mVulkanPipeline = std::make_unique<VulkanPipeline>(mVulkanDevice.get(), mVulkanSwapchainKHR,
-                                                   NATURE_SHADER_MODULE_OF_VERTEX_BINARY_FILE,
-                                                   NATURE_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE);
+                                                   SPORTS_SHADER_MODULE_OF_VERTEX_BINARY_FILE,
+                                                   SPORTS_SHADER_MODULE_OF_FRAGMENT_BINARY_FILE);
 }
 
 void VulkanRenderer::RecreateSwapchain() {

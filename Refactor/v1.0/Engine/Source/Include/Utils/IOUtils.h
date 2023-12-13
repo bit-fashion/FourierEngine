@@ -27,7 +27,7 @@
 static char *vrrt_load_file(const char *file_path, size_t *size) {
     std::ifstream file(file_path, std::ios::ate | std::ios::binary);
     if (!file.is_open())
-        NATURE_LOGGER_ERROR("Error: open {} file failed!", file_path);
+        SPORTS_LOGGER_ERROR("Error: open {} file failed!", file_path);
     *size = file.tellg();
     file.seekg(0);
 

@@ -20,4 +20,4 @@
 #pragma once
 
 /** this macro define is used for switch debugging code. */
-#define NATURE_ENGINE_CONFIG_ENABLE_DEBUG
+#define SPORTS_ENGINE_CONFIG_ENABLE_DEBUG

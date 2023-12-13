@@ -30,7 +30,7 @@ Window::Window(int width, int height, const char *title) : m_Width(width), m_Hei
 
     if (m_Window == NULL) {
         glfwTerminate();
-        NATURE_THROW_ERROR("NatureEngine Error: create window failed, cause window pointer is NULL!");
+        SPORTS_THROW_ERROR("NatureEngine Error: create window failed, cause window pointer is NULL!");
     }
 
     glfwSetWindowUserPointer(m_Window, this);
