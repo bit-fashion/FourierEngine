@@ -33,8 +33,8 @@ INCLUDE_DIRECTORIES(SYSTEM
 )
 
 INCLUDE_DIRECTORIES(
-  # "${ENGINE_SOURCE_DIRECTORY}/Include"
-  # "${ENGINE_SOURCE_DIRECTORY}/Runtime"
+  "${ENGINE_SOURCE_DIRECTORY}/Include"
+  "${ENGINE_SOURCE_DIRECTORY}/Runtime"
 )
 
 #[[ Configure link directories ]]
@@ -52,6 +52,7 @@ ADD_EXECUTABLE(${PROJECT_NAME}
   "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/imgui_widgets.cpp"
   "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/backends/imgui_impl_vulkan.cpp"
   "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/backends/imgui_impl_glfw.cpp"
+        Engine/Source/Include/Core.h
 )
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
