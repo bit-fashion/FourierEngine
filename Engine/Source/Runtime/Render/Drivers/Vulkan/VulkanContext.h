@@ -49,10 +49,19 @@ struct VkSwapchainContextKHR {
     VkPresentModeKHR presentMode;
 };
 
+struct VkDeviceBuffer {
+    VkBuffer buffer;
+    VkDeviceMemory memory;
+    VkDeviceSize size;
+};
+
 class VulkanContext {
 public:
     VulkanContext(Window *window);
    ~VulkanContext();
+
+private:
+    void InitVulkanDriverContext(); /* Init Vulkan Context */
 
 private:
     void _CreateSwapcahinAboutComponents(VkSwapchainContextKHR *pSwapchainContext);
@@ -61,23 +70,41 @@ private:
     void _ConfigurationWindowResizeableEventCallback();
 
     void DeviceWaitIdle();
+    void CopyBuffer(VkDeviceBuffer dest, VkDeviceBuffer src, VkDeviceSize size);
+    void MapMemory(VkDeviceBuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void **ppData);
+    void UnmapMemory(VkDeviceBuffer buffer);
+    void BeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags usageFlags);
+    void EndCommandBuffer(VkCommandBuffer commandBuffer);
+    void SyncSubmitQueueWithSubmitInfo(uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers,
+                                       uint32_t waitSemaphoreCount, VkSemaphore *pWaitSemaphores,
+                                       uint32_t signalSemaphoreCount, VkSemaphore *pSignalSemaphores,
+                                       VkPipelineStageFlags *pWaitDstStageMask);
+    void BeginOnceTimeCommandBufferSubmit(VkCommandBuffer *pCommandBuffer);
+    void EndOnceTimeCommandBufferSubmit();
+
+    void AllocateCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer);
+    void AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkDeviceBuffer *buffer);
     void RecreateSwapchainContext(VkSwapchainContextKHR *pSwapchainContext, uint32_t width, uint32_t height);
-
     void CreateSwapchainContext(VkSwapchainContextKHR *pSwapchainContext);
-    void InitVulkanDriverContext();
 
+    void FreeCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer);
+    void FreeBuffer(VkDeviceBuffer buffer);
     void DestroySwapchainContext(VkSwapchainContextKHR *pSwapchainContext);
 
 private:
     VkInstance m_Instance;
     VkSurfaceKHR m_SurfaceKHR;
     VkDevice m_Device;
+    VkCommandPool m_CommandPool;
     VkSwapchainContextKHR m_SwapchainContext;
 
     Window *m_Window;
     VkPhysicalDevice m_PhysicalDevice;
     VkPhysicalDeviceProperties m_PhysicalDeviceProperties;
     VkPhysicalDeviceFeatures m_PhysicalDeviceFeature;
+    VkQueue m_GraphicsQueue;
+    VkQueue m_PresentQueue;
+    VkCommandBuffer m_SingleTimeCommandBuffer;
 };
 
 #endif /* _SPORTS_VULKAN_CONTEXT_H_ */

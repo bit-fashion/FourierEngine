@@ -171,8 +171,8 @@ namespace VulkanUtils {
     }
 #endif
 
-    static void GetVulkanDeviceCreateRequiredQueueCreateInfo(VkPhysicalDevice device, VkSurfaceKHR surface,
-                                                             Vector<VkDeviceQueueCreateInfo> &deviceQueueCreateInfos) {
+    static QueueFamilyIndices GetVulkanDeviceCreateRequiredQueueFamilyAndQueueCreateInfo(VkPhysicalDevice device, VkSurfaceKHR surface,
+                                                                           Vector<VkDeviceQueueCreateInfo> &deviceQueueCreateInfos) {
         /** Create vulkan device. */
         float queuePriority = 1.0f;
         VulkanUtils::QueueFamilyIndices queueFamilyIndices;
@@ -264,6 +264,17 @@ namespace VulkanUtils {
         pSwapchainContext->minImageCount = pSwapchainContext->capabilities.minImageCount + 1;
         if (pSwapchainContext->capabilities.maxImageCount > 0 && pSwapchainContext->minImageCount > pSwapchainContext->capabilities.maxImageCount)
             pSwapchainContext->minImageCount = pSwapchainContext->capabilities.maxImageCount;
+    }
+
+    uint32_t FindMemoryType(uint32_t typeFilter, VkPhysicalDevice physicalDevice, VkMemoryPropertyFlags properties) {
+        VkPhysicalDeviceMemoryProperties memProperties;
+        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+        for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+            if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+                return i;
+            }
+        }
+        throw std::runtime_error("failed to find suitable memory type!");
     }
 
 }

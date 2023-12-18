@@ -80,7 +80,7 @@ void VulkanContext::_CreateSwapcahinAboutComponents(VkSwapchainContextKHR *pSwap
         imageViewCreateInfo.subresourceRange.levelCount = 1;
         imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
         imageViewCreateInfo.subresourceRange.layerCount = 1;
-        vkCreateImageView(m_Device, &imageViewCreateInfo, VK_NULL_HANDLE, &pSwapchainContext->imageViews[i]);
+        vkCreateImageView(m_Device, &imageViewCreateInfo, VulkanUtils::Allocator, &pSwapchainContext->imageViews[i]);
 
         /* framebuffer */
         VkImageView attachments[] = { pSwapchainContext->imageViews[i] };
@@ -93,7 +93,7 @@ void VulkanContext::_CreateSwapcahinAboutComponents(VkSwapchainContextKHR *pSwap
         framebufferCreateInfo.height = pSwapchainContext->height;
         framebufferCreateInfo.layers = 1;
 
-        vkCreateFramebuffer(m_Device, &framebufferCreateInfo, nullptr, &pSwapchainContext->framebuffers[i]);
+        vkCreateFramebuffer(m_Device, &framebufferCreateInfo, VulkanUtils::Allocator, &pSwapchainContext->framebuffers[i]);
     }
 }
 
@@ -153,6 +153,116 @@ void VulkanContext::DeviceWaitIdle() {
     vkDeviceWaitIdle(m_Device);
 }
 
+void VulkanContext::CopyBuffer(VkDeviceBuffer dest, VkDeviceBuffer src, VkDeviceSize size) {
+    VkCommandBuffer oneTimeCommandBuffer;
+    BeginOnceTimeCommandBufferSubmit(&oneTimeCommandBuffer);
+    {
+        /* copy buffer */
+        VkBufferCopy copyRegion = {};
+        copyRegion.srcOffset = 0;
+        copyRegion.dstOffset = 0;
+        copyRegion.size = size;
+        vkCmdCopyBuffer(oneTimeCommandBuffer, src.buffer, dest.buffer, 1, &copyRegion);
+    }
+    EndOnceTimeCommandBufferSubmit();
+}
+
+void VulkanContext::MapMemory(VkDeviceBuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void **ppData) {
+    vkMapMemory(m_Device, buffer.memory, offset, size, flags, ppData);
+}
+
+void VulkanContext::UnmapMemory(VkDeviceBuffer buffer) {
+    vkUnmapMemory(m_Device, buffer.memory);
+}
+
+void VulkanContext::BeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags usageFlags) {
+    /* start command buffers record. */
+    vkResetCommandBuffer(commandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
+    VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    commandBufferBeginInfo.flags = usageFlags;
+    commandBufferBeginInfo.pInheritanceInfo = null; // Optional
+    vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+}
+
+void VulkanContext::EndCommandBuffer(VkCommandBuffer commandBuffer) {
+    /* end command buffer record. */
+    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
+        throw std::runtime_error("failed to record command buffer!");
+}
+
+void VulkanContext::SyncSubmitQueueWithSubmitInfo(uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers,
+                                                 uint32_t waitSemaphoreCount, VkSemaphore *pWaitSemaphores,
+                                                 uint32_t signalSemaphoreCount, VkSemaphore *pSignalSemaphores,
+                                                 VkPipelineStageFlags *pWaitDstStageMask) {
+    /* submit command buffer */
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    submitInfo.waitSemaphoreCount = waitSemaphoreCount;
+    submitInfo.pWaitSemaphores = pWaitSemaphores;
+    submitInfo.pWaitDstStageMask = pWaitDstStageMask;
+    submitInfo.commandBufferCount = commandBufferCount;
+    submitInfo.pCommandBuffers = pCommandBuffers;
+
+    submitInfo.signalSemaphoreCount = signalSemaphoreCount;
+    submitInfo.pSignalSemaphores = pSignalSemaphores;
+
+    if (vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+        throw std::runtime_error("failed to submit draw command buffer!");
+
+    vkQueueWaitIdle(m_GraphicsQueue);
+}
+
+void VulkanContext::BeginOnceTimeCommandBufferSubmit(VkCommandBuffer *pCommandBuffer) {
+    AllocateCommandBuffer(1, &m_SingleTimeCommandBuffer);
+    *pCommandBuffer = m_SingleTimeCommandBuffer;
+    /* begin */
+    BeginCommandBuffer(m_SingleTimeCommandBuffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+}
+
+void VulkanContext::EndOnceTimeCommandBufferSubmit() {
+    EndCommandBuffer(m_SingleTimeCommandBuffer);
+    /* submit */
+    SyncSubmitQueueWithSubmitInfo(1, &m_SingleTimeCommandBuffer, 0, NULL, 0, NULL, NULL);
+    FreeCommandBuffer(1, &m_SingleTimeCommandBuffer);
+}
+
+void VulkanContext::AllocateCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer) {
+    /** Allocate command buffer. */
+    VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    commandBufferAllocateInfo.commandPool = m_CommandPool;
+    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandBufferAllocateInfo.commandBufferCount = (uint32_t) count;
+
+    vkAllocateCommandBuffers(m_Device, &commandBufferAllocateInfo, pCommandBuffer);
+}
+
+void VulkanContext::AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
+                                   VkDeviceBuffer *buffer) {
+    VkBufferCreateInfo bufferCreateInfo = {};
+    bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferCreateInfo.size = size;
+    buffer->size = bufferCreateInfo.size;
+    bufferCreateInfo.usage = usage;
+    bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    vkCreateBuffer(m_Device, &bufferCreateInfo, VulkanUtils::Allocator, &buffer->buffer);
+    vkCreateBuffer(m_Device, &bufferCreateInfo, VulkanUtils::Allocator, &buffer->buffer);
+
+    /** Query memory requirements. */
+    VkMemoryRequirements memoryRequirements;
+    vkGetBufferMemoryRequirements(m_Device, buffer->buffer, &memoryRequirements);
+
+    VkMemoryAllocateInfo memoryAllocInfo = {};
+    memoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memoryAllocInfo.allocationSize = memoryRequirements.size;
+    memoryAllocInfo.memoryTypeIndex = VulkanUtils::FindMemoryType(memoryRequirements.memoryTypeBits, m_PhysicalDevice, properties);
+
+    vkAllocateMemory(m_Device, &memoryAllocInfo, VulkanUtils::Allocator, &buffer->memory);
+    vkBindBufferMemory(m_Device, buffer->buffer, buffer->memory, 0);
+}
+
 void VulkanContext::RecreateSwapchainContext(VkSwapchainContextKHR *pSwapchainContext, uint32_t width, uint32_t height) {
     if (width <= 0 || height <= 0)
         return;
@@ -204,7 +314,8 @@ void VulkanContext::InitVulkanDriverContext() {
     VulkanUtils::GetVulkanMostPreferredPhysicalDevice(m_Instance, &m_PhysicalDevice, &m_PhysicalDeviceProperties,
                                                       &m_PhysicalDeviceFeature);
     Vector<VkDeviceQueueCreateInfo> deviceQueueCreateInfos;
-    VulkanUtils::GetVulkanDeviceCreateRequiredQueueCreateInfo(m_PhysicalDevice, m_SurfaceKHR, deviceQueueCreateInfos);
+    VulkanUtils::QueueFamilyIndices queueFamilyIndices =
+            VulkanUtils::GetVulkanDeviceCreateRequiredQueueFamilyAndQueueCreateInfo(m_PhysicalDevice, m_SurfaceKHR, deviceQueueCreateInfos);
 
     VkDeviceCreateInfo deviceCreateInfo = {};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -226,8 +337,29 @@ void VulkanContext::InitVulkanDriverContext() {
 
     vkCreateDevice(m_PhysicalDevice, &deviceCreateInfo, VulkanUtils::Allocator, &m_Device);
 
+    /* get queue */
+    vkGetDeviceQueue(m_Device, queueFamilyIndices.graphicsQueueFamily, 0, &m_GraphicsQueue);
+    vkGetDeviceQueue(m_Device, queueFamilyIndices.presentQueueFamily, 0, &m_PresentQueue);
+
+    /* Create command pool. */
+    VkCommandPoolCreateInfo commandPoolCreateInfo = {};
+    commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    commandPoolCreateInfo.queueFamilyIndex = queueFamilyIndices.graphicsQueueFamily;
+    commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+    vkCreateCommandPool(m_Device, &commandPoolCreateInfo, VulkanUtils::Allocator, &m_CommandPool);
+
     /* Create swapchain */
     CreateSwapchainContext(&m_SwapchainContext);
+}
+
+void VulkanContext::FreeCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer) {
+    vkFreeCommandBuffers(m_Device, m_CommandPool, count, pCommandBuffer);
+}
+
+void VulkanContext::FreeBuffer(VkDeviceBuffer buffer) {
+    vkFreeMemory(m_Device, buffer.memory, VulkanUtils::Allocator);
+    vkDestroyBuffer(m_Device, buffer.buffer, VulkanUtils::Allocator);
 }
 
 void VulkanContext::DestroySwapchainContext(VkSwapchainContextKHR *pSwapchainContext) {
