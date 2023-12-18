@@ -38,7 +38,7 @@ VulkanContext::~VulkanContext() {
     vkDestroyInstance(m_Instance, VulkanUtils::Allocator);
 }
 
-void VulkanContext::_CreateSwapcahinAboutComponents(SwapchainContext *pSwapchainContext) {
+void VulkanContext::_CreateSwapcahinAboutComponents(VkSwapchainContextKHR *pSwapchainContext) {
     VkSwapchainCreateInfoKHR swapchainCreateInfoKHR = {};
     swapchainCreateInfoKHR.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     swapchainCreateInfoKHR.surface = m_SwapchainContext.surface;
@@ -97,7 +97,7 @@ void VulkanContext::_CreateSwapcahinAboutComponents(SwapchainContext *pSwapchain
     }
 }
 
-void VulkanContext::_CreateRenderpass(VulkanContext::SwapchainContext *pSwapchainContext) {
+void VulkanContext::_CreateRenderpass(VkSwapchainContextKHR *pSwapchainContext) {
     VkAttachmentDescription colorAttachmentDescription = {};
     colorAttachmentDescription.format = pSwapchainContext->surfaceFormat.format;
     colorAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -137,7 +137,7 @@ void VulkanContext::_CreateRenderpass(VulkanContext::SwapchainContext *pSwapchai
     vkCreateRenderPass(m_Device, &renderPassCreateInfo, VulkanUtils::Allocator, &pSwapchainContext->renderpass);
 }
 
-void VulkanContext::_ConfigurationSwapchainContext(VulkanContext::SwapchainContext *pSwapchainContext) {
+void VulkanContext::_ConfigurationSwapchainContext(VkSwapchainContextKHR *pSwapchainContext) {
     VulkanUtils::ConfigurationVulkanSwapchainContextDetail(m_PhysicalDevice, m_SurfaceKHR, m_Window,
                                                        &m_SwapchainContext);
 }
@@ -153,7 +153,7 @@ void VulkanContext::DeviceWaitIdle() {
     vkDeviceWaitIdle(m_Device);
 }
 
-void VulkanContext::RecreateSwapchainContext(SwapchainContext *pSwapchainContext, uint32_t width, uint32_t height) {
+void VulkanContext::RecreateSwapchainContext(VkSwapchainContextKHR *pSwapchainContext, uint32_t width, uint32_t height) {
     if (width <= 0 || height <= 0)
         return;
     DeviceWaitIdle();
@@ -161,7 +161,7 @@ void VulkanContext::RecreateSwapchainContext(SwapchainContext *pSwapchainContext
     CreateSwapchainContext(pSwapchainContext);
 }
 
-void VulkanContext::CreateSwapchainContext(VulkanContext::SwapchainContext *pSwapchainContext) {
+void VulkanContext::CreateSwapchainContext(VkSwapchainContextKHR *pSwapchainContext) {
     _ConfigurationSwapchainContext(pSwapchainContext);
     _CreateRenderpass(pSwapchainContext);
     _CreateSwapcahinAboutComponents(pSwapchainContext);
@@ -230,7 +230,7 @@ void VulkanContext::InitVulkanDriverContext() {
     CreateSwapchainContext(&m_SwapchainContext);
 }
 
-void VulkanContext::DestroySwapchainContext(VulkanContext::SwapchainContext *pSwapchainContext) {
+void VulkanContext::DestroySwapchainContext(VkSwapchainContextKHR *pSwapchainContext) {
     vkDestroyRenderPass(m_Device, pSwapchainContext->renderpass, VulkanUtils::Allocator);
     for (int i = 0; i < pSwapchainContext->minImageCount; i++) {
         vkDestroyImageView(m_Device, pSwapchainContext->imageViews[i], VulkanUtils::Allocator);

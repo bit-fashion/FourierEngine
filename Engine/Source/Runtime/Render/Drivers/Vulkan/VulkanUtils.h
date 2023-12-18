@@ -227,7 +227,7 @@ namespace VulkanUtils {
     }
 
     static void ConfigurationVulkanSwapchainContextDetail(VkPhysicalDevice device, VkSurfaceKHR surface, const Window *pWindow,
-                                                VulkanContext::SwapchainContext *pSwapchainContext) {
+                                                          VkSwapchainContextKHR *pSwapchainContext) {
         pSwapchainContext->surface = surface;
         pSwapchainContext->window = pWindow;
         pSwapchainContext->width = pWindow->GetWidth();

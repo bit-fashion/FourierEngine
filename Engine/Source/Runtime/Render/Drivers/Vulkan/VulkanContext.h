@@ -33,47 +33,46 @@
 
 class Window;
 
-class VulkanContext {
-public:
-    struct SwapchainContext {
-        VkSwapchainKHR swapchain;
-        Vector<VkImage> images;
-        Vector<VkImageView> imageViews;
-        Vector<VkFramebuffer> framebuffers;
-        VkRenderPass renderpass;
-        uint32_t minImageCount;
-        VkSurfaceFormatKHR surfaceFormat;
-        VkSurfaceKHR surface;
-        const Window *window;
-        uint32_t width;
-        uint32_t height;
-        VkSurfaceCapabilitiesKHR capabilities;
-        VkPresentModeKHR presentMode;
-    };
+struct VkSwapchainContextKHR {
+    VkSwapchainKHR swapchain;
+    Vector<VkImage> images;
+    Vector<VkImageView> imageViews;
+    Vector<VkFramebuffer> framebuffers;
+    VkRenderPass renderpass;
+    uint32_t minImageCount;
+    VkSurfaceFormatKHR surfaceFormat;
+    VkSurfaceKHR surface;
+    const Window *window;
+    uint32_t width;
+    uint32_t height;
+    VkSurfaceCapabilitiesKHR capabilities;
+    VkPresentModeKHR presentMode;
+};
 
+class VulkanContext {
 public:
     VulkanContext(Window *window);
    ~VulkanContext();
 
 private:
-    void _CreateSwapcahinAboutComponents(SwapchainContext *pSwapchainContext);
-    void _CreateRenderpass(SwapchainContext *pSwapchainContext);
-    void _ConfigurationSwapchainContext(SwapchainContext *pSwapchainContext);
+    void _CreateSwapcahinAboutComponents(VkSwapchainContextKHR *pSwapchainContext);
+    void _CreateRenderpass(VkSwapchainContextKHR *pSwapchainContext);
+    void _ConfigurationSwapchainContext(VkSwapchainContextKHR *pSwapchainContext);
     void _ConfigurationWindowResizeableEventCallback();
 
     void DeviceWaitIdle();
-    void RecreateSwapchainContext(SwapchainContext *pSwapchainContext, uint32_t width, uint32_t height);
+    void RecreateSwapchainContext(VkSwapchainContextKHR *pSwapchainContext, uint32_t width, uint32_t height);
 
-    void CreateSwapchainContext(SwapchainContext *pSwapchainContext);
+    void CreateSwapchainContext(VkSwapchainContextKHR *pSwapchainContext);
     void InitVulkanDriverContext();
 
-    void DestroySwapchainContext(SwapchainContext *pSwapchainContext);
+    void DestroySwapchainContext(VkSwapchainContextKHR *pSwapchainContext);
 
 private:
     VkInstance m_Instance;
     VkSurfaceKHR m_SurfaceKHR;
     VkDevice m_Device;
-    SwapchainContext m_SwapchainContext;
+    VkSwapchainContextKHR m_SwapchainContext;
 
     Window *m_Window;
     VkPhysicalDevice m_PhysicalDevice;
