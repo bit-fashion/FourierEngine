@@ -29,35 +29,41 @@
 #include <GLFW/glfw3.h>
 #include <Typedef.h>
 
+#define HWINDOW GLFWwindow *
+
 class Window;
 
-typedef void (*PFN_WindowResizeableEventCallback)(Window *window, uint32_t width, uint32_t height);
+struct WindowExtent2D {
+    int width;
+    int height;
+};
+
+typedef void (*PFN_WindowResizeableEventCallback)(Window *window, int width, int height);
 
 class Window {
 public:
     Window(const String &title, uint32_t width, uint32_t height);
    ~Window();
 
-public:
-    GLFWwindow *GetHandle() const { return HWIN; }
-    String GetTitle() const { return m_Title; }
-    uint32_t GetWidth() const { return m_Width; }
-    uint32_t GetHeight() const { return m_Height; }
-    bool ShouldClose() const { return glfwWindowShouldClose(HWIN); }
-    void SetWindowUserPointer(void *pointer) { m_UserPointer = pointer; }
-    void *GetWindowUserPointer() const { return m_UserPointer; }
-    void SetWindowResizeableEventCallback(PFN_WindowResizeableEventCallback callback) { m_WindowResizeableEventCallback = callback; }
+   GLFWwindow *GetWindowPointer() const { return m_HWINDOW; }
+   WindowExtent2D GetWindowExtent2D() const;
+   void PutWindowUserPointer(const String &key, pointer_t pointer);
+   pointer_t GetWindowUserPointer(const String &key) const;
+   size_t AddWindowResizeableCallback(PFN_WindowResizeableEventCallback callback);
+   void RemoveWindowResizeableCallback(size_t n);
+   bool is_close() const;
+   void SetWindowHintVisible(bool isVisible) const;
+   int GetKey(int key) const; /* GLFW_KEY_* */
 
 public:
     static void PollEvents() { glfwPollEvents(); }
 
 private:
-    GLFWwindow *HWIN;
-    String m_Title;
-    uint32_t m_Width;
-    uint32_t m_Height;
-    void *m_UserPointer;
-    PFN_WindowResizeableEventCallback m_WindowResizeableEventCallback;
+    HWINDOW m_HWINDOW;
+    WindowExtent2D m_WindowExtent2D;
+    const String m_Title;
+    HashMap<String, pointer_t> m_WindowUserPointers;
+    Vector<PFN_WindowResizeableEventCallback> m_WindowResizeableEventCallbacks;
 };
 
 #endif /* _SPORTS_WINDOW_H_ */

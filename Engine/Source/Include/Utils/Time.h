@@ -16,22 +16,16 @@
  *
  * ************************************************************************/
 
-/* Creates on 2022/9/14. */
+/* Creates on 2023/12/14. */
 
 /*
-  ===================================
-    @author bit-fashion
-  ===================================
+ ===============================
+   @author bit-fashion
+ ===============================
 */
-#include "Window/Window.h"
-#include "Render/Drivers/Vulkan/VulkanContext.h"
+#ifndef _SPORTS_TIME_H_
+#define _SPORTS_TIME_H_
 
-int main(int argc, const char **argv) {
-    Window window("SportsEngine", 800, 600);
-    VulkanContext vulkanContext(&window);
-    window.SetWindowHintVisible(true);
+#include <chrono>
 
-    while (!window.is_close()) {
-        Window::PollEvents();
-    }
-}
+#endif /* _SPORTS_TIME_H_ */

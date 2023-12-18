@@ -40,6 +40,8 @@
 #  define null nullptr
 #endif
 
+#define pointer_t void *
+
 template <typename T> using Vector = std::vector<T>;
 template <typename T, std::size_t N> using Array = std::array<T, N>;
 template <typename K, typename V> using HashMap = std::unordered_map<K, V>;

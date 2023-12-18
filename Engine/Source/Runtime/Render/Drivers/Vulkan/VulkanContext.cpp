@@ -143,8 +143,8 @@ void VulkanContext::_ConfigurationSwapchainContext(VkSwapchainContextKHR *pSwapc
 }
 
 void VulkanContext::_ConfigurationWindowResizeableEventCallback() {
-    m_Window->SetWindowResizeableEventCallback([](Window *window, uint32_t width, uint32_t height){
-        VulkanContext *context = (VulkanContext *) window->GetWindowUserPointer();
+    m_Window->AddWindowResizeableCallback([](Window *window, int width, int height){
+        VulkanContext *context = (VulkanContext *) window->GetWindowUserPointer("VulkanContext");
         context->RecreateSwapchainContext(&context->m_SwapchainContext, width, height);
     });
 }
@@ -168,7 +168,7 @@ void VulkanContext::CreateSwapchainContext(VkSwapchainContextKHR *pSwapchainCont
 }
 
 void VulkanContext::InitVulkanDriverContext() {
-    m_Window->SetWindowUserPointer(this);
+    m_Window->PutWindowUserPointer("VulkanContext", this);
     _ConfigurationWindowResizeableEventCallback();
 
     /* Create vulkan instance. */
@@ -197,7 +197,7 @@ void VulkanContext::InitVulkanDriverContext() {
 
     /* Create window surface */
 #ifdef _glfw3_h_
-    VulkanUtils::CreateWindowSurfaceKHR(m_Instance, m_Window->GetHandle(), &m_SurfaceKHR);
+    VulkanUtils::CreateWindowSurfaceKHR(m_Instance, m_Window->GetWindowPointer(), &m_SurfaceKHR);
 #endif
 
     /* Create vulkan device. */

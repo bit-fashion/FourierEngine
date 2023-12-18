@@ -230,8 +230,9 @@ namespace VulkanUtils {
                                                           VkSwapchainContextKHR *pSwapchainContext) {
         pSwapchainContext->surface = surface;
         pSwapchainContext->window = pWindow;
-        pSwapchainContext->width = pWindow->GetWidth();
-        pSwapchainContext->height = pWindow->GetHeight();
+        auto windowExtent2D = pWindow->GetWindowExtent2D();
+        pSwapchainContext->width = windowExtent2D.width;
+        pSwapchainContext->height = windowExtent2D.height;
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &pSwapchainContext->capabilities);
 
         uint32_t formatCount;
@@ -250,7 +251,7 @@ namespace VulkanUtils {
             pSwapchainContext->width = pSwapchainContext->capabilities.currentExtent.width;
             pSwapchainContext->height = pSwapchainContext->capabilities.currentExtent.height;
         } else {
-            VkExtent2D actualExtent = { static_cast<uint32_t>(pWindow->GetWidth()), static_cast<uint32_t>(pWindow->GetHeight()) };
+            VkExtent2D actualExtent = { static_cast<uint32_t>(windowExtent2D.width), static_cast<uint32_t>(windowExtent2D.height) };
 
             actualExtent.width = std::max(pSwapchainContext->capabilities.minImageExtent.width, std::min(pSwapchainContext->capabilities.maxImageExtent.width, actualExtent.width));
             actualExtent.height = std::max(pSwapchainContext->capabilities.minImageExtent.height, std::min(pSwapchainContext->capabilities.maxImageExtent.height, actualExtent.height));
