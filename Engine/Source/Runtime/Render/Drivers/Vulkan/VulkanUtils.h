@@ -26,6 +26,8 @@
 #ifndef _SPORTS_VULKAN_UTILS_H_
 #define _SPORTS_VULKAN_UTILS_H_
 
+#include <Utils/IOUtils.h>
+
 #define VK_LAYER_KHRONOS_validation "VK_LAYER_KHRONOS_validation"
 
 namespace VulkanUtils {
@@ -275,6 +277,58 @@ namespace VulkanUtils {
             }
         }
         throw std::runtime_error("failed to find suitable memory type!");
+    }
+
+    static VkVertexInputBindingDescription GetVertexInputBindingDescription() {
+        VkVertexInputBindingDescription vertexInputBindingDescription = {};
+        vertexInputBindingDescription.binding = 0;
+        vertexInputBindingDescription.stride = sizeof(Vertex);
+        vertexInputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        return vertexInputBindingDescription;
+    }
+
+    static Array<VkVertexInputAttributeDescription, 3> GetVertexInputAttributeDescriptionArray() {
+        Array<VkVertexInputAttributeDescription, 3> array = {};
+        /* position attribute */
+        array[0].binding = 0;
+        array[0].location = 0;
+        array[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+        array[0].offset = offsetof(Vertex, position);
+
+        /* color attribute */
+        array[1].binding = 0;
+        array[1].location = 1;
+        array[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+        array[1].offset = offsetof(Vertex, color);
+
+        array[2].binding = 0;
+        array[2].location = 2;
+        array[2].format = VK_FORMAT_R32G32_SFLOAT;
+        array[2].offset = offsetof(Vertex, texCoord);
+
+        return array;
+    }
+
+    static VkShaderModule LoadShaderModule(VkDevice device, const String &path, const String &name, VkShaderStageFlagBits flag) {
+        char *buf;
+        size_t size;
+        VkShaderModule shader;
+
+        String ext = flag == VK_SHADER_STAGE_VERTEX_BIT ? ".vert" : ".frag";
+
+        /* load shader binaries. */
+        buf = IOUtils::Read(strfmt("{}/{}.{}", path, name, ext), &size);
+
+        VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
+        shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        shaderModuleCreateInfo.codeSize = size;
+        shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(buf);
+        vkCreateShaderModule(device, &shaderModuleCreateInfo, VK_NULL_HANDLE, &shader);
+
+        /* free binaries buf. */
+        IOUtils::FreeBuffer(buf);
+
+        return shader;
     }
 
 }

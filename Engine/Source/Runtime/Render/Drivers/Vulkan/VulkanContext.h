@@ -30,6 +30,7 @@
 #include <Typedef.h>
 #include <Engine.h>
 #include <stdexcept>
+#include <glm/glm.hpp>
 
 class Window;
 
@@ -55,19 +56,27 @@ struct VkDeviceBuffer {
     VkDeviceSize size;
 };
 
+struct VkFrameContext {
+    uint32_t index;
+    VkCommandBuffer commandBuffer;
+    VkFramebuffer framebuffer;
+};
+
+struct VkDriverGraphicsPipeline {
+    VkPipeline pipeline;
+    VkPipelineLayout pipelineLayout;
+};
+
+struct Vertex {
+    glm::vec3 position;
+    glm::vec3 color;
+    glm::vec2 texCoord;
+};
+
 class VulkanContext {
 public:
     VulkanContext(Window *window);
    ~VulkanContext();
-
-private:
-    void InitVulkanDriverContext(); /* Init Vulkan Context */
-
-private:
-    void _CreateSwapcahinAboutComponents(VkSwapchainContextKHR *pSwapchainContext);
-    void _CreateRenderpass(VkSwapchainContextKHR *pSwapchainContext);
-    void _ConfigurationSwapchainContext(VkSwapchainContextKHR *pSwapchainContext);
-    void _ConfigurationWindowResizeableEventCallback();
 
     void DeviceWaitIdle();
     void CopyBuffer(VkDeviceBuffer dest, VkDeviceBuffer src, VkDeviceSize size);
@@ -81,15 +90,32 @@ private:
                                        VkPipelineStageFlags *pWaitDstStageMask);
     void BeginOnceTimeCommandBufferSubmit(VkCommandBuffer *pCommandBuffer);
     void EndOnceTimeCommandBufferSubmit();
+    void BeginRenderPass(VkRenderPass renderPass);
+    void EndRenderPass();
 
+    void CreateDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> &bindings, VkDescriptorSetLayoutCreateFlags flags,
+                                   VkDescriptorSetLayout *pDescriptorSetLayout);
+    void CreateGraphicsPipeline(const String &shaderfolder, const String &shadername, VkDescriptorSetLayout descriptorSetLayout,
+                                VkDriverGraphicsPipeline *pDriverGraphicsPipeline);
     void AllocateCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer);
     void AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkDeviceBuffer *buffer);
     void RecreateSwapchainContext(VkSwapchainContextKHR *pSwapchainContext, uint32_t width, uint32_t height);
     void CreateSwapchainContext(VkSwapchainContextKHR *pSwapchainContext);
 
+    void DestroyDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout);
+    void DestroyGraphicsPipeline(VkDriverGraphicsPipeline driverGraphicsPipeline);
     void FreeCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer);
     void FreeBuffer(VkDeviceBuffer buffer);
     void DestroySwapchainContext(VkSwapchainContextKHR *pSwapchainContext);
+
+private:
+    void InitVulkanDriverContext(); /* Init Vulkan Context */
+
+private:
+    void _CreateSwapcahinAboutComponents(VkSwapchainContextKHR *pSwapchainContext);
+    void _CreateRenderpass(VkSwapchainContextKHR *pSwapchainContext);
+    void _ConfigurationSwapchainContext(VkSwapchainContextKHR *pSwapchainContext);
+    void _ConfigurationWindowResizeableEventCallback();
 
 private:
     VkInstance m_Instance;
@@ -105,6 +131,7 @@ private:
     VkQueue m_GraphicsQueue;
     VkQueue m_PresentQueue;
     VkCommandBuffer m_SingleTimeCommandBuffer;
+    VkFrameContext m_FrameContext;
 };
 
 #endif /* _SPORTS_VULKAN_CONTEXT_H_ */
