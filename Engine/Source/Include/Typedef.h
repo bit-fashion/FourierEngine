@@ -32,10 +32,19 @@
 #include <format>
 #include <memory>
 #include <array>
+#include <algorithm>
+
+#if defined(VK_VERSION_1_0)
+#  define null VK_NULL_HANDLE
+#else
+#  define null nullptr
+#endif
 
 template <typename T> using Vector = std::vector<T>;
 template <typename T, std::size_t N> using Array = std::array<T, N>;
 template <typename K, typename V> using HashMap = std::unordered_map<K, V>;
 typedef std::string String;
+
+#define _chars(str) (str.c_str())
 
 #endif /* _SPORTS_TYPEDEF_H_ */

@@ -27,13 +27,28 @@
 #define _SPORTS_WINDOW_H_
 
 #include <GLFW/glfw3.h>
+#include <Typedef.h>
 
 class Window {
 public:
-    GLFWwindow *GetHandle() const { return m_Handle; }
+    Window(const String &title, uint32_t width, uint32_t height);
+   ~Window();
+
+public:
+    GLFWwindow *GetHandle() const { return HWIN; }
+    String GetTitle() const { return m_Title; }
+    uint32_t GetWidth() const { return m_Width; }
+    uint32_t GetHeight() const { return m_Height; }
+    bool ShouldClose() const { return glfwWindowShouldClose(HWIN); }
+
+public:
+    static void PollEvents() { glfwPollEvents(); }
 
 private:
-    GLFWwindow *m_Handle;
+    GLFWwindow *HWIN;
+    String m_Title;
+    uint32_t m_Width;
+    uint32_t m_Height;
 };
 
 #endif /* _SPORTS_WINDOW_H_ */

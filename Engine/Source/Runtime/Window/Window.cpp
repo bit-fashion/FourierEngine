@@ -23,15 +23,20 @@
     @author bit-fashion
   ===================================
 */
-#include "Window/Window.h"
-#include "Render/Drivers/Vulkan/VulkanContext.h"
+#include "Window.h"
 
-int main(int argc, const char **argv) {
-    Window window("SportsEngine", 800, 600);
-    VulkanContext vulkanContext(&window);
+Window::Window(const String &title, uint32_t width, uint32_t height)
+  : m_Title(std::move(title)), m_Width(width), m_Height(height) {
 
-    while (!window.ShouldClose()) {
-        Window::PollEvents();
-    }
+    glfwInit();
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
+    HWIN = glfwCreateWindow(m_Width, m_Height,_chars(m_Title), null, null);
+    if (HWIN == null)
+        throw std::runtime_error("Create glfw window failed!");
+}
+
+Window::~Window() {
+    glfwDestroyWindow(HWIN);
+    glfwTerminate();
 }

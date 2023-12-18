@@ -35,26 +35,23 @@ class Window;
 
 class VulkanContext {
 public:
-    struct DriverPhysicalDevice {
-        VkPhysicalDevice device;
-        VkPhysicalDeviceProperties properties;
-        VkPhysicalDeviceFeatures features;
-    };
-
-public:
     VulkanContext(const Window *pWindow);
    ~VulkanContext();
 
 private:
+    void CreateVulkanSwapchainKHR(VkSwapchainKHR *pSwapchain);
     void InitVulkanDriverContext();
 
 private:
     VkInstance m_Instance;
     VkSurfaceKHR m_SurfaceKHR;
     VkDevice m_Device;
+    VkSwapchainKHR m_SwapchainKHR;
 
     const Window *m_Window;
-    DriverPhysicalDevice m_DriverPhysicalDevice;
+    VkPhysicalDevice m_PhysicalDevice;
+    VkPhysicalDeviceProperties m_PhysicalDeviceProperties;
+    VkPhysicalDeviceFeatures m_PhysicalDeviceFeature;
 };
 
 #endif /* _SPORTS_VULKAN_CONTEXT_H_ */

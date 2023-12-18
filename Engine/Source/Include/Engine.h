@@ -28,4 +28,9 @@
 
 #define SPORTS_ENGINE_NAME "SportsEngine"
 
+//
+// config
+//
+#define ENABLE_VULKAN_VALIDATION_LAYER
+
 #endif /* _SPORTS_ENGINE_H_ */
