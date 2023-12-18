@@ -23,9 +23,4 @@
    @author bit-fashion
  ===============================
 */
-#ifndef _SPORTS_TIME_H_
-#define _SPORTS_TIME_H_
-
-#include <chrono>
-
-#endif /* _SPORTS_TIME_H_ */
+#include <pch.h>

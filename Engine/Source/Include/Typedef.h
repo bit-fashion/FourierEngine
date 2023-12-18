@@ -49,4 +49,11 @@ typedef std::string String;
 
 #define _chars(str) (str.c_str())
 
+#define vstrfmt(_fmt, _args) std::vformat(_fmt.get(), std::make_format_args(_args...))
+
+template<typename... Args>
+inline static String strfmt(std::format_string<Args...> fmt, Args&&... args) {
+    return vstrfmt(fmt, args);
+}
+
 #endif /* _SPORTS_TYPEDEF_H_ */
