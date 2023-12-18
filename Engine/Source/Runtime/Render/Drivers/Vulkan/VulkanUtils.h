@@ -99,17 +99,6 @@ namespace VulkanUtils {
         uint32_t presentQueueFamily = 0;
     };
 
-    struct SwapchainSupportDetail {
-        uint32_t minImageCount;
-        VkSurfaceFormatKHR surfaceFormat;
-        VkSurfaceKHR surface;
-        const Window *window;
-        uint32_t width;
-        uint32_t height;
-        VkSurfaceCapabilitiesKHR capabilities;
-        VkPresentModeKHR presentMode;
-    };
-
     static VkBool32 _CheckQueueFamilyIndicesComplete(QueueFamilyIndices &queueFamilyIndices) {
         return queueFamilyIndices.graphicsQueueFamily > 0 && queueFamilyIndices.presentQueueFamily > 0;
     }
@@ -237,42 +226,43 @@ namespace VulkanUtils {
         *pPresentMode = bestMode;
     }
 
-    static void GetVulkanSwapchainSupportDetail(VkPhysicalDevice device, VkSurfaceKHR surface, const Window *pWindow, SwapchainSupportDetail *pDetail) {
-        pDetail->surface = surface;
-        pDetail->window = pWindow;
-        pDetail->width = pWindow->GetWidth();
-        pDetail->height = pWindow->GetHeight();
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &pDetail->capabilities);
+    static void ConfigurationVulkanSwapchainContextDetail(VkPhysicalDevice device, VkSurfaceKHR surface, const Window *pWindow,
+                                                VulkanContext::SwapchainContext *pSwapchainContext) {
+        pSwapchainContext->surface = surface;
+        pSwapchainContext->window = pWindow;
+        pSwapchainContext->width = pWindow->GetWidth();
+        pSwapchainContext->height = pWindow->GetHeight();
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &pSwapchainContext->capabilities);
 
         uint32_t formatCount;
         vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, null);
         Vector<VkSurfaceFormatKHR> formats(formatCount);
         vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, std::data(formats));
-        _SelectVulkanSwapchainSurfaceFormatKHR(formats, &pDetail->surfaceFormat);
+        _SelectVulkanSwapchainSurfaceFormatKHR(formats, &pSwapchainContext->surfaceFormat);
 
         uint32_t presentModeCount;
         vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, null);
         Vector<VkPresentModeKHR> presentModes(presentModeCount);
         vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, std::data(presentModes));
-        _SelectVulkanSwapchainPresentModeKHR(presentModes, &pDetail->presentMode);
+        _SelectVulkanSwapchainPresentModeKHR(presentModes, &pSwapchainContext->presentMode);
 
-        if (pDetail->capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
-            pDetail->width = pDetail->capabilities.currentExtent.width;
-            pDetail->height = pDetail->capabilities.currentExtent.height;
+        if (pSwapchainContext->capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+            pSwapchainContext->width = pSwapchainContext->capabilities.currentExtent.width;
+            pSwapchainContext->height = pSwapchainContext->capabilities.currentExtent.height;
         } else {
             VkExtent2D actualExtent = { static_cast<uint32_t>(pWindow->GetWidth()), static_cast<uint32_t>(pWindow->GetHeight()) };
 
-            actualExtent.width = std::max(pDetail->capabilities.minImageExtent.width, std::min(pDetail->capabilities.maxImageExtent.width, actualExtent.width));
-            actualExtent.height = std::max(pDetail->capabilities.minImageExtent.height, std::min(pDetail->capabilities.maxImageExtent.height, actualExtent.height));
+            actualExtent.width = std::max(pSwapchainContext->capabilities.minImageExtent.width, std::min(pSwapchainContext->capabilities.maxImageExtent.width, actualExtent.width));
+            actualExtent.height = std::max(pSwapchainContext->capabilities.minImageExtent.height, std::min(pSwapchainContext->capabilities.maxImageExtent.height, actualExtent.height));
 
-            pDetail->width = actualExtent.width;
-            pDetail->height = actualExtent.height;
+            pSwapchainContext->width = actualExtent.width;
+            pSwapchainContext->height = actualExtent.height;
         }
 
         /* 设置三重缓冲 */
-        pDetail->minImageCount = pDetail->capabilities.minImageCount + 1;
-        if (pDetail->capabilities.maxImageCount > 0 && pDetail->minImageCount > pDetail->capabilities.maxImageCount)
-            pDetail->minImageCount = pDetail->capabilities.maxImageCount;
+        pSwapchainContext->minImageCount = pSwapchainContext->capabilities.minImageCount + 1;
+        if (pSwapchainContext->capabilities.maxImageCount > 0 && pSwapchainContext->minImageCount > pSwapchainContext->capabilities.maxImageCount)
+            pSwapchainContext->minImageCount = pSwapchainContext->capabilities.maxImageCount;
     }
 
 }

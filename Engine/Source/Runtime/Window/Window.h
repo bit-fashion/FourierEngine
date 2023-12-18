@@ -29,6 +29,10 @@
 #include <GLFW/glfw3.h>
 #include <Typedef.h>
 
+class Window;
+
+typedef void (*PFN_WindowResizeableEventCallback)(Window *window, uint32_t width, uint32_t height);
+
 class Window {
 public:
     Window(const String &title, uint32_t width, uint32_t height);
@@ -40,6 +44,9 @@ public:
     uint32_t GetWidth() const { return m_Width; }
     uint32_t GetHeight() const { return m_Height; }
     bool ShouldClose() const { return glfwWindowShouldClose(HWIN); }
+    void SetWindowUserPointer(void *pointer) { m_UserPointer = pointer; }
+    void *GetWindowUserPointer() const { return m_UserPointer; }
+    void SetWindowResizeableEventCallback(PFN_WindowResizeableEventCallback callback) { m_WindowResizeableEventCallback = callback; }
 
 public:
     static void PollEvents() { glfwPollEvents(); }
@@ -49,6 +56,8 @@ private:
     String m_Title;
     uint32_t m_Width;
     uint32_t m_Height;
+    void *m_UserPointer;
+    PFN_WindowResizeableEventCallback m_WindowResizeableEventCallback;
 };
 
 #endif /* _SPORTS_WINDOW_H_ */

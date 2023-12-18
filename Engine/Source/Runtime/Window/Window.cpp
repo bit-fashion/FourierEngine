@@ -34,6 +34,15 @@ Window::Window(const String &title, uint32_t width, uint32_t height)
     HWIN = glfwCreateWindow(m_Width, m_Height,_chars(m_Title), null, null);
     if (HWIN == null)
         throw std::runtime_error("Create glfw window failed!");
+
+    glfwSetWindowUserPointer(HWIN, this);
+
+    glfwSetWindowSizeCallback(HWIN, [](GLFWwindow *window, int width, int height) {
+        Window *win = (Window *) glfwGetWindowUserPointer(window);
+        win->m_Width = width;
+        win->m_Height = height;
+        win->m_WindowResizeableEventCallback(win, win->m_Width, win->m_Height);
+    });
 }
 
 Window::~Window() {

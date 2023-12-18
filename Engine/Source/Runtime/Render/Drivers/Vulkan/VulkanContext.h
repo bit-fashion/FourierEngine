@@ -35,20 +35,47 @@ class Window;
 
 class VulkanContext {
 public:
-    VulkanContext(const Window *pWindow);
+    struct SwapchainContext {
+        VkSwapchainKHR swapchain;
+        Vector<VkImage> images;
+        Vector<VkImageView> imageViews;
+        Vector<VkFramebuffer> framebuffers;
+        VkRenderPass renderpass;
+        uint32_t minImageCount;
+        VkSurfaceFormatKHR surfaceFormat;
+        VkSurfaceKHR surface;
+        const Window *window;
+        uint32_t width;
+        uint32_t height;
+        VkSurfaceCapabilitiesKHR capabilities;
+        VkPresentModeKHR presentMode;
+    };
+
+public:
+    VulkanContext(Window *window);
    ~VulkanContext();
 
 private:
-    void CreateVulkanSwapchainKHR(VkSwapchainKHR *pSwapchain);
+    void _CreateSwapcahinAboutComponents(SwapchainContext *pSwapchainContext);
+    void _CreateRenderpass(SwapchainContext *pSwapchainContext);
+    void _ConfigurationSwapchainContext(SwapchainContext *pSwapchainContext);
+    void _ConfigurationWindowResizeableEventCallback();
+
+    void DeviceWaitIdle();
+    void RecreateSwapchainContext(SwapchainContext *pSwapchainContext, uint32_t width, uint32_t height);
+
+    void CreateSwapchainContext(SwapchainContext *pSwapchainContext);
     void InitVulkanDriverContext();
+
+    void DestroySwapchainContext(SwapchainContext *pSwapchainContext);
 
 private:
     VkInstance m_Instance;
     VkSurfaceKHR m_SurfaceKHR;
     VkDevice m_Device;
-    VkSwapchainKHR m_SwapchainKHR;
+    SwapchainContext m_SwapchainContext;
 
-    const Window *m_Window;
+    Window *m_Window;
     VkPhysicalDevice m_PhysicalDevice;
     VkPhysicalDeviceProperties m_PhysicalDeviceProperties;
     VkPhysicalDeviceFeatures m_PhysicalDeviceFeature;
