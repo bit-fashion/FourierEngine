@@ -40,7 +40,7 @@ struct UniformBufferObject {
 };
 
 int main(int argc, const char **argv) {
-    Window window("SportsEngine", 800, 600);
+    Window window("SportsEngine", 120, 90);
     std::unique_ptr<VulkanContext> vulkanContext = std::make_unique<VulkanContext>(&window);
     window.SetWindowHintVisible(true);
 
@@ -115,8 +115,6 @@ int main(int argc, const char **argv) {
             vulkanContext->DrawIndexed(std::size(indices));
 
             editor.BeginGameEditorFrame();
-            static bool isShowDemo = true;
-            ImGui::ShowDemoWindow(&isShowDemo);
             editor.EndGameEditorFrame();
         }
         vulkanContext->EndRender();

@@ -310,6 +310,16 @@ void VulkanContext::EndRender() {
 
 void VulkanContext::BindRenderPipeline(VkRenderPipeline &pipeline) {
     vkCmdBindPipeline(m_FrameContext.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
+    // 动态视口
+    float w = m_SwapchainContext.width;
+    float h = m_SwapchainContext.height;
+    VkViewport viewport = { 0.0f, 0.0f, w, h, 0.0f, 1.0f };
+    vkCmdSetViewport(m_FrameContext.commandBuffer, 0, 1, &viewport);
+
+    VkRect2D scissor;
+    scissor.offset = {0, 0};
+    scissor.extent = { m_SwapchainContext.width, m_SwapchainContext.height };
+    vkCmdSetScissor(m_FrameContext.commandBuffer, 0, 1, &scissor);
 }
 
 void VulkanContext::BindDescriptorSets(VkRenderPipeline &pipeline, uint32_t count, VkDescriptorSet *pDescriptorSets) {
@@ -713,15 +723,16 @@ void VulkanContext::CreateRenderPipeline(const String &shaderfolder, const Strin
     pipelineColorBlendStateCreateInfo.blendConstants[3] = 0.0f; // Optional
 
     /* 动态修改 */
-    VkDynamicState dynamicStates[] = {
+    Vector<VkDynamicState> dynamicStates = {
             VK_DYNAMIC_STATE_VIEWPORT,
+            VK_DYNAMIC_STATE_SCISSOR,
             VK_DYNAMIC_STATE_LINE_WIDTH
     };
 
     VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo = {};
     pipelineDynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    pipelineDynamicStateCreateInfo.dynamicStateCount = 2;
-    pipelineDynamicStateCreateInfo.pDynamicStates = dynamicStates;
+    pipelineDynamicStateCreateInfo.dynamicStateCount = std::size(dynamicStates);
+    pipelineDynamicStateCreateInfo.pDynamicStates = std::data(dynamicStates);
 
     /* 管道布局 */
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
@@ -744,7 +755,7 @@ void VulkanContext::CreateRenderPipeline(const String &shaderfolder, const Strin
     graphicsPipelineCreateInfo.pMultisampleState = &pipelineMultisampleStateCreateInfo;
     graphicsPipelineCreateInfo.pDepthStencilState = nullptr; // Optional
     graphicsPipelineCreateInfo.pColorBlendState = &pipelineColorBlendStateCreateInfo;
-    graphicsPipelineCreateInfo.pDynamicState = nullptr; // Optional
+    graphicsPipelineCreateInfo.pDynamicState = &pipelineDynamicStateCreateInfo; // Optional
     graphicsPipelineCreateInfo.layout = pDriverGraphicsPipeline->pipelineLayout;
     graphicsPipelineCreateInfo.renderPass = m_SwapchainContext.renderpass;
     graphicsPipelineCreateInfo.subpass = 0;
@@ -805,9 +816,6 @@ void VulkanContext::CreateSwapchainContext(VkSwapchainContextKHR *pSwapchainCont
     _ConfigurationSwapchainContext(pSwapchainContext);
     _CreateRenderpass(pSwapchainContext);
     _CreateSwapcahinAboutComponents(pSwapchainContext);
-
-    CreateSemaphore(&pSwapchainContext->imageAvailableSemaphore);
-    CreateSemaphore(&pSwapchainContext->renderFinishedSemaphore);
 }
 
 void VulkanContext::InitVulkanDriverContext() {
@@ -922,6 +930,8 @@ void VulkanContext::_InitVulkanContextCommandPool() {
 void VulkanContext::_InitVulkanContextSwapchain() {
     /* Create swapchain */
     CreateSwapchainContext(&m_SwapchainContext);
+    CreateSemaphore(&m_SwapchainContext.imageAvailableSemaphore);
+    CreateSemaphore(&m_SwapchainContext.renderFinishedSemaphore);
 }
 
 void VulkanContext::_InitVulkanContextCommandBuffers() {
