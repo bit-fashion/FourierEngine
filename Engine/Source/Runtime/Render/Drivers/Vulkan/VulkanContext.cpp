@@ -32,6 +32,11 @@ VulkanContext::VulkanContext(Window *window) : m_Window(window) {
 }
 
 VulkanContext::~VulkanContext() {
+    vkDestroyDescriptorPool(m_Device, m_DescriptorPool, VulkanUtils::Allocator);
+    FreeCommandBuffer(std::size(m_CommandBuffers), std::data(m_CommandBuffers));
+    vkDestroyCommandPool(m_Device, m_CommandPool, VulkanUtils::Allocator);
+    vkDestroySemaphore(m_Device, m_SwapchainContext.renderFinishedSemaphore, VulkanUtils::Allocator);
+    vkDestroySemaphore(m_Device, m_SwapchainContext.imageAvailableSemaphore, VulkanUtils::Allocator);
     DestroySwapchainContext(&m_SwapchainContext);
     vkDestroyDevice(m_Device, VulkanUtils::Allocator);
     vkDestroySurfaceKHR(m_Instance, m_SurfaceKHR, VulkanUtils::Allocator);
@@ -307,6 +312,10 @@ void VulkanContext::BindRenderPipeline(VkRenderPipeline *pPipeline) {
 void VulkanContext::BindDescriptorSet(VkRenderPipeline *pPipeline, uint32_t count, VkDescriptorSet *pDescriptorSets) {
     vkCmdBindDescriptorSets(m_FrameContext.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             pPipeline->pipelineLayout, 0, count, pDescriptorSets, 0, null);
+}
+
+void VulkanContext::DrawIndexed(uint32_t indexCount) {
+    vkCmdDrawIndexed(m_FrameContext.commandBuffer, indexCount, 1, 0, 0, 0);
 }
 
 void VulkanContext::AllocateVertexBuffer(VkDeviceSize size, const Vertex *pVertices, VkDeviceBuffer *pVertexBuffer) {
@@ -729,7 +738,6 @@ void VulkanContext::AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, 
     bufferCreateInfo.usage = usage;
     bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     vkCreateBuffer(m_Device, &bufferCreateInfo, VulkanUtils::Allocator, &buffer->buffer);
-    vkCreateBuffer(m_Device, &bufferCreateInfo, VulkanUtils::Allocator, &buffer->buffer);
 
     /** Query memory requirements. */
     VkMemoryRequirements memoryRequirements;
@@ -869,20 +877,31 @@ void VulkanContext::InitDescriptorPool() {
     vkCreateDescriptorPool(m_Device, &descriptorPoolCrateInfo, VulkanUtils::Allocator, &m_DescriptorPool);
 }
 
-void VulkanContext::DestroyDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout) {
+void VulkanContext::DestroyTexture2D(VkTexture2D &texture) {
+    vkDestroySampler(m_Device, texture.sampler, VulkanUtils::Allocator);
+    vkDestroyImageView(m_Device, texture.imageView, VulkanUtils::Allocator);
+    vkDestroyImage(m_Device, texture.image, VulkanUtils::Allocator);
+    vkFreeMemory(m_Device, texture.memory, VulkanUtils::Allocator);
+}
+
+void VulkanContext::FreeDescriptorSets(uint32_t count, VkDescriptorSet *pDescriptorSet) {
+    vkFreeDescriptorSets(m_Device, m_DescriptorPool, count, pDescriptorSet);
+}
+
+void VulkanContext::DestroyDescriptorSetLayout(VkDescriptorSetLayout &descriptorSetLayout) {
     vkDestroyDescriptorSetLayout(m_Device, descriptorSetLayout, VulkanUtils::Allocator);
 }
 
-void VulkanContext::DestroyRenderPipeline(VkRenderPipeline driverGraphicsPipeline) {
-    vkDestroyPipeline(m_Device, driverGraphicsPipeline.pipeline, VulkanUtils::Allocator);
-    vkDestroyPipelineLayout(m_Device, driverGraphicsPipeline.pipelineLayout, VulkanUtils::Allocator);
+void VulkanContext::DestroyRenderPipeline(VkRenderPipeline &pipeline) {
+    vkDestroyPipeline(m_Device, pipeline.pipeline, VulkanUtils::Allocator);
+    vkDestroyPipelineLayout(m_Device, pipeline.pipelineLayout, VulkanUtils::Allocator);
 }
 
 void VulkanContext::FreeCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer) {
     vkFreeCommandBuffers(m_Device, m_CommandPool, count, pCommandBuffer);
 }
 
-void VulkanContext::FreeBuffer(VkDeviceBuffer buffer) {
+void VulkanContext::FreeBuffer(VkDeviceBuffer &buffer) {
     vkFreeMemory(m_Device, buffer.memory, VulkanUtils::Allocator);
     vkDestroyBuffer(m_Device, buffer.buffer, VulkanUtils::Allocator);
 }

@@ -89,7 +89,7 @@ public:
     VulkanContext(Window *window);
    ~VulkanContext();
 
-   void GetFrameContext(VkFrameContext *pContext) { *pContext = m_FrameContext; }
+    void GetFrameContext(VkFrameContext *pContext) { *pContext = m_FrameContext; }
     void DeviceWaitIdle();
     void CopyBuffer(VkDeviceBuffer dest, VkDeviceBuffer src, VkDeviceSize size);
     void MapMemory(VkDeviceBuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void **ppData);
@@ -112,6 +112,7 @@ public:
     VkDevice GetDevice() const { return m_Device; }
     void BindRenderPipeline(VkRenderPipeline *pPipeline);
     void BindDescriptorSet(VkRenderPipeline *pPipeline, uint32_t count, VkDescriptorSet *pDescriptorSets);
+    void DrawIndexed(uint32_t indexCount);
 
     void AllocateVertexBuffer(VkDeviceSize size, const Vertex *pVertices, VkDeviceBuffer *pVertexBuffer);
     void AllocateIndexBuffer(VkDeviceSize size, const uint32_t *pIndices, VkDeviceBuffer *pIndexBuffer);
@@ -130,10 +131,12 @@ public:
     void RecreateSwapchainContext(VkSwapchainContextKHR *pSwapchainContext, uint32_t width, uint32_t height);
     void CreateSwapchainContext(VkSwapchainContextKHR *pSwapchainContext);
 
-    void DestroyDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout);
-    void DestroyRenderPipeline(VkRenderPipeline driverGraphicsPipeline);
+    void DestroyTexture2D(VkTexture2D &texture);
+    void FreeDescriptorSets(uint32_t count, VkDescriptorSet *pDescriptorSet);
+    void DestroyDescriptorSetLayout(VkDescriptorSetLayout &descriptorSetLayout);
+    void DestroyRenderPipeline(VkRenderPipeline &pipeline);
     void FreeCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer);
-    void FreeBuffer(VkDeviceBuffer buffer);
+    void FreeBuffer(VkDeviceBuffer &buffer);
     void DestroySwapchainContext(VkSwapchainContextKHR *pSwapchainContext);
 
 private:

@@ -144,10 +144,17 @@ int main(int argc, const char **argv) {
             vkCmdBindVertexBuffers(frameContext.commandBuffer, 0, 1, buffers, offsets);
             vkCmdBindIndexBuffer(frameContext.commandBuffer, indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
             /* draw call */
-            // vkCmdDraw(mVulkanRenderContext.commandBuffer, 3, 1, 0, 0);
-            vkCmdDrawIndexed(frameContext.commandBuffer, static_cast<uint32_t>(std::size(indices)), 1, 0, 0, 0);
+            vulkanContext->DrawIndexed(std::size(indices));
         }
         vulkanContext->EndRender();
         Window::PollEvents();
     }
+
+    vulkanContext->FreeBuffer(uniformBuffer);
+    vulkanContext->DestroyTexture2D(texture2D);
+    vulkanContext->FreeBuffer(indexBuffer);
+    vulkanContext->FreeBuffer(vertexBuffer);
+    vulkanContext->FreeDescriptorSets(1, &descriptorSet);
+    vulkanContext->DestroyDescriptorSetLayout(descriptorSetLayout);
+    vulkanContext->DestroyRenderPipeline(pipeline);
 }
