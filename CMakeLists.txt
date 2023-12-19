@@ -51,6 +51,8 @@ ADD_EXECUTABLE(${PROJECT_NAME}
   "${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Main.cpp"
   "${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Editor/GameEditor.cpp"
   "${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Window/Window.cpp"
+  #[[ Render ]]
+  "${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Render/Camera/OrthoCamera.cpp"
   "${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Render/Drivers/Vulkan/VulkanContext.cpp"
   #[[ Dear ImGUI ]]
   "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/imgui.cpp"

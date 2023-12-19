@@ -23,12 +23,15 @@
    @author bit-fashion
  ===============================
 */
-#ifndef _SPORTS_ENGINE_PCH_H_
-#define _SPORTS_ENGINE_PCH_H_
+#pragma once
 
-#include <Engine.h>
-#include <Typedef.h>
-#include <System.h>
-#include <Math.h>
+#include "Camera.h"
 
-#endif /* _SPORTS_ENGINE_PCH_H_ */
+class OrthoCamera : public Camera {
+public:
+    OrthoCamera(float left, float right, float bottom, float top);
+   ~OrthoCamera() = default;
+
+   void UpdateCamera() override;
+
+};

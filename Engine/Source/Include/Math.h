@@ -23,12 +23,12 @@
    @author bit-fashion
  ===============================
 */
-#ifndef _SPORTS_ENGINE_PCH_H_
-#define _SPORTS_ENGINE_PCH_H_
+#ifndef _SPORTS_ENGINE_MATH_H_
+#define _SPORTS_ENGINE_MATH_H_
 
-#include <Engine.h>
-#include <Typedef.h>
-#include <System.h>
-#include <Math.h>
+// glm
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
-#endif /* _SPORTS_ENGINE_PCH_H_ */
+#endif /* _SPORTS_ENGINE_MATH_H_ */

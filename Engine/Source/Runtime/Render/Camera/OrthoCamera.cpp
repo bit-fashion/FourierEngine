@@ -23,12 +23,12 @@
    @author bit-fashion
  ===============================
 */
-#ifndef _SPORTS_ENGINE_PCH_H_
-#define _SPORTS_ENGINE_PCH_H_
+#include "OrthoCamera.h"
 
-#include <Engine.h>
-#include <Typedef.h>
-#include <System.h>
-#include <Math.h>
+OrthoCamera::OrthoCamera(float left, float right, float bottom, float top) {
+    m_ViewMatrix = glm::mat4(1.0f);
+    m_ProjectionMatrix = glm::ortho(left, right, bottom, top, -1.0f, 1.0f);
+}
 
-#endif /* _SPORTS_ENGINE_PCH_H_ */
+void OrthoCamera::UpdateCamera() {
+}

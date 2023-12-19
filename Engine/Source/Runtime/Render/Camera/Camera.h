@@ -23,12 +23,25 @@
    @author bit-fashion
  ===============================
 */
-#ifndef _SPORTS_ENGINE_PCH_H_
-#define _SPORTS_ENGINE_PCH_H_
+#ifndef _SPORTS_ENGINE_CAMERA_H_
+#define _SPORTS_ENGINE_CAMERA_H_
 
-#include <Engine.h>
 #include <Typedef.h>
-#include <System.h>
+// glm
 #include <Math.h>
 
-#endif /* _SPORTS_ENGINE_PCH_H_ */
+class Camera {
+public:
+    // MV 矩阵
+    const glm::mat4 &GetViewMatrix() const { return m_ViewMatrix; };
+    const glm::mat4 &GetProjectionMatrix() const { return m_ProjectionMatrix; };
+
+    // 更新摄像机数据，由子类实现
+    virtual void UpdateCamera() = 0;
+
+protected:
+    glm::mat4 m_ViewMatrix;
+    glm::mat4 m_ProjectionMatrix;
+};
+
+#endif /* _SPORTS_ENGINE_CAMERA_H_ */

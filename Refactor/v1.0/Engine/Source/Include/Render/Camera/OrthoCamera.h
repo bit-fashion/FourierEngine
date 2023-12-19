@@ -22,4 +22,6 @@
 #include "Camera.h"
 
 class OrthoCamera : public Camera {
+public:
+    OrthoCamera()
 };
