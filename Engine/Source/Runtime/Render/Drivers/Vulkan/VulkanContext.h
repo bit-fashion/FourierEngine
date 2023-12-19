@@ -48,6 +48,8 @@ struct VkSwapchainContextKHR {
     uint32_t height;
     VkSurfaceCapabilitiesKHR capabilities;
     VkPresentModeKHR presentMode;
+    VkSemaphore imageAvailableSemaphore;
+    VkSemaphore renderFinishedSemaphore;
 };
 
 struct VkDeviceBuffer {
@@ -62,7 +64,7 @@ struct VkFrameContext {
     VkFramebuffer framebuffer;
 };
 
-struct VkDriverGraphicsPipeline {
+struct VkRenderPipeline {
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
 };
@@ -73,11 +75,21 @@ struct Vertex {
     glm::vec2 texCoord;
 };
 
+struct VkTexture2D {
+    VkImage image;
+    VkImageView imageView;
+    VkSampler sampler;
+    VkFormat format;
+    VkImageLayout layout;
+    VkDeviceMemory memory;
+};
+
 class VulkanContext {
 public:
     VulkanContext(Window *window);
    ~VulkanContext();
 
+   void GetFrameContext(VkFrameContext *pContext) { *pContext = m_FrameContext; }
     void DeviceWaitIdle();
     void CopyBuffer(VkDeviceBuffer dest, VkDeviceBuffer src, VkDeviceSize size);
     void MapMemory(VkDeviceBuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void **ppData);
@@ -90,26 +102,43 @@ public:
                                        VkPipelineStageFlags *pWaitDstStageMask);
     void BeginOnceTimeCommandBufferSubmit(VkCommandBuffer *pCommandBuffer);
     void EndOnceTimeCommandBufferSubmit();
+    void BeginRecordCommandBuffer();
+    void EndRecordCommandBuffer();
     void BeginRenderPass(VkRenderPass renderPass);
     void EndRenderPass();
+    void QueueWaitIdle(VkQueue queue);
+    void BeginRender();
+    void EndRender();
+    VkDevice GetDevice() const { return m_Device; }
+    void BindRenderPipeline(VkRenderPipeline *pPipeline);
+    void BindDescriptorSet(VkRenderPipeline *pPipeline, uint32_t count, VkDescriptorSet *pDescriptorSets);
 
+    void AllocateVertexBuffer(VkDeviceSize size, const Vertex *pVertices, VkDeviceBuffer *pVertexBuffer);
+    void AllocateIndexBuffer(VkDeviceSize size, const uint32_t *pIndices, VkDeviceBuffer *pIndexBuffer);
+    void TransitionTextureLayout(VkTexture2D *texture, VkImageLayout newLayout);
+    void CopyTextureBuffer(VkDeviceBuffer &buffer, VkTexture2D &texture, uint32_t width, uint32_t height);
+    void CreateTexture2D(const String &path, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+                         VkMemoryPropertyFlags properties, VkTexture2D *pTexture2D);
+    void CreateSemaphore(VkSemaphore *semaphore);
     void CreateDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> &bindings, VkDescriptorSetLayoutCreateFlags flags,
                                    VkDescriptorSetLayout *pDescriptorSetLayout);
-    void CreateGraphicsPipeline(const String &shaderfolder, const String &shadername, VkDescriptorSetLayout descriptorSetLayout,
-                                VkDriverGraphicsPipeline *pDriverGraphicsPipeline);
+    void AllocateDescriptorSet(Vector<VkDescriptorSetLayout> &layouts, VkDescriptorSet *pDescriptorSet);
+    void CreateRenderPipeline(const String &shaderfolder, const String &shadername, VkDescriptorSetLayout descriptorSetLayout,
+                                VkRenderPipeline *pDriverGraphicsPipeline);
     void AllocateCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer);
     void AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkDeviceBuffer *buffer);
     void RecreateSwapchainContext(VkSwapchainContextKHR *pSwapchainContext, uint32_t width, uint32_t height);
     void CreateSwapchainContext(VkSwapchainContextKHR *pSwapchainContext);
 
     void DestroyDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout);
-    void DestroyGraphicsPipeline(VkDriverGraphicsPipeline driverGraphicsPipeline);
+    void DestroyRenderPipeline(VkRenderPipeline driverGraphicsPipeline);
     void FreeCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer);
     void FreeBuffer(VkDeviceBuffer buffer);
     void DestroySwapchainContext(VkSwapchainContextKHR *pSwapchainContext);
 
 private:
     void InitVulkanDriverContext(); /* Init Vulkan Context */
+    void InitDescriptorPool();
 
 private:
     void _CreateSwapcahinAboutComponents(VkSwapchainContextKHR *pSwapchainContext);
@@ -122,6 +151,7 @@ private:
     VkSurfaceKHR m_SurfaceKHR;
     VkDevice m_Device;
     VkCommandPool m_CommandPool;
+    Vector<VkCommandBuffer> m_CommandBuffers;
     VkSwapchainContextKHR m_SwapchainContext;
 
     Window *m_Window;
@@ -132,6 +162,7 @@ private:
     VkQueue m_PresentQueue;
     VkCommandBuffer m_SingleTimeCommandBuffer;
     VkFrameContext m_FrameContext;
+    VkDescriptorPool m_DescriptorPool;
 };
 
 #endif /* _SPORTS_VULKAN_CONTEXT_H_ */

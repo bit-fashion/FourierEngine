@@ -56,4 +56,7 @@ inline static String strfmt(std::format_string<Args...> fmt, Args&&... args) {
     return vstrfmt(fmt, args);
 }
 
+/* Get total byte size of array. */
+#define ARRAY_SIZE(a) (sizeof(a[0]) * std::size(a))
+
 #endif /* _SPORTS_TYPEDEF_H_ */

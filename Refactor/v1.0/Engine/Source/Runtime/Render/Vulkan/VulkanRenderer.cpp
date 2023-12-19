@@ -1263,7 +1263,7 @@ void VulkanRenderer::QueueSubmitBuffer() {
     presentInfo.pImageIndices = &mVulkanRenderContext.index;
     presentInfo.pResults = nullptr; // Optional
 
-    mVulkanDevice->SyncSubmitQueueWithPresentInfoKHR(&presentInfo);
+    mVulkanDevice->SyncSubmitQueueWithPresentInfoKHR(&presentInfo)
 }
 
 void VulkanRenderer::UpdateUniformBuffer() {

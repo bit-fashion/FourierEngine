@@ -54,6 +54,8 @@ public:
    bool is_close() const;
    void SetWindowHintVisible(bool isVisible) const;
    int GetKey(int key) const; /* GLFW_KEY_* */
+   int GetWidth() const { return m_WindowExtent2D.width; }
+   int GetHeight() const { return m_WindowExtent2D.height; }
 
 public:
     static void PollEvents() { glfwPollEvents(); }

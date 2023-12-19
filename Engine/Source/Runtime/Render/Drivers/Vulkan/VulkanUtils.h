@@ -27,6 +27,8 @@
 #define _SPORTS_VULKAN_UTILS_H_
 
 #include <Utils/IOUtils.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
 
 #define VK_LAYER_KHRONOS_validation "VK_LAYER_KHRONOS_validation"
 
@@ -194,6 +196,8 @@ namespace VulkanUtils {
 
         deviceQueueCreateInfos.push_back(graphicsDeviceQueueCreateInfo);
         deviceQueueCreateInfos.push_back(presentDeviceQueueCreateInfo);
+
+        return queueFamilyIndices;
     }
 
     static void _SelectVulkanSwapchainSurfaceFormatKHR(Vector<VkSurfaceFormatKHR> &formats, VkSurfaceFormatKHR *pSurfaceFormat) {
@@ -314,7 +318,7 @@ namespace VulkanUtils {
         size_t size;
         VkShaderModule shader;
 
-        String ext = flag == VK_SHADER_STAGE_VERTEX_BIT ? ".vert" : ".frag";
+        String ext = flag == VK_SHADER_STAGE_VERTEX_BIT ? "vert.spv" : "frag.spv";
 
         /* load shader binaries. */
         buf = IOUtils::Read(strfmt("{}/{}.{}", path, name, ext), &size);
