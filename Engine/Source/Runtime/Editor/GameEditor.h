@@ -38,8 +38,17 @@ public:
     GameEditor(const Window *window, VulkanContext *context);
     ~GameEditor();
 
+    //
+    // start gui render
+    //
     void BeginGameEditorFrame();
     void EndGameEditorFrame();
+
+private:
+    void InitGameEditorContext(const Window *window, VulkanContext *context);
+
+private:
+    void _ThemeEmbraceTheDarkness();
 };
 
 #endif /* _SPORTS_ENGINE_EDITOR_H_ */
