@@ -26,6 +26,7 @@
 #include "Window/Window.h"
 #include "Render/Drivers/Vulkan/VulkanContext.h"
 #include <System.h>
+#include "Editor/GameEditor.h"
 // glm
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -81,9 +82,11 @@ int main(int argc, const char **argv) {
     vulkanContext->AllocateBuffer(sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &uniformBuffer);
 
-    VkFrameContext frameContext;
+    GameEditor editor(&window, vulkanContext.get());
+
+    VkFrameContext *frameContext;
     while (!window.is_close()) {
-        vulkanContext->BeginRender();
+        vulkanContext->BeginRender(&frameContext);
         {
             static auto startTime = std::chrono::high_resolution_clock::now();
             auto currentTime = std::chrono::high_resolution_clock::now();
@@ -99,52 +102,22 @@ int main(int argc, const char **argv) {
             memcpy(data, &ubo, sizeof(ubo));
             vulkanContext->UnmapMemory(uniformBuffer);
 
-            vulkanContext->GetFrameContext(&frameContext);
-            vulkanContext->BindRenderPipeline(&pipeline);
-            vulkanContext->BindDescriptorSet(&pipeline, 1, &descriptorSet);
-
-            std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
-
-            VkDescriptorBufferInfo bufferInfo = {};
-            bufferInfo.buffer = uniformBuffer.buffer;
-            bufferInfo.offset = 0;
-            bufferInfo.range = uniformBuffer.size;
-
-            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[0].dstSet = descriptorSet;
-            descriptorWrites[0].dstBinding = 0;
-            descriptorWrites[0].dstArrayElement = 0;
-            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites[0].descriptorCount = 1;
-            descriptorWrites[0].pBufferInfo = &bufferInfo;
-            descriptorWrites[0].pImageInfo = nullptr; // Optional
-            descriptorWrites[0].pTexelBufferView = nullptr; // Optional
-
-            VkDescriptorImageInfo imageInfo = {};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = texture2D.imageView;
-            imageInfo.sampler = texture2D.sampler;
-
-            descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[1].dstSet = descriptorSet;
-            descriptorWrites[1].dstBinding = 1;
-            descriptorWrites[1].dstArrayElement = 0;
-            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[1].descriptorCount = 1;
-            descriptorWrites[1].pBufferInfo = nullptr;
-            descriptorWrites[1].pImageInfo = &imageInfo;
-            descriptorWrites[1].pTexelBufferView = nullptr;
-
-            vkUpdateDescriptorSets(vulkanContext->GetDevice(), std::size(descriptorWrites), std::data(descriptorWrites), 0, nullptr);
+            vulkanContext->BindRenderPipeline(pipeline);
+            vulkanContext->BindDescriptorSets(pipeline, 1, &descriptorSet);
+            vulkanContext->WriteDescriptorSet(uniformBuffer, texture2D, descriptorSet);
 
             /* bind vertex buffer */
             VkBuffer buffers[] = {vertexBuffer.buffer};
             VkDeviceSize offsets[] = {0};
-            vkCmdBindVertexBuffers(frameContext.commandBuffer, 0, 1, buffers, offsets);
-            vkCmdBindIndexBuffer(frameContext.commandBuffer, indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindVertexBuffers(frameContext->commandBuffer, 0, 1, buffers, offsets);
+            vkCmdBindIndexBuffer(frameContext->commandBuffer, indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
             /* draw call */
             vulkanContext->DrawIndexed(std::size(indices));
+
+            editor.BeginGameEditorFrame();
+            static bool isShowDemo = true;
+            ImGui::ShowDemoWindow(&isShowDemo);
+            editor.EndGameEditorFrame();
         }
         vulkanContext->EndRender();
         Window::PollEvents();

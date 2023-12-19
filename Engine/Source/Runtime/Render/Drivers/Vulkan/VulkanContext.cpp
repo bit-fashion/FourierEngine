@@ -265,13 +265,16 @@ void VulkanContext::QueueWaitIdle(VkQueue queue) {
     vkQueueWaitIdle(queue);
 }
 
-void VulkanContext::BeginRender() {
+void VulkanContext::BeginRender(VkFrameContext **ppFrameContext) {
     uint32_t index;
     vkAcquireNextImageKHR(m_Device, m_SwapchainContext.swapchain, std::numeric_limits<uint64_t>::max(),
                           m_SwapchainContext.imageAvailableSemaphore, null, &index);
     m_FrameContext.index = index;
     m_FrameContext.framebuffer = m_SwapchainContext.framebuffers[m_FrameContext.index];
     m_FrameContext.commandBuffer = m_CommandBuffers[m_FrameContext.index];
+
+    if (ppFrameContext != null)
+        GetFrameContext(ppFrameContext);
 
     BeginRecordCommandBuffer();
     BeginRenderPass(m_SwapchainContext.renderpass);
@@ -305,13 +308,51 @@ void VulkanContext::EndRender() {
     QueueWaitIdle(m_PresentQueue);
 }
 
-void VulkanContext::BindRenderPipeline(VkRenderPipeline *pPipeline) {
-    vkCmdBindPipeline(m_FrameContext.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pPipeline->pipeline);
+void VulkanContext::BindRenderPipeline(VkRenderPipeline &pipeline) {
+    vkCmdBindPipeline(m_FrameContext.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
 }
 
-void VulkanContext::BindDescriptorSet(VkRenderPipeline *pPipeline, uint32_t count, VkDescriptorSet *pDescriptorSets) {
+void VulkanContext::BindDescriptorSets(VkRenderPipeline &pipeline, uint32_t count, VkDescriptorSet *pDescriptorSets) {
     vkCmdBindDescriptorSets(m_FrameContext.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            pPipeline->pipelineLayout, 0, count, pDescriptorSets, 0, null);
+                            pipeline.pipelineLayout, 0, count, pDescriptorSets, 0, null);
+}
+
+void VulkanContext::WriteDescriptorSet(VkDeviceBuffer &buffer, VkTexture2D &texture, VkDescriptorSet descriptorSet) {
+    std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
+
+    VkDescriptorBufferInfo bufferInfo = {};
+    bufferInfo.buffer = buffer.buffer;
+    bufferInfo.offset = 0;
+    bufferInfo.range = buffer.size;
+
+    descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrites[0].dstSet = descriptorSet;
+    descriptorWrites[0].dstBinding = 0;
+    descriptorWrites[0].dstArrayElement = 0;
+    descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptorWrites[0].descriptorCount = 1;
+    descriptorWrites[0].pBufferInfo = &bufferInfo;
+    descriptorWrites[0].pImageInfo = nullptr; // Optional
+    descriptorWrites[0].pTexelBufferView = nullptr; // Optional
+
+    VkDescriptorImageInfo imageInfo = {};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = texture.imageView;
+    imageInfo.sampler = texture.sampler;
+
+    descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrites[1].dstSet = descriptorSet;
+    descriptorWrites[1].dstBinding = 1;
+    descriptorWrites[1].dstArrayElement = 0;
+    descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorWrites[1].descriptorCount = 1;
+    descriptorWrites[1].pBufferInfo = nullptr;
+    descriptorWrites[1].pImageInfo = &imageInfo;
+    descriptorWrites[1].pTexelBufferView = nullptr;
+
+    vkUpdateDescriptorSets(m_Device, std::size(descriptorWrites),
+                           std::data(descriptorWrites), 0, nullptr);
 }
 
 void VulkanContext::DrawIndexed(uint32_t indexCount) {
@@ -773,6 +814,31 @@ void VulkanContext::InitVulkanDriverContext() {
     m_Window->PutWindowUserPointer("VulkanContext", this);
     _ConfigurationWindowResizeableEventCallback();
 
+    /* init stages */
+    _InitVulkanContextInstance();
+    _InitVulkanContextSurface();
+    _InitVulkanContextDevice();
+    _InitVulkanContextQueue();
+    _InitVulkanContextCommandPool();
+    _InitVulkanContextSwapchain();
+    _InitVulkanContextCommandBuffers();
+    _InitVulkanContextDescriptorPool();
+
+    m_RenderContext.Instance = m_Instance;
+    m_RenderContext.Surface = m_SurfaceKHR;
+    m_RenderContext.PhysicalDevice = m_PhysicalDevice;
+    m_RenderContext.Device = m_Device;
+    m_RenderContext.GraphicsQueue = m_GraphicsQueue;
+    m_RenderContext.GraphicsQueueFamily = m_GraphicsQueueFamily;
+    m_RenderContext.Swapchain = m_SwapchainContext.swapchain;
+    m_RenderContext.RenderPass = m_SwapchainContext.renderpass;
+    m_RenderContext.CommandPool = m_CommandPool;
+    m_RenderContext.DescriptorPool = m_DescriptorPool;
+    m_RenderContext.MinImageCount = m_SwapchainContext.minImageCount;
+    m_RenderContext.FrameContext = &m_FrameContext;
+}
+
+void VulkanContext::_InitVulkanContextInstance() {
     /* Create vulkan instance. */
     struct VkApplicationInfo applicationInfo = {};
     applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -796,18 +862,25 @@ void VulkanContext::InitVulkanDriverContext() {
     instanceCreateInfo.enabledLayerCount = std::size(requiredEnableLayersForInstance);
     instanceCreateInfo.ppEnabledLayerNames = std::data(requiredEnableLayersForInstance);
     vkCreateInstance(&instanceCreateInfo, VulkanUtils::Allocator, &m_Instance);
+}
 
+void VulkanContext::_InitVulkanContextSurface() {
     /* Create window surface */
 #ifdef _glfw3_h_
     VulkanUtils::CreateWindowSurfaceKHR(m_Instance, m_Window->GetWindowPointer(), &m_SurfaceKHR);
 #endif
+}
 
+void VulkanContext::_InitVulkanContextDevice() {
     /* Create vulkan device. */
     VulkanUtils::GetVulkanMostPreferredPhysicalDevice(m_Instance, &m_PhysicalDevice, &m_PhysicalDeviceProperties,
                                                       &m_PhysicalDeviceFeature);
     Vector<VkDeviceQueueCreateInfo> deviceQueueCreateInfos;
     VulkanUtils::QueueFamilyIndices queueFamilyIndices =
             VulkanUtils::GetVulkanDeviceCreateRequiredQueueFamilyAndQueueCreateInfo(m_PhysicalDevice, m_SurfaceKHR, deviceQueueCreateInfos);
+
+    m_GraphicsQueueFamily = queueFamilyIndices.graphicsQueueFamily;
+    m_PresentQueueFamily = queueFamilyIndices.presentQueueFamily;
 
     VkDeviceCreateInfo deviceCreateInfo = {};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -828,30 +901,36 @@ void VulkanContext::InitVulkanDriverContext() {
     deviceCreateInfo.pQueueCreateInfos = std::data(deviceQueueCreateInfos);
 
     vkCreateDevice(m_PhysicalDevice, &deviceCreateInfo, VulkanUtils::Allocator, &m_Device);
+}
 
+void VulkanContext::_InitVulkanContextQueue() {
     /* get queue */
-    vkGetDeviceQueue(m_Device, queueFamilyIndices.graphicsQueueFamily, 0, &m_GraphicsQueue);
-    vkGetDeviceQueue(m_Device, queueFamilyIndices.presentQueueFamily, 0, &m_PresentQueue);
+    vkGetDeviceQueue(m_Device, m_GraphicsQueueFamily, 0, &m_GraphicsQueue);
+    vkGetDeviceQueue(m_Device, m_PresentQueueFamily, 0, &m_PresentQueue);
+}
 
+void VulkanContext::_InitVulkanContextCommandPool() {
     /* Create command pool. */
     VkCommandPoolCreateInfo commandPoolCreateInfo = {};
     commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    commandPoolCreateInfo.queueFamilyIndex = queueFamilyIndices.graphicsQueueFamily;
+    commandPoolCreateInfo.queueFamilyIndex = m_GraphicsQueueFamily;
     commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
     vkCreateCommandPool(m_Device, &commandPoolCreateInfo, VulkanUtils::Allocator, &m_CommandPool);
+}
 
+void VulkanContext::_InitVulkanContextSwapchain() {
     /* Create swapchain */
     CreateSwapchainContext(&m_SwapchainContext);
+}
 
+void VulkanContext::_InitVulkanContextCommandBuffers() {
     /* allocate */
     m_CommandBuffers.resize(m_SwapchainContext.minImageCount);
     AllocateCommandBuffer(std::size(m_CommandBuffers), std::data(m_CommandBuffers));
-
-    InitDescriptorPool();
 }
 
-void VulkanContext::InitDescriptorPool() {
+void VulkanContext::_InitVulkanContextDescriptorPool() {
     /** Create descriptor set pool */
     std::vector<VkDescriptorPoolSize> poolSizes = {
             {VK_DESCRIPTOR_TYPE_SAMPLER,                1024},

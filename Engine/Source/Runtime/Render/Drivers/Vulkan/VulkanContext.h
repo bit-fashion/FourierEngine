@@ -30,7 +30,7 @@
 #include <Typedef.h>
 #include <Engine.h>
 #include <stdexcept>
-#include <glm/glm.hpp>
+#include "Render/GameModel.h"
 
 class Window;
 
@@ -69,12 +69,6 @@ struct VkRenderPipeline {
     VkPipelineLayout pipelineLayout;
 };
 
-struct Vertex {
-    glm::vec3 position;
-    glm::vec3 color;
-    glm::vec2 texCoord;
-};
-
 struct VkTexture2D {
     VkImage image;
     VkImageView imageView;
@@ -84,16 +78,43 @@ struct VkTexture2D {
     VkDeviceMemory memory;
 };
 
+struct VkRenderContext {
+    VkInstance Instance;
+    VkSurfaceKHR Surface;
+    VkPhysicalDevice PhysicalDevice;
+    VkDevice Device;
+    VkQueue GraphicsQueue;
+    uint32_t GraphicsQueueFamily;
+    VkSwapchainKHR Swapchain;
+    VkCommandPool CommandPool;
+    VkDescriptorPool DescriptorPool;
+    uint32_t MinImageCount;
+    VkRenderPass RenderPass;
+    struct VkFrameContext *FrameContext;
+};
+/**
+ * Vulkan context class.
+ */
 class VulkanContext {
 public:
     VulkanContext(Window *window);
    ~VulkanContext();
 
-    void GetFrameContext(VkFrameContext *pContext) { *pContext = m_FrameContext; }
+    void GetRenderContext(VkRenderContext **pRenderContext) { *pRenderContext = &m_RenderContext; }
+    void GetFrameContext(VkFrameContext **pContext) { *pContext = &m_FrameContext; }
     void DeviceWaitIdle();
+    VkDevice GetDevice() const { return m_Device; }
+
+    //
+    // About vulkan device buffer.
+    //
     void CopyBuffer(VkDeviceBuffer dest, VkDeviceBuffer src, VkDeviceSize size);
     void MapMemory(VkDeviceBuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void **ppData);
     void UnmapMemory(VkDeviceBuffer buffer);
+
+    //
+    // About vulkan command buffer.
+    //
     void BeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags usageFlags);
     void EndCommandBuffer(VkCommandBuffer commandBuffer);
     void SyncSubmitQueueWithSubmitInfo(uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers,
@@ -107,13 +128,20 @@ public:
     void BeginRenderPass(VkRenderPass renderPass);
     void EndRenderPass();
     void QueueWaitIdle(VkQueue queue);
-    void BeginRender();
+    void BeginRender(VkFrameContext **ppFrameContext = null);
     void EndRender();
-    VkDevice GetDevice() const { return m_Device; }
-    void BindRenderPipeline(VkRenderPipeline *pPipeline);
-    void BindDescriptorSet(VkRenderPipeline *pPipeline, uint32_t count, VkDescriptorSet *pDescriptorSets);
+
+    //
+    // Bind
+    //
+    void BindRenderPipeline(VkRenderPipeline &pipeline);
+    void BindDescriptorSets(VkRenderPipeline &pipeline, uint32_t count, VkDescriptorSet *pDescriptorSets);
+    void WriteDescriptorSet(VkDeviceBuffer &buffer, VkTexture2D &texture, VkDescriptorSet descriptorSet);
     void DrawIndexed(uint32_t indexCount);
 
+    //
+    // Allocate and create buffer etc...
+    //
     void AllocateVertexBuffer(VkDeviceSize size, const Vertex *pVertices, VkDeviceBuffer *pVertexBuffer);
     void AllocateIndexBuffer(VkDeviceSize size, const uint32_t *pIndices, VkDeviceBuffer *pIndexBuffer);
     void TransitionTextureLayout(VkTexture2D *texture, VkImageLayout newLayout);
@@ -131,6 +159,9 @@ public:
     void RecreateSwapchainContext(VkSwapchainContextKHR *pSwapchainContext, uint32_t width, uint32_t height);
     void CreateSwapchainContext(VkSwapchainContextKHR *pSwapchainContext);
 
+    //
+    // Destroy components.
+    //
     void DestroyTexture2D(VkTexture2D &texture);
     void FreeDescriptorSets(uint32_t count, VkDescriptorSet *pDescriptorSet);
     void DestroyDescriptorSetLayout(VkDescriptorSetLayout &descriptorSetLayout);
@@ -140,8 +171,15 @@ public:
     void DestroySwapchainContext(VkSwapchainContextKHR *pSwapchainContext);
 
 private:
-    void InitVulkanDriverContext(); /* Init Vulkan Context */
-    void InitDescriptorPool();
+    void InitVulkanDriverContext(); /* Init VulkanContext main */
+    void _InitVulkanContextInstance();
+    void _InitVulkanContextSurface();
+    void _InitVulkanContextDevice();
+    void _InitVulkanContextQueue();
+    void _InitVulkanContextCommandPool();
+    void _InitVulkanContextSwapchain();
+    void _InitVulkanContextCommandBuffers();
+    void _InitVulkanContextDescriptorPool();
 
 private:
     void _CreateSwapcahinAboutComponents(VkSwapchainContextKHR *pSwapchainContext);
@@ -161,11 +199,14 @@ private:
     VkPhysicalDevice m_PhysicalDevice;
     VkPhysicalDeviceProperties m_PhysicalDeviceProperties;
     VkPhysicalDeviceFeatures m_PhysicalDeviceFeature;
+    uint32_t m_GraphicsQueueFamily;
+    uint32_t m_PresentQueueFamily;
     VkQueue m_GraphicsQueue;
     VkQueue m_PresentQueue;
     VkCommandBuffer m_SingleTimeCommandBuffer;
     VkFrameContext m_FrameContext;
     VkDescriptorPool m_DescriptorPool;
+    VkRenderContext m_RenderContext;
 };
 
 #endif /* _SPORTS_VULKAN_CONTEXT_H_ */
