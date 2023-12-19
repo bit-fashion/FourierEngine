@@ -63,6 +63,9 @@ void GameEditor::BeginGameEditorFrame() {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+
+    // docking
+    ImGui::DockSpaceOverViewport(NULL, ImGuiDockNodeFlags_PassthruCentralNode);
 }
 
 void GameEditor::EndGameEditorFrame() {
@@ -94,10 +97,6 @@ void GameEditor::InitGameEditorContext(const Window *window, VulkanContext *cont
     io.Fonts->AddFontFromFileTTF("../Engine/Assets/Fonts/smiley-sans-v1.1.1/SmileySans-Oblique.ttf", 18.0f,
                                  null, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
     io.FontDefault = io.Fonts->Fonts.back();
-
-    // Setup Dear ImGui style
-    ImGui::StyleColorsDark();
-    //ImGui::StyleColorsLight();
 
     // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
     ImGuiStyle& style = ImGui::GetStyle();
