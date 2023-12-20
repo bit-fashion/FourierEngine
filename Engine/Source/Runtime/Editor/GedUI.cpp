@@ -253,8 +253,14 @@ void GedUI::EndNewFrame() {
     _GECTX->EndGameEditorFrame();
 }
 
-void GedUI::DrawTexture2D(VkTexture2D *pTexture2D, const ImVec2 &size) {
-    ImTextureID imTexture2D = (ImTextureID)
-            ImGui_ImplVulkan_AddTexture(pTexture2D->sampler, pTexture2D->imageView, pTexture2D->layout);
-    ImGui::Image(imTexture2D, size);
+ImTextureID GedUI::AddTexture2D(VkTexture2D &texture) {
+    return (ImTextureID) ImGui_ImplVulkan_AddTexture(texture.sampler, texture.imageView, texture.layout);
+}
+
+void GedUI::RemoveTexture2D(const ImTextureID &texture) {
+    ImGui_ImplVulkan_RemoveTexture((VkDescriptorSet) texture);
+}
+
+void GedUI::DrawTexture2D(const ImTextureID &texture, const ImVec2 &size) {
+    ImGui::Image(texture, size);
 }

@@ -101,6 +101,14 @@ struct VkRenderContext {
     VkRenderPass RenderPass;
     struct VkFrameContext *FrameContext;
 };
+
+struct VkOffScreenRenderContext {
+    VkRenderPass renderpass;
+    VkTexture2D texture;
+    VkFramebuffer framebuffer;
+    VkCommandBuffer commandBuffer;
+};
+
 /**
  * Vulkan context class.
  */
@@ -131,46 +139,57 @@ public:
                                        VkPipelineStageFlags *pWaitDstStageMask);
     void BeginOnceTimeCommandBufferSubmit(VkCommandBuffer *pCommandBuffer);
     void EndOnceTimeCommandBufferSubmit();
-    void BeginRecordCommandBuffer();
-    void EndRecordCommandBuffer();
-    void BeginRenderPass(VkRenderPass renderPass);
-    void EndRenderPass();
+    void BeginRecordCommandBuffer(VkCommandBuffer commandBuffer);
+    void EndRecordCommandBuffer(VkCommandBuffer commandBuffer);
+    void BeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer framebuffer);
+    void EndRenderPass(VkCommandBuffer commandBuffer);
     void QueueWaitIdle(VkQueue queue);
+
     void BeginRender(VkFrameContext **ppFrameContext = null);
     void EndRender();
+
+    void BeginOffScreenRender(VkCommandBuffer *pCommandBuffer = null);
+    void EndOffScreenRender();
+    void RecreateOffScreenRenderContext(uint32_t width, uint32_t height);
+    void AcquireOffScreenRenderTexture2D(VkTexture2D **ppTexture2D);
 
     //
     // Bind
     //
-    void BindRenderPipeline(VkRenderPipeline &pipeline);
-    void BindDescriptorSets(VkRenderPipeline &pipeline, uint32_t count, VkDescriptorSet *pDescriptorSets);
+    void BindRenderPipeline(VkCommandBuffer commandBuffer, VkRenderPipeline &pipeline);
+    void BindDescriptorSets(VkCommandBuffer commandBuffer, VkRenderPipeline &pipeline, uint32_t count, VkDescriptorSet *pDescriptorSets);
     void WriteDescriptorSet(VkDeviceBuffer &buffer, VkTexture2D &texture, VkDescriptorSet descriptorSet);
-    void DrawIndexed(uint32_t indexCount);
+    void DrawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCount);
 
     //
     // Allocate and create buffer etc...
     //
+    void CreateOffScreenRenderContext(uint32_t width, uint32_t height, VkOffScreenRenderContext *pContext);
     void AllocateVertexBuffer(VkDeviceSize size, const Vertex *pVertices, VkDeviceBuffer *pVertexBuffer);
     void AllocateIndexBuffer(VkDeviceSize size, const uint32_t *pIndices, VkDeviceBuffer *pIndexBuffer);
     void TransitionTextureLayout(VkTexture2D *texture, VkImageLayout newLayout);
     void CopyTextureBuffer(VkDeviceBuffer &buffer, VkTexture2D &texture, uint32_t width, uint32_t height);
-    void CreateTexture2D(const String &path, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-                         VkMemoryPropertyFlags properties, VkTexture2D *pTexture2D);
+    void CreateTexture2D(const String &path, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkTexture2D *pTexture2D);
+    void CreateTexture2D(int texWidth, int texHeight, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkTexture2D *pTexture2D);
+    void CreateFramebuffer(VkRenderPass renderpass, VkImageView imageView, int width, int height, VkFramebuffer *pFramebuffer);
     void CreateTextureSampler2D(VkSampler *pSampler);
     void CreateSemaphore(VkSemaphore *semaphore);
-    void CreateDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> &bindings, VkDescriptorSetLayoutCreateFlags flags,
-                                   VkDescriptorSetLayout *pDescriptorSetLayout);
+    void CreateDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> &bindings, VkDescriptorSetLayoutCreateFlags flags, VkDescriptorSetLayout *pDescriptorSetLayout);
     void AllocateDescriptorSet(Vector<VkDescriptorSetLayout> &layouts, VkDescriptorSet *pDescriptorSet);
-    void CreateRenderPipeline(const String &shaderfolder, const String &shadername, VkDescriptorSetLayout descriptorSetLayout,
-                                VkRenderPipeline *pDriverGraphicsPipeline);
+    void CreateRenderPipeline(const String &shaderfolder, const String &shadername, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout, VkRenderPipeline *pDriverGraphicsPipeline);
     void AllocateCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer);
     void AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkDeviceBuffer *buffer);
     void RecreateSwapchainContextKHR(VkSwapchainContextKHR *pSwapchainContext, uint32_t width, uint32_t height);
     void CreateSwapchainContextKHR(VkSwapchainContextKHR *pSwapchainContext);
+    void CreateRenderpass(VkFormat format, VkImageLayout imageLayout, VkRenderPass *pRenderPass);
+
+    VkRenderPass GetOffScreenRenderPass() { return m_OffScreenRenderContext.renderpass; }
 
     //
     // Destroy components.
     //
+    void DestroyFramebuffer(VkFramebuffer &framebuffer);
+    void DestroyOffScreenRenderContext(VkOffScreenRenderContext &context);
     void DestroyTexture2D(VkTexture2D &texture);
     void FreeDescriptorSets(uint32_t count, VkDescriptorSet *pDescriptorSet);
     void DestroyDescriptorSetLayout(VkDescriptorSetLayout &descriptorSetLayout);
@@ -178,6 +197,7 @@ public:
     void FreeCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer);
     void FreeBuffer(VkDeviceBuffer &buffer);
     void DestroySwapchainContextKHR(VkSwapchainContextKHR *pSwapchainContext);
+    void DestroyRenderPass(VkRenderPass renderPass);
 
 private:
     void InitVulkanDriverContext(); /* Init VulkanContext main */
@@ -191,9 +211,10 @@ private:
     void _InitVulkanContextCommandBuffers();
     void _InitVulkanContextDescriptorPool();
 
+    void _InitVulkanContextOffscreentRenderContext();
+
 private:
     void _CreateSwapcahinAboutComponents(VkSwapchainContextKHR *pSwapchainContext);
-    void _CreateRenderpass(VkSwapchainContextKHR *pSwapchainContext);
     void _ConfigurationSwapchainContext(VkSwapchainContextKHR *pSwapchainContext);
     void _ConfigurationWindowResizeableEventCallback();
 
@@ -204,6 +225,7 @@ private:
     VkCommandPool m_CommandPool;
     Vector<VkCommandBuffer> m_CommandBuffers;
     VkSwapchainContextKHR m_MainSwapchainContext;
+    VkOffScreenRenderContext m_OffScreenRenderContext;
 
     Window *m_Window;
     VkPhysicalDevice m_PhysicalDevice;

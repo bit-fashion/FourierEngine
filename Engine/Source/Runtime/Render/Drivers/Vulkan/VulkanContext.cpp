@@ -32,6 +32,7 @@ VulkanContext::VulkanContext(Window *window) : m_Window(window) {
 }
 
 VulkanContext::~VulkanContext() {
+    DestroyOffScreenRenderContext(m_OffScreenRenderContext);
     vkDestroyDescriptorPool(m_Device, m_DescriptorPool, VulkanUtils::Allocator);
     FreeCommandBuffer(std::size(m_CommandBuffers), std::data(m_CommandBuffers));
     vkDestroyCommandPool(m_Device, m_CommandPool, VulkanUtils::Allocator);
@@ -88,58 +89,9 @@ void VulkanContext::_CreateSwapcahinAboutComponents(VkSwapchainContextKHR *pSwap
         vkCreateImageView(m_Device, &imageViewCreateInfo, VulkanUtils::Allocator, &pSwapchainContext->imageViews[i]);
 
         /* framebuffer */
-        VkImageView attachments[] = { pSwapchainContext->imageViews[i] };
-        VkFramebufferCreateInfo framebufferCreateInfo = {};
-        framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferCreateInfo.renderPass = m_WindowContext.renderpass;
-        framebufferCreateInfo.attachmentCount = 1;
-        framebufferCreateInfo.pAttachments = attachments;
-        framebufferCreateInfo.width = pSwapchainContext->width;
-        framebufferCreateInfo.height = pSwapchainContext->height;
-        framebufferCreateInfo.layers = 1;
-
-        vkCreateFramebuffer(m_Device, &framebufferCreateInfo, VulkanUtils::Allocator, &pSwapchainContext->framebuffers[i]);
+        CreateFramebuffer(m_WindowContext.renderpass, pSwapchainContext->imageViews[i], pSwapchainContext->width,
+                          pSwapchainContext->height, &pSwapchainContext->framebuffers[i]);
     }
-}
-
-void VulkanContext::_CreateRenderpass(VkSwapchainContextKHR *pSwapchainContext) {
-    VkAttachmentDescription colorAttachmentDescription = {};
-    colorAttachmentDescription.format = pSwapchainContext->format;
-    colorAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-    VkAttachmentReference colorAttachmentReference = {};
-    colorAttachmentReference.attachment = 0;
-    colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkSubpassDescription subpassDescription = {};
-    subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpassDescription.colorAttachmentCount = 1;
-    subpassDescription.pColorAttachments = &colorAttachmentReference;
-
-    VkSubpassDependency subpassDependency = {};
-    subpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    subpassDependency.dstSubpass = 0;
-    subpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    subpassDependency.srcAccessMask = 0;
-    subpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    subpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-    VkRenderPassCreateInfo renderPassCreateInfo = {};
-    renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassCreateInfo.attachmentCount = 1;
-    renderPassCreateInfo.pAttachments = &colorAttachmentDescription;
-    renderPassCreateInfo.subpassCount = 1;
-    renderPassCreateInfo.pSubpasses = &subpassDescription;
-    renderPassCreateInfo.dependencyCount = 1;
-    renderPassCreateInfo.pDependencies = &subpassDependency;
-
-    vkCreateRenderPass(m_Device, &renderPassCreateInfo, VulkanUtils::Allocator, &m_WindowContext.renderpass);
 }
 
 void VulkanContext::_ConfigurationSwapchainContext(VkSwapchainContextKHR *pSwapchainContext) {
@@ -232,32 +184,32 @@ void VulkanContext::EndOnceTimeCommandBufferSubmit() {
     FreeCommandBuffer(1, &m_SingleTimeCommandBuffer);
 }
 
-void VulkanContext::BeginRecordCommandBuffer() {
-    BeginCommandBuffer(m_FrameContext.commandBuffer, VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
+void VulkanContext::BeginRecordCommandBuffer(VkCommandBuffer commandBuffer) {
+    BeginCommandBuffer(commandBuffer, VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
 }
 
-void VulkanContext::EndRecordCommandBuffer() {
-    EndCommandBuffer(m_FrameContext.commandBuffer);
+void VulkanContext::EndRecordCommandBuffer(VkCommandBuffer commandBuffer) {
+    EndCommandBuffer(commandBuffer);
 }
 
-void VulkanContext::BeginRenderPass(VkRenderPass renderPass) {
+void VulkanContext::BeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer framebuffer) {
     /* start render pass. */
     VkRenderPassBeginInfo renderPassBeginInfo = {};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassBeginInfo.renderPass = renderPass;
-    renderPassBeginInfo.framebuffer = m_FrameContext.framebuffer;
+    renderPassBeginInfo.framebuffer = framebuffer;
     renderPassBeginInfo.renderArea.offset = {0, 0};
     renderPassBeginInfo.renderArea.extent = { m_MainSwapchainContext.width, m_MainSwapchainContext.height };
 
     VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
     renderPassBeginInfo.clearValueCount = 1;
     renderPassBeginInfo.pClearValues = &clearColor;
-    vkCmdBeginRenderPass(m_FrameContext.commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 
-void VulkanContext::EndRenderPass() {
+void VulkanContext::EndRenderPass(VkCommandBuffer commandBuffer) {
     /* end render pass */
-    vkCmdEndRenderPass(m_FrameContext.commandBuffer);
+    vkCmdEndRenderPass(commandBuffer);
 }
 
 void VulkanContext::QueueWaitIdle(VkQueue queue) {
@@ -277,13 +229,13 @@ void VulkanContext::BeginRender(VkFrameContext **ppFrameContext) {
     if (ppFrameContext != null)
         GetFrameContext(ppFrameContext);
 
-    BeginRecordCommandBuffer();
-    BeginRenderPass(m_WindowContext.renderpass);
+    BeginRecordCommandBuffer(m_FrameContext.commandBuffer);
+    BeginRenderPass(m_FrameContext.commandBuffer, m_WindowContext.renderpass, m_FrameContext.framebuffer);
 }
 
 void VulkanContext::EndRender() {
-    EndRenderPass();
-    EndRecordCommandBuffer();
+    EndRenderPass(m_FrameContext.commandBuffer);
+    EndRecordCommandBuffer(m_FrameContext.commandBuffer);
     /* final submit */
     VkSemaphore waitSemaphores[] = { m_WindowContext.imageAvailableSemaphore };
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
@@ -309,22 +261,44 @@ void VulkanContext::EndRender() {
     QueueWaitIdle(m_PresentQueue);
 }
 
-void VulkanContext::BindRenderPipeline(VkRenderPipeline &pipeline) {
-    vkCmdBindPipeline(m_FrameContext.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
+void VulkanContext::BeginOffScreenRender(VkCommandBuffer *pCommandBuffer) {
+    if (pCommandBuffer != null)
+        *pCommandBuffer = m_OffScreenRenderContext.commandBuffer;
+    BeginRecordCommandBuffer(m_OffScreenRenderContext.commandBuffer);
+    BeginRenderPass(m_OffScreenRenderContext.commandBuffer, m_OffScreenRenderContext.renderpass, m_OffScreenRenderContext.framebuffer);
+}
+
+void VulkanContext::EndOffScreenRender() {
+    EndRenderPass(m_OffScreenRenderContext.commandBuffer);
+    EndRecordCommandBuffer(m_OffScreenRenderContext.commandBuffer);
+    SyncSubmitQueueWithSubmitInfo(1, &m_OffScreenRenderContext.commandBuffer, 0, null, 0, null, null);
+}
+
+void VulkanContext::RecreateOffScreenRenderContext(uint32_t width, uint32_t height) {
+    DestroyOffScreenRenderContext(m_OffScreenRenderContext);
+    CreateOffScreenRenderContext(width, height, &m_OffScreenRenderContext);
+}
+
+void VulkanContext::AcquireOffScreenRenderTexture2D(VkTexture2D **ppTexture2D) {
+    *ppTexture2D = &m_OffScreenRenderContext.texture;
+}
+
+void VulkanContext::BindRenderPipeline(VkCommandBuffer commandBuffer, VkRenderPipeline &pipeline) {
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
     // 动态视口
     float w = m_MainSwapchainContext.width;
     float h = m_MainSwapchainContext.height;
     VkViewport viewport = { 0.0f, 0.0f, w, h, 0.0f, 1.0f };
-    vkCmdSetViewport(m_FrameContext.commandBuffer, 0, 1, &viewport);
+    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
     VkRect2D scissor;
     scissor.offset = {0, 0};
     scissor.extent = { (uint32_t) w, (uint32_t) h };
-    vkCmdSetScissor(m_FrameContext.commandBuffer, 0, 1, &scissor);
+    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
-void VulkanContext::BindDescriptorSets(VkRenderPipeline &pipeline, uint32_t count, VkDescriptorSet *pDescriptorSets) {
-    vkCmdBindDescriptorSets(m_FrameContext.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+void VulkanContext::BindDescriptorSets(VkCommandBuffer commandBuffer, VkRenderPipeline &pipeline, uint32_t count, VkDescriptorSet *pDescriptorSets) {
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             pipeline.pipelineLayout, 0, count, pDescriptorSets, 0, null);
 }
 
@@ -366,8 +340,18 @@ void VulkanContext::WriteDescriptorSet(VkDeviceBuffer &buffer, VkTexture2D &text
                            std::data(descriptorWrites), 0, nullptr);
 }
 
-void VulkanContext::DrawIndexed(uint32_t indexCount) {
-    vkCmdDrawIndexed(m_FrameContext.commandBuffer, indexCount, 1, 0, 0, 0);
+void VulkanContext::DrawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCount) {
+    vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
+}
+
+void VulkanContext::CreateOffScreenRenderContext(uint32_t width, uint32_t height, VkOffScreenRenderContext *pContext) {
+    CreateRenderpass(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &m_OffScreenRenderContext.renderpass);
+    CreateTexture2D(width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
+                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &pContext->texture);
+    TransitionTextureLayout(&pContext->texture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    CreateFramebuffer(m_OffScreenRenderContext.renderpass, m_OffScreenRenderContext.texture.imageView, width, height, &pContext->framebuffer);
+    AllocateCommandBuffer(1, &m_OffScreenRenderContext.commandBuffer);
 }
 
 void VulkanContext::AllocateVertexBuffer(VkDeviceSize size, const Vertex *pVertices, VkDeviceBuffer *pVertexBuffer) {
@@ -416,26 +400,31 @@ void VulkanContext::TransitionTextureLayout(VkTexture2D *texture, VkImageLayout 
     barrier.subresourceRange.levelCount = 1;
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount = 1;
-    barrier.srcAccessMask = 0; // TODO
-    barrier.dstAccessMask = 0; // TODO
 
-    VkPipelineStageFlags sourceStage;
-    VkPipelineStageFlags destinationStage;
+    VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+    VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 
     if (texture->layout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
         barrier.srcAccessMask = 0;
         barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    } else if (texture->layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    } else {
-        throw std::invalid_argument("unsupported layout transition!");
+        goto PipelineBarrierCreateEndTag;
     }
 
+    if (texture->layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        goto PipelineBarrierCreateEndTag;
+    }
+
+    if (texture->layout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_HOST_READ_BIT;
+        goto PipelineBarrierCreateEndTag;
+    }
+
+    throw std::invalid_argument("unsupported layout transition!");
+
+PipelineBarrierCreateEndTag:
     vkCmdPipelineBarrier(
             commandBuffer,
             sourceStage,
@@ -493,6 +482,10 @@ void VulkanContext::CreateTexture2D(const String &path, VkFormat format, VkImage
     if (!pixels)
         throw std::runtime_error("failed to load texture image!");
 
+    /* 创建图像 */
+    CreateTexture2D(texWidth, texHeight, format, tiling,usage, properties, pTexture2D);
+
+    // write buffer to image
     VkDeviceBuffer stagingBuffer;
     AllocateBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer);
@@ -504,6 +497,16 @@ void VulkanContext::CreateTexture2D(const String &path, VkFormat format, VkImage
 
     stbi_image_free(pixels);
 
+    /* copy buffer to image */
+    TransitionTextureLayout(pTexture2D, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    CopyTextureBuffer(stagingBuffer, *pTexture2D, texWidth, texHeight);
+    TransitionTextureLayout(pTexture2D, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    FreeBuffer(stagingBuffer);
+}
+
+void VulkanContext::CreateTexture2D(int texWidth, int texHeight, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+                                    VkMemoryPropertyFlags properties, VkTexture2D *pTexture2D) {
     /* Create image */
     VkImageCreateInfo imageCreateInfo = {};
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -513,10 +516,10 @@ void VulkanContext::CreateTexture2D(const String &path, VkFormat format, VkImage
     imageCreateInfo.extent.depth = 1;
     imageCreateInfo.mipLevels = 1;
     imageCreateInfo.arrayLayers = 1;
-    imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-    imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.format = format;
+    imageCreateInfo.tiling = tiling;
     imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    imageCreateInfo.usage = usage;
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imageCreateInfo.flags = 0; // Optional
@@ -555,13 +558,21 @@ void VulkanContext::CreateTexture2D(const String &path, VkFormat format, VkImage
 
     /* create sampler */
     CreateTextureSampler2D(&pTexture2D->sampler);
+}
 
-    /* copy buffer to image */
-    TransitionTextureLayout(pTexture2D, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    CopyTextureBuffer(stagingBuffer, *pTexture2D, texWidth, texHeight);
-    TransitionTextureLayout(pTexture2D, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+void VulkanContext::CreateFramebuffer(VkRenderPass renderpass, VkImageView imageView, int width, int height,
+                                      VkFramebuffer *pFramebuffer) {
+    VkImageView attachments[] = { imageView };
+    VkFramebufferCreateInfo framebufferCreateInfo = {};
+    framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    framebufferCreateInfo.renderPass = renderpass;
+    framebufferCreateInfo.attachmentCount = 1;
+    framebufferCreateInfo.pAttachments = attachments;
+    framebufferCreateInfo.width = width;
+    framebufferCreateInfo.height = height;
+    framebufferCreateInfo.layers = 1;
 
-    FreeBuffer(stagingBuffer);
+    vkCreateFramebuffer(m_Device, &framebufferCreateInfo, VulkanUtils::Allocator, pFramebuffer);
 }
 
 void VulkanContext::CreateTextureSampler2D(VkSampler *pSampler) {
@@ -594,8 +605,7 @@ void VulkanContext::CreateSemaphore(VkSemaphore *pSemaphore) {
     vkCreateSemaphore(m_Device, &semaphoreCreateInfo, VulkanUtils::Allocator, pSemaphore);
 }
 
-void VulkanContext::CreateDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> &bindings, VkDescriptorSetLayoutCreateFlags flags,
-                                             VkDescriptorSetLayout *pDescriptorSetLayout) {
+void VulkanContext::CreateDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> &bindings, VkDescriptorSetLayoutCreateFlags flags, VkDescriptorSetLayout *pDescriptorSetLayout) {
     VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
     descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     descriptorSetLayoutCreateInfo.flags = flags;
@@ -614,8 +624,7 @@ void VulkanContext::AllocateDescriptorSet(Vector<VkDescriptorSetLayout> &layouts
     vkAllocateDescriptorSets(m_Device, &descriptorAllocateInfo, pDescriptorSet);
 }
 
-void VulkanContext::CreateRenderPipeline(const String &shaderfolder, const String &shadername, VkDescriptorSetLayout descriptorSetLayout,
-                                           VkRenderPipeline *pDriverGraphicsPipeline) {
+void VulkanContext::CreateRenderPipeline(const String &shaderfolder, const String &shadername, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout, VkRenderPipeline *pDriverGraphicsPipeline) {
     /** Create shader of vertex & fragment module. */
     VkShaderModule vertexShaderModule =
             VulkanUtils::LoadShaderModule(m_Device, shaderfolder, shadername, VK_SHADER_STAGE_VERTEX_BIT);
@@ -732,7 +741,7 @@ void VulkanContext::CreateRenderPipeline(const String &shaderfolder, const Strin
     Vector<VkDynamicState> dynamicStates = {
             VK_DYNAMIC_STATE_VIEWPORT,
             VK_DYNAMIC_STATE_SCISSOR,
-            VK_DYNAMIC_STATE_LINE_WIDTH
+            VK_DYNAMIC_STATE_LINE_WIDTH,
     };
 
     VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo = {};
@@ -763,7 +772,7 @@ void VulkanContext::CreateRenderPipeline(const String &shaderfolder, const Strin
     graphicsPipelineCreateInfo.pColorBlendState = &pipelineColorBlendStateCreateInfo;
     graphicsPipelineCreateInfo.pDynamicState = &pipelineDynamicStateCreateInfo; // Optional
     graphicsPipelineCreateInfo.layout = pDriverGraphicsPipeline->pipelineLayout;
-    graphicsPipelineCreateInfo.renderPass = m_WindowContext.renderpass;
+    graphicsPipelineCreateInfo.renderPass = renderPass;
     graphicsPipelineCreateInfo.subpass = 0;
     graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
     graphicsPipelineCreateInfo.basePipelineIndex = -1; // Optional
@@ -816,12 +825,53 @@ void VulkanContext::RecreateSwapchainContextKHR(VkSwapchainContextKHR *pSwapchai
     DeviceWaitIdle();
     DestroySwapchainContextKHR(pSwapchainContext);
     CreateSwapchainContextKHR(pSwapchainContext);
+    RecreateOffScreenRenderContext(width, height);
 }
 
 void VulkanContext::CreateSwapchainContextKHR(VkSwapchainContextKHR *pSwapchainContext) {
     _ConfigurationSwapchainContext(pSwapchainContext);
-    _CreateRenderpass(pSwapchainContext);
+    CreateRenderpass(pSwapchainContext->format, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, &m_WindowContext.renderpass);
     _CreateSwapcahinAboutComponents(pSwapchainContext);
+}
+
+void VulkanContext::CreateRenderpass(VkFormat format, VkImageLayout imageLayout, VkRenderPass *pRenderPass) {
+    VkAttachmentDescription colorAttachmentDescription = {};
+    colorAttachmentDescription.format = format;
+    colorAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachmentDescription.finalLayout = imageLayout;
+
+    VkAttachmentReference colorAttachmentReference = {};
+    colorAttachmentReference.attachment = 0;
+    colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkSubpassDescription subpassDescription = {};
+    subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDescription.colorAttachmentCount = 1;
+    subpassDescription.pColorAttachments = &colorAttachmentReference;
+
+    VkSubpassDependency subpassDependency = {};
+    subpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    subpassDependency.dstSubpass = 0;
+    subpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    subpassDependency.srcAccessMask = 0;
+    subpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    subpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    VkRenderPassCreateInfo renderPassCreateInfo = {};
+    renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassCreateInfo.attachmentCount = 1;
+    renderPassCreateInfo.pAttachments = &colorAttachmentDescription;
+    renderPassCreateInfo.subpassCount = 1;
+    renderPassCreateInfo.pSubpasses = &subpassDescription;
+    renderPassCreateInfo.dependencyCount = 1;
+    renderPassCreateInfo.pDependencies = &subpassDependency;
+
+    vkCreateRenderPass(m_Device, &renderPassCreateInfo, VulkanUtils::Allocator, pRenderPass);
 }
 
 void VulkanContext::InitVulkanDriverContext() {
@@ -838,6 +888,8 @@ void VulkanContext::InitVulkanDriverContext() {
     _InitVulkanContextMainSwapchain();
     _InitVulkanContextCommandBuffers();
     _InitVulkanContextDescriptorPool();
+
+    _InitVulkanContextOffscreentRenderContext();
 
     m_RenderContext.Instance = m_Instance;
     m_RenderContext.Surface = m_SurfaceKHR;
@@ -954,17 +1006,17 @@ void VulkanContext::_InitVulkanContextCommandBuffers() {
 void VulkanContext::_InitVulkanContextDescriptorPool() {
     /** Create descriptor set pool */
     std::vector<VkDescriptorPoolSize> poolSizes = {
-            {VK_DESCRIPTOR_TYPE_SAMPLER,                1024},
-            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1024},
-            {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          1024},
-            {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          1024},
-            {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,   1024},
-            {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,   1024},
-            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         1024},
-            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         1024},
-            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1024},
-            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1024},
-            {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,       1024}
+            {VK_DESCRIPTOR_TYPE_SAMPLER,                64},
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 64},
+            {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          64},
+            {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          64},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,   64},
+            {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,   64},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         64},
+            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         64},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 64},
+            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 64},
+            {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,       64}
     };
 
     VkDescriptorPoolCreateInfo descriptorPoolCrateInfo = {};
@@ -975,6 +1027,20 @@ void VulkanContext::_InitVulkanContextDescriptorPool() {
     descriptorPoolCrateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
     vkCreateDescriptorPool(m_Device, &descriptorPoolCrateInfo, VulkanUtils::Allocator, &m_DescriptorPool);
+}
+
+void VulkanContext::_InitVulkanContextOffscreentRenderContext() {
+    CreateOffScreenRenderContext(m_MainSwapchainContext.width, m_MainSwapchainContext.height, &m_OffScreenRenderContext);
+}
+
+void VulkanContext::DestroyFramebuffer(VkFramebuffer &framebuffer) {
+    vkDestroyFramebuffer(m_Device, framebuffer, VulkanUtils::Allocator);
+}
+
+void VulkanContext::DestroyOffScreenRenderContext(VkOffScreenRenderContext &context) {
+    DestroyRenderPass(context.renderpass);
+    DestroyTexture2D(context.texture);
+    DestroyFramebuffer(context.framebuffer);
 }
 
 void VulkanContext::DestroyTexture2D(VkTexture2D &texture) {
@@ -1007,10 +1073,14 @@ void VulkanContext::FreeBuffer(VkDeviceBuffer &buffer) {
 }
 
 void VulkanContext::DestroySwapchainContextKHR(VkSwapchainContextKHR *pSwapchainContext) {
-    vkDestroyRenderPass(m_Device, m_WindowContext.renderpass, VulkanUtils::Allocator);
+    DestroyRenderPass(m_WindowContext.renderpass);
     for (int i = 0; i < pSwapchainContext->minImageCount; i++) {
         vkDestroyImageView(m_Device, pSwapchainContext->imageViews[i], VulkanUtils::Allocator);
-        vkDestroyFramebuffer(m_Device, pSwapchainContext->framebuffers[i], VulkanUtils::Allocator);
+        DestroyFramebuffer(pSwapchainContext->framebuffers[i]);
     }
     vkDestroySwapchainKHR(m_Device, pSwapchainContext->swapchain, VulkanUtils::Allocator);
+}
+
+void VulkanContext::DestroyRenderPass(VkRenderPass renderPass) {
+    vkDestroyRenderPass(m_Device, renderPass, VulkanUtils::Allocator);
 }

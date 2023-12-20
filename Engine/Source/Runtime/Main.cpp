@@ -43,7 +43,7 @@ struct UniformBufferObject {
 };
 
 int main(int argc, const char **argv) {
-    Window window("SportsEngine", 120, 90);
+    Window window("SportsEngine", 1280, 1200);
     std::unique_ptr<VulkanContext> vulkanContext = std::make_unique<VulkanContext>(&window);
     window.SetWindowHintVisible(true);
 
@@ -63,7 +63,7 @@ int main(int argc, const char **argv) {
 
     Vector<VkDescriptorSetLayout> layouts = { descriptorSetLayout };
     vulkanContext->AllocateDescriptorSet(layouts, &descriptorSet);
-    vulkanContext->CreateRenderPipeline("../Engine/Binaries", "simple_shader", descriptorSetLayout, &pipeline);
+    vulkanContext->CreateRenderPipeline("../Engine/Binaries", "simple_shader", vulkanContext->GetOffScreenRenderPass(), descriptorSetLayout, &pipeline);
 
     const std::vector<Vertex> vertices = {
             {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
@@ -87,9 +87,9 @@ int main(int argc, const char **argv) {
 
     GedUI::Init(&window, vulkanContext.get());
 
-    VkFrameContext *frameContext;
     while (!window.is_close()) {
-        vulkanContext->BeginRender(&frameContext);
+        VkCommandBuffer commandBuffer;
+        vulkanContext->BeginOffScreenRender(&commandBuffer);
         {
             static auto startTime = std::chrono::high_resolution_clock::now();
             auto currentTime = std::chrono::high_resolution_clock::now();
@@ -105,24 +105,36 @@ int main(int argc, const char **argv) {
             memcpy(data, &ubo, sizeof(ubo));
             vulkanContext->UnmapMemory(uniformBuffer);
 
-            vulkanContext->BindRenderPipeline(pipeline);
-            vulkanContext->BindDescriptorSets(pipeline, 1, &descriptorSet);
+            vulkanContext->BindRenderPipeline(commandBuffer, pipeline);
+            vulkanContext->BindDescriptorSets(commandBuffer, pipeline, 1, &descriptorSet);
             vulkanContext->WriteDescriptorSet(uniformBuffer, texture2D, descriptorSet);
 
             /* bind vertex buffer */
             VkBuffer buffers[] = {vertexBuffer.buffer};
             VkDeviceSize offsets[] = {0};
-            vkCmdBindVertexBuffers(frameContext->commandBuffer, 0, 1, buffers, offsets);
-            vkCmdBindIndexBuffer(frameContext->commandBuffer, indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
+            vkCmdBindIndexBuffer(commandBuffer, indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
             /* draw call */
-            vulkanContext->DrawIndexed(std::size(indices));
+            vulkanContext->DrawIndexed(commandBuffer, std::size(indices));
+        }
+        vulkanContext->EndOffScreenRender();
 
+        VkTexture2D *texture;
+        vulkanContext->AcquireOffScreenRenderTexture2D(&texture);
+        ImTextureID offScreenTextureId = GedUI::AddTexture2D(*texture);
+
+        VkFrameContext *frameContext;
+        vulkanContext->BeginRender(&frameContext);
+        {
             GedUI::BeginNewFrame();
             {
+                GedUI::DrawTexture2D(offScreenTextureId, ImVec2(400, 400));
             }
             GedUI::EndNewFrame();
         }
         vulkanContext->EndRender();
+
+        GedUI::RemoveTexture2D(offScreenTextureId);
         Window::PollEvents();
     }
 

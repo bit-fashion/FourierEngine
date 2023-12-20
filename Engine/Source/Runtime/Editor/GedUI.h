@@ -44,7 +44,9 @@ public:
     static void Destroy();
     static void BeginNewFrame();
     static void EndNewFrame();
-    static void DrawTexture2D(VkTexture2D *pTexture2D, const ImVec2 &size);
+    static ImTextureID AddTexture2D(VkTexture2D &texture);
+    static void RemoveTexture2D(const ImTextureID &texture);
+    static void DrawTexture2D(const ImTextureID &texture, const ImVec2 &size);
 
 private:
     struct State {
