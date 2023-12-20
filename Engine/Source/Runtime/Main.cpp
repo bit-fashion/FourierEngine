@@ -85,7 +85,7 @@ int main(int argc, const char **argv) {
     vulkanContext->AllocateBuffer(sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &uniformBuffer);
 
-    GameEditor editor(&window, vulkanContext.get());
+    GameEditor::Init(&window, vulkanContext.get());
 
     VkFrameContext *frameContext;
     while (!window.is_close()) {
@@ -117,12 +117,18 @@ int main(int argc, const char **argv) {
             /* draw call */
             vulkanContext->DrawIndexed(std::size(indices));
 
-            editor.BeginGameEditorFrame();
-            editor.EndGameEditorFrame();
+            GameEditor::BeginNewFrame();
+            {
+                static bool showDemoWindow = true;
+                ImGui::ShowDemoWindow(&showDemoWindow);
+            }
+            GameEditor::EndNewFrame();
         }
         vulkanContext->EndRender();
         Window::PollEvents();
     }
+
+    GameEditor::Destroy();
 
     vulkanContext->FreeBuffer(uniformBuffer);
     vulkanContext->DestroyTexture2D(texture2D);

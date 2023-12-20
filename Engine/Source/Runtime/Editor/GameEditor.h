@@ -35,17 +35,24 @@
  */
 class GameEditor {
 public:
+    //
+    // 公共函数
+    //
+    static void Init(const Window *window, VulkanContext *context);
+    static void Destroy();
+    static void BeginNewFrame();
+    static void EndNewFrame();
+
+private:
     GameEditor(const Window *window, VulkanContext *context);
     ~GameEditor();
+    void InitGameEditorContext(const Window *window, VulkanContext *context);
 
     //
     // start gui render
     //
     void BeginGameEditorFrame();
     void EndGameEditorFrame();
-
-private:
-    void InitGameEditorContext(const Window *window, VulkanContext *context);
 
 private:
     void _ThemeEmbraceTheDarkness();

@@ -28,6 +28,7 @@
 #include <imgui/backends/imgui_impl_vulkan.h>
 
 static VkRenderContext *s_RenderContext = null;
+GameEditor *s_GameEditorContext = null;
 
 GameEditor::GameEditor(const Window *window, VulkanContext *context) {
     // Setup Dear ImGui context
@@ -58,32 +59,6 @@ GameEditor::~GameEditor() {
     ImGui_ImplGlfw_Shutdown();
 }
 
-void GameEditor::BeginGameEditorFrame() {
-    // Start the Dear ImGui frame
-    ImGui_ImplVulkan_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
-    // docking
-    ImGui::DockSpaceOverViewport(NULL, ImGuiDockNodeFlags_PassthruCentralNode);
-}
-
-void GameEditor::EndGameEditorFrame() {
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-
-    // Rendering
-    ImGui::Render();
-    ImDrawData* main_draw_data = ImGui::GetDrawData();
-    ImGui_ImplVulkan_RenderDrawData(main_draw_data, s_RenderContext->FrameContext->commandBuffer);
-
-    // Update and Render additional Platform Windows
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    {
-        ImGui::UpdatePlatformWindows();
-        ImGui::RenderPlatformWindowsDefault();
-    }
-}
-
 void GameEditor::InitGameEditorContext(const Window *window, VulkanContext *context) {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
@@ -94,7 +69,7 @@ void GameEditor::InitGameEditorContext(const Window *window, VulkanContext *cont
     //io.ConfigViewportsNoTaskBarIcon = true;
 
     // set default font.
-    io.Fonts->AddFontFromFileTTF("../Engine/Assets/Fonts/smiley-sans-v1.1.1/SmileySans-Oblique.ttf", 18.0f,
+    io.Fonts->AddFontFromFileTTF("../Engine/Assets/Fonts/smiley-sans-v1.1.1/SmileySans-Oblique.ttf", 21.0f,
                                  null, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
     io.FontDefault = io.Fonts->Fonts.back();
 
@@ -128,6 +103,32 @@ void GameEditor::InitGameEditorContext(const Window *window, VulkanContext *cont
     init_info.Allocator = VK_NULL_HANDLE;
     init_info.CheckVkResultFn = VK_NULL_HANDLE;
     ImGui_ImplVulkan_Init(&init_info, s_RenderContext->RenderPass);
+}
+
+void GameEditor::BeginGameEditorFrame() {
+    // Start the Dear ImGui frame
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    // docking
+    ImGui::DockSpaceOverViewport(NULL, ImGuiDockNodeFlags_PassthruCentralNode);
+}
+
+void GameEditor::EndGameEditorFrame() {
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    // Rendering
+    ImGui::Render();
+    ImDrawData* main_draw_data = ImGui::GetDrawData();
+    ImGui_ImplVulkan_RenderDrawData(main_draw_data, s_RenderContext->FrameContext->commandBuffer);
+
+    // Update and Render additional Platform Windows
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+    }
 }
 
 void GameEditor::_ThemeEmbraceTheDarkness() {
@@ -211,4 +212,23 @@ void GameEditor::_ThemeEmbraceTheDarkness() {
     style.GrabRounding                      = 3;
     style.LogSliderDeadzone                 = 4;
     style.TabRounding                       = 4;
+}
+
+//
+// GameEditor
+//
+void GameEditor::Init(const Window *window, VulkanContext *context) {
+    s_GameEditorContext = new GameEditor(window, context);
+}
+
+void GameEditor::Destroy() {
+    delete s_GameEditorContext;
+}
+
+void GameEditor::BeginNewFrame() {
+    s_GameEditorContext->BeginGameEditorFrame();
+}
+
+void GameEditor::EndNewFrame() {
+    s_GameEditorContext->EndGameEditorFrame();
 }
