@@ -34,22 +34,29 @@
 
 class Window;
 
+struct VkWindowContext {
+    VkPhysicalDevice physicalDevice;
+    VkSurfaceKHR surface;
+    const Window *win;
+    /* only create once */
+    VkRenderPass renderpass;
+    VkSemaphore imageAvailableSemaphore;
+    VkSemaphore renderFinishedSemaphore;
+};
+
 struct VkSwapchainContextKHR {
     VkSwapchainKHR swapchain;
     Vector<VkImage> images;
     Vector<VkImageView> imageViews;
     Vector<VkFramebuffer> framebuffers;
-    VkRenderPass renderpass;
+    const VkWindowContext *winctx;
     uint32_t minImageCount;
-    VkSurfaceFormatKHR surfaceFormat;
-    VkSurfaceKHR surface;
-    const Window *window;
     uint32_t width;
     uint32_t height;
-    VkSurfaceCapabilitiesKHR capabilities;
     VkPresentModeKHR presentMode;
-    VkSemaphore imageAvailableSemaphore;
-    VkSemaphore renderFinishedSemaphore;
+    VkFormat format;
+    VkColorSpaceKHR colorSpace;
+    VkSurfaceCapabilitiesKHR capabilities;
 };
 
 struct VkDeviceBuffer {
@@ -105,7 +112,6 @@ public:
     void GetRenderContext(VkRenderContext **pRenderContext) { *pRenderContext = &m_RenderContext; }
     void GetFrameContext(VkFrameContext **pContext) { *pContext = &m_FrameContext; }
     void DeviceWaitIdle();
-    VkDevice GetDevice() const { return m_Device; }
 
     //
     // About vulkan device buffer.
@@ -159,8 +165,8 @@ public:
                                 VkRenderPipeline *pDriverGraphicsPipeline);
     void AllocateCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer);
     void AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkDeviceBuffer *buffer);
-    void RecreateSwapchainContext(VkSwapchainContextKHR *pSwapchainContext, uint32_t width, uint32_t height);
-    void CreateSwapchainContext(VkSwapchainContextKHR *pSwapchainContext);
+    void RecreateSwapchainContextKHR(VkSwapchainContextKHR *pSwapchainContext, uint32_t width, uint32_t height);
+    void CreateSwapchainContextKHR(VkSwapchainContextKHR *pSwapchainContext);
 
     //
     // Destroy components.
@@ -171,16 +177,17 @@ public:
     void DestroyRenderPipeline(VkRenderPipeline &pipeline);
     void FreeCommandBuffer(uint32_t count, VkCommandBuffer *pCommandBuffer);
     void FreeBuffer(VkDeviceBuffer &buffer);
-    void DestroySwapchainContext(VkSwapchainContextKHR *pSwapchainContext);
+    void DestroySwapchainContextKHR(VkSwapchainContextKHR *pSwapchainContext);
 
 private:
     void InitVulkanDriverContext(); /* Init VulkanContext main */
     void _InitVulkanContextInstance();
     void _InitVulkanContextSurface();
+    void _InitVulkanContextWindowContext();
     void _InitVulkanContextDevice();
     void _InitVulkanContextQueue();
     void _InitVulkanContextCommandPool();
-    void _InitVulkanContextSwapchain();
+    void _InitVulkanContextMainSwapchain();
     void _InitVulkanContextCommandBuffers();
     void _InitVulkanContextDescriptorPool();
 
@@ -210,6 +217,7 @@ private:
     VkFrameContext m_FrameContext;
     VkDescriptorPool m_DescriptorPool;
     VkRenderContext m_RenderContext;
+    VkWindowContext m_WindowContext;
 };
 
 #endif /* _SPORTS_VULKAN_CONTEXT_H_ */

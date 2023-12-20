@@ -35,9 +35,9 @@ VulkanContext::~VulkanContext() {
     vkDestroyDescriptorPool(m_Device, m_DescriptorPool, VulkanUtils::Allocator);
     FreeCommandBuffer(std::size(m_CommandBuffers), std::data(m_CommandBuffers));
     vkDestroyCommandPool(m_Device, m_CommandPool, VulkanUtils::Allocator);
-    vkDestroySemaphore(m_Device, m_SwapchainContext.renderFinishedSemaphore, VulkanUtils::Allocator);
-    vkDestroySemaphore(m_Device, m_SwapchainContext.imageAvailableSemaphore, VulkanUtils::Allocator);
-    DestroySwapchainContext(&m_SwapchainContext);
+    vkDestroySemaphore(m_Device, m_WindowContext.renderFinishedSemaphore, VulkanUtils::Allocator);
+    vkDestroySemaphore(m_Device, m_WindowContext.imageAvailableSemaphore, VulkanUtils::Allocator);
+    DestroySwapchainContextKHR(&m_SwapchainContext);
     vkDestroyDevice(m_Device, VulkanUtils::Allocator);
     vkDestroySurfaceKHR(m_Instance, m_SurfaceKHR, VulkanUtils::Allocator);
     vkDestroyInstance(m_Instance, VulkanUtils::Allocator);
@@ -46,10 +46,10 @@ VulkanContext::~VulkanContext() {
 void VulkanContext::_CreateSwapcahinAboutComponents(VkSwapchainContextKHR *pSwapchainContext) {
     VkSwapchainCreateInfoKHR swapchainCreateInfoKHR = {};
     swapchainCreateInfoKHR.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    swapchainCreateInfoKHR.surface = m_SwapchainContext.surface;
+    swapchainCreateInfoKHR.surface = m_SwapchainContext.winctx->surface;
     swapchainCreateInfoKHR.minImageCount = m_SwapchainContext.minImageCount;
-    swapchainCreateInfoKHR.imageFormat = m_SwapchainContext.surfaceFormat.format;
-    swapchainCreateInfoKHR.imageColorSpace = m_SwapchainContext.surfaceFormat.colorSpace;
+    swapchainCreateInfoKHR.imageFormat = m_SwapchainContext.format;
+    swapchainCreateInfoKHR.imageColorSpace = m_SwapchainContext.colorSpace;
     swapchainCreateInfoKHR.imageExtent = { m_SwapchainContext.width, m_SwapchainContext.height };
     swapchainCreateInfoKHR.imageArrayLayers = 1;
     swapchainCreateInfoKHR.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -75,7 +75,7 @@ void VulkanContext::_CreateSwapcahinAboutComponents(VkSwapchainContextKHR *pSwap
         imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         imageViewCreateInfo.image = pSwapchainContext->images[i];
         imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        imageViewCreateInfo.format = pSwapchainContext->surfaceFormat.format;
+        imageViewCreateInfo.format = pSwapchainContext->format;
         imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
         imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
         imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -91,7 +91,7 @@ void VulkanContext::_CreateSwapcahinAboutComponents(VkSwapchainContextKHR *pSwap
         VkImageView attachments[] = { pSwapchainContext->imageViews[i] };
         VkFramebufferCreateInfo framebufferCreateInfo = {};
         framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferCreateInfo.renderPass = pSwapchainContext->renderpass;
+        framebufferCreateInfo.renderPass = m_WindowContext.renderpass;
         framebufferCreateInfo.attachmentCount = 1;
         framebufferCreateInfo.pAttachments = attachments;
         framebufferCreateInfo.width = pSwapchainContext->width;
@@ -104,7 +104,7 @@ void VulkanContext::_CreateSwapcahinAboutComponents(VkSwapchainContextKHR *pSwap
 
 void VulkanContext::_CreateRenderpass(VkSwapchainContextKHR *pSwapchainContext) {
     VkAttachmentDescription colorAttachmentDescription = {};
-    colorAttachmentDescription.format = pSwapchainContext->surfaceFormat.format;
+    colorAttachmentDescription.format = pSwapchainContext->format;
     colorAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
     colorAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -139,18 +139,17 @@ void VulkanContext::_CreateRenderpass(VkSwapchainContextKHR *pSwapchainContext) 
     renderPassCreateInfo.dependencyCount = 1;
     renderPassCreateInfo.pDependencies = &subpassDependency;
 
-    vkCreateRenderPass(m_Device, &renderPassCreateInfo, VulkanUtils::Allocator, &pSwapchainContext->renderpass);
+    vkCreateRenderPass(m_Device, &renderPassCreateInfo, VulkanUtils::Allocator, &m_WindowContext.renderpass);
 }
 
 void VulkanContext::_ConfigurationSwapchainContext(VkSwapchainContextKHR *pSwapchainContext) {
-    VulkanUtils::ConfigurationVulkanSwapchainContextDetail(m_PhysicalDevice, m_SurfaceKHR, m_Window,
-                                                       &m_SwapchainContext);
+    VulkanUtils::ConfigurationVulkanSwapchainContextDetail(&m_WindowContext, &m_SwapchainContext);
 }
 
 void VulkanContext::_ConfigurationWindowResizeableEventCallback() {
     m_Window->AddWindowResizeableCallback([](Window *window, int width, int height){
         VulkanContext *context = (VulkanContext *) window->GetWindowUserPointer("VulkanContext");
-        context->RecreateSwapchainContext(&context->m_SwapchainContext, width, height);
+        context->RecreateSwapchainContextKHR(&context->m_SwapchainContext, width, height);
     });
 }
 
@@ -268,7 +267,7 @@ void VulkanContext::QueueWaitIdle(VkQueue queue) {
 void VulkanContext::BeginRender(VkFrameContext **ppFrameContext) {
     uint32_t index;
     vkAcquireNextImageKHR(m_Device, m_SwapchainContext.swapchain, std::numeric_limits<uint64_t>::max(),
-                          m_SwapchainContext.imageAvailableSemaphore, null, &index);
+                          m_WindowContext.imageAvailableSemaphore, null, &index);
     m_FrameContext.index = index;
     m_FrameContext.framebuffer = m_SwapchainContext.framebuffers[m_FrameContext.index];
     m_FrameContext.commandBuffer = m_CommandBuffers[m_FrameContext.index];
@@ -279,16 +278,16 @@ void VulkanContext::BeginRender(VkFrameContext **ppFrameContext) {
         GetFrameContext(ppFrameContext);
 
     BeginRecordCommandBuffer();
-    BeginRenderPass(m_SwapchainContext.renderpass);
+    BeginRenderPass(m_WindowContext.renderpass);
 }
 
 void VulkanContext::EndRender() {
     EndRenderPass();
     EndRecordCommandBuffer();
     /* final submit */
-    VkSemaphore waitSemaphores[] = { m_SwapchainContext.imageAvailableSemaphore };
+    VkSemaphore waitSemaphores[] = { m_WindowContext.imageAvailableSemaphore };
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    VkSemaphore signalSemaphores[] = { m_SwapchainContext.renderFinishedSemaphore };
+    VkSemaphore signalSemaphores[] = { m_WindowContext.renderFinishedSemaphore };
 
     SyncSubmitQueueWithSubmitInfo(1, &m_FrameContext.commandBuffer,
                                   1, waitSemaphores,
@@ -320,7 +319,7 @@ void VulkanContext::BindRenderPipeline(VkRenderPipeline &pipeline) {
 
     VkRect2D scissor;
     scissor.offset = {0, 0};
-    scissor.extent = { m_SwapchainContext.width, m_SwapchainContext.height };
+    scissor.extent = { (uint32_t) w, (uint32_t) h };
     vkCmdSetScissor(m_FrameContext.commandBuffer, 0, 1, &scissor);
 }
 
@@ -659,13 +658,13 @@ void VulkanContext::CreateRenderPipeline(const String &shaderfolder, const Strin
     viewport.x = 0.0f;
     viewport.y = 0.0f;
     viewport.width = (float) m_SwapchainContext.width;
-    viewport.height = (float) m_SwapchainContext.height;
+    viewport.height = (float) m_SwapchainContext.width;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
     VkRect2D scissor;
     scissor.offset = {0, 0};
-    scissor.extent = { m_SwapchainContext.width, m_SwapchainContext.height };
+    scissor.extent = { m_SwapchainContext.width, m_SwapchainContext.width };
 
     /* 视口裁剪 */
     VkPipelineViewportStateCreateInfo pipelineViewportStateCrateInfo = {};
@@ -764,7 +763,7 @@ void VulkanContext::CreateRenderPipeline(const String &shaderfolder, const Strin
     graphicsPipelineCreateInfo.pColorBlendState = &pipelineColorBlendStateCreateInfo;
     graphicsPipelineCreateInfo.pDynamicState = &pipelineDynamicStateCreateInfo; // Optional
     graphicsPipelineCreateInfo.layout = pDriverGraphicsPipeline->pipelineLayout;
-    graphicsPipelineCreateInfo.renderPass = m_SwapchainContext.renderpass;
+    graphicsPipelineCreateInfo.renderPass = m_WindowContext.renderpass;
     graphicsPipelineCreateInfo.subpass = 0;
     graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
     graphicsPipelineCreateInfo.basePipelineIndex = -1; // Optional
@@ -811,15 +810,15 @@ void VulkanContext::AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, 
     vkBindBufferMemory(m_Device, buffer->buffer, buffer->memory, 0);
 }
 
-void VulkanContext::RecreateSwapchainContext(VkSwapchainContextKHR *pSwapchainContext, uint32_t width, uint32_t height) {
+void VulkanContext::RecreateSwapchainContextKHR(VkSwapchainContextKHR *pSwapchainContext, uint32_t width, uint32_t height) {
     if (width <= 0 || height <= 0)
         return;
     DeviceWaitIdle();
-    DestroySwapchainContext(pSwapchainContext);
-    CreateSwapchainContext(pSwapchainContext);
+    DestroySwapchainContextKHR(pSwapchainContext);
+    CreateSwapchainContextKHR(pSwapchainContext);
 }
 
-void VulkanContext::CreateSwapchainContext(VkSwapchainContextKHR *pSwapchainContext) {
+void VulkanContext::CreateSwapchainContextKHR(VkSwapchainContextKHR *pSwapchainContext) {
     _ConfigurationSwapchainContext(pSwapchainContext);
     _CreateRenderpass(pSwapchainContext);
     _CreateSwapcahinAboutComponents(pSwapchainContext);
@@ -833,9 +832,10 @@ void VulkanContext::InitVulkanDriverContext() {
     _InitVulkanContextInstance();
     _InitVulkanContextSurface();
     _InitVulkanContextDevice();
+    _InitVulkanContextWindowContext();
     _InitVulkanContextQueue();
     _InitVulkanContextCommandPool();
-    _InitVulkanContextSwapchain();
+    _InitVulkanContextMainSwapchain();
     _InitVulkanContextCommandBuffers();
     _InitVulkanContextDescriptorPool();
 
@@ -846,7 +846,7 @@ void VulkanContext::InitVulkanDriverContext() {
     m_RenderContext.GraphicsQueue = m_GraphicsQueue;
     m_RenderContext.GraphicsQueueFamily = m_GraphicsQueueFamily;
     m_RenderContext.Swapchain = m_SwapchainContext.swapchain;
-    m_RenderContext.RenderPass = m_SwapchainContext.renderpass;
+    m_RenderContext.RenderPass = m_WindowContext.renderpass;
     m_RenderContext.CommandPool = m_CommandPool;
     m_RenderContext.DescriptorPool = m_DescriptorPool;
     m_RenderContext.MinImageCount = m_SwapchainContext.minImageCount;
@@ -918,6 +918,12 @@ void VulkanContext::_InitVulkanContextDevice() {
     vkCreateDevice(m_PhysicalDevice, &deviceCreateInfo, VulkanUtils::Allocator, &m_Device);
 }
 
+void VulkanContext::_InitVulkanContextWindowContext() {
+    VulkanUtils::ConfigurationVulkanWindowContextDetail(m_PhysicalDevice, m_Window, m_SurfaceKHR, &m_WindowContext);
+    CreateSemaphore(&m_WindowContext.imageAvailableSemaphore);
+    CreateSemaphore(&m_WindowContext.renderFinishedSemaphore);
+}
+
 void VulkanContext::_InitVulkanContextQueue() {
     /* get queue */
     vkGetDeviceQueue(m_Device, m_GraphicsQueueFamily, 0, &m_GraphicsQueue);
@@ -934,11 +940,9 @@ void VulkanContext::_InitVulkanContextCommandPool() {
     vkCreateCommandPool(m_Device, &commandPoolCreateInfo, VulkanUtils::Allocator, &m_CommandPool);
 }
 
-void VulkanContext::_InitVulkanContextSwapchain() {
+void VulkanContext::_InitVulkanContextMainSwapchain() {
     /* Create swapchain */
-    CreateSwapchainContext(&m_SwapchainContext);
-    CreateSemaphore(&m_SwapchainContext.imageAvailableSemaphore);
-    CreateSemaphore(&m_SwapchainContext.renderFinishedSemaphore);
+    CreateSwapchainContextKHR(&m_SwapchainContext);
 }
 
 void VulkanContext::_InitVulkanContextCommandBuffers() {
@@ -1002,8 +1006,8 @@ void VulkanContext::FreeBuffer(VkDeviceBuffer &buffer) {
     vkDestroyBuffer(m_Device, buffer.buffer, VulkanUtils::Allocator);
 }
 
-void VulkanContext::DestroySwapchainContext(VkSwapchainContextKHR *pSwapchainContext) {
-    vkDestroyRenderPass(m_Device, pSwapchainContext->renderpass, VulkanUtils::Allocator);
+void VulkanContext::DestroySwapchainContextKHR(VkSwapchainContextKHR *pSwapchainContext) {
+    vkDestroyRenderPass(m_Device, m_WindowContext.renderpass, VulkanUtils::Allocator);
     for (int i = 0; i < pSwapchainContext->minImageCount; i++) {
         vkDestroyImageView(m_Device, pSwapchainContext->imageViews[i], VulkanUtils::Allocator);
         vkDestroyFramebuffer(m_Device, pSwapchainContext->framebuffers[i], VulkanUtils::Allocator);

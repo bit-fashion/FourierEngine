@@ -232,32 +232,37 @@ namespace VulkanUtils {
         *pPresentMode = bestMode;
     }
 
-    static void ConfigurationVulkanSwapchainContextDetail(VkPhysicalDevice device, VkSurfaceKHR surface, const Window *pWindow,
-                                                          VkSwapchainContextKHR *pSwapchainContext) {
-        pSwapchainContext->surface = surface;
-        pSwapchainContext->window = pWindow;
-        auto windowExtent2D = pWindow->GetWindowExtent2D();
-        pSwapchainContext->width = windowExtent2D.width;
-        pSwapchainContext->height = windowExtent2D.height;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &pSwapchainContext->capabilities);
+    static void ConfigurationVulkanWindowContextDetail(VkPhysicalDevice device, Window *window, VkSurfaceKHR surface, VkWindowContext *p_winctx) {
+        p_winctx->surface = surface;
+        p_winctx->win = window;
+        p_winctx->physicalDevice = device;
+    }
+
+    static void ConfigurationVulkanSwapchainContextDetail(VkWindowContext *p_winctx, VkSwapchainContextKHR *pSwapchainContext) {
+        pSwapchainContext->winctx = p_winctx;
+
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(p_winctx->physicalDevice, p_winctx->surface, &pSwapchainContext->capabilities);
 
         uint32_t formatCount;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, null);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(p_winctx->physicalDevice, p_winctx->surface, &formatCount, null);
         Vector<VkSurfaceFormatKHR> formats(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, std::data(formats));
-        _SelectVulkanSwapchainSurfaceFormatKHR(formats, &pSwapchainContext->surfaceFormat);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(p_winctx->physicalDevice, p_winctx->surface, &formatCount, std::data(formats));
+        VkSurfaceFormatKHR surfaceFormatKHR;
+        _SelectVulkanSwapchainSurfaceFormatKHR(formats, &surfaceFormatKHR);
+        pSwapchainContext->format = surfaceFormatKHR.format;
+        pSwapchainContext->colorSpace = surfaceFormatKHR.colorSpace;
 
         uint32_t presentModeCount;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, null);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(p_winctx->physicalDevice, p_winctx->surface, &presentModeCount, null);
         Vector<VkPresentModeKHR> presentModes(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, std::data(presentModes));
+        vkGetPhysicalDeviceSurfacePresentModesKHR(p_winctx->physicalDevice, p_winctx->surface, &presentModeCount, std::data(presentModes));
         _SelectVulkanSwapchainPresentModeKHR(presentModes, &pSwapchainContext->presentMode);
 
         if (pSwapchainContext->capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
             pSwapchainContext->width = pSwapchainContext->capabilities.currentExtent.width;
             pSwapchainContext->height = pSwapchainContext->capabilities.currentExtent.height;
         } else {
-            VkExtent2D actualExtent = { static_cast<uint32_t>(windowExtent2D.width), static_cast<uint32_t>(windowExtent2D.height) };
+            VkExtent2D actualExtent = { static_cast<uint32_t>(p_winctx->win->GetWidth()), static_cast<uint32_t>(p_winctx->win->GetHeight()) };
 
             actualExtent.width = std::max(pSwapchainContext->capabilities.minImageExtent.width, std::min(pSwapchainContext->capabilities.maxImageExtent.width, actualExtent.width));
             actualExtent.height = std::max(pSwapchainContext->capabilities.minImageExtent.height, std::min(pSwapchainContext->capabilities.maxImageExtent.height, actualExtent.height));
