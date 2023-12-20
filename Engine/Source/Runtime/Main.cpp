@@ -26,7 +26,7 @@
 #include "Window/Window.h"
 #include "Render/Drivers/Vulkan/VulkanContext.h"
 #include <System.h>
-#include "Editor/GameEditor.h"
+#include "Editor/GedUI.h"
 // glm
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -85,7 +85,7 @@ int main(int argc, const char **argv) {
     vulkanContext->AllocateBuffer(sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &uniformBuffer);
 
-    GameEditor::Init(&window, vulkanContext.get());
+    GedUI::Init(&window, vulkanContext.get());
 
     VkFrameContext *frameContext;
     while (!window.is_close()) {
@@ -117,14 +117,16 @@ int main(int argc, const char **argv) {
             /* draw call */
             vulkanContext->DrawIndexed(std::size(indices));
 
-            GameEditor::BeginNewFrame();
-            GameEditor::EndNewFrame();
+            GedUI::BeginNewFrame();
+            {
+            }
+            GedUI::EndNewFrame();
         }
         vulkanContext->EndRender();
         Window::PollEvents();
     }
 
-    GameEditor::Destroy();
+    GedUI::Destroy();
 
     vulkanContext->FreeBuffer(uniformBuffer);
     vulkanContext->DestroyTexture2D(texture2D);

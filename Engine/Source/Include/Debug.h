@@ -58,7 +58,7 @@ static Vector<SportsDebugWatchInfo> _GLOBAL_DEBUG_WATCHER;
  * 推送一个调试数据到监听器
  */
 inline
-static void SportsDebugAddWatch(const String &name, SportsDebugWatchType type, pointer_t ptr,
+static void NatureDebugAddWatch(const String &name, SportsDebugWatchType type, pointer_t ptr,
                                 bool editable = false) {
     _GLOBAL_DEBUG_WATCHER.push_back({name, type, ptr, editable});
 }
@@ -66,7 +66,7 @@ static void SportsDebugAddWatch(const String &name, SportsDebugWatchType type, p
 /**
  * 推送一个调试数据到监听器
  */
-static void SportsDebugRemoveWatch(const String &name) {
+static void NatureDebugRemoveWatch(const String &name) {
     size_t index = -1;
     size_t len = std::size(_GLOBAL_DEBUG_WATCHER);
 

@@ -203,7 +203,7 @@ private:
     VkDevice m_Device;
     VkCommandPool m_CommandPool;
     Vector<VkCommandBuffer> m_CommandBuffers;
-    VkSwapchainContextKHR m_SwapchainContext;
+    VkSwapchainContextKHR m_MainSwapchainContext;
 
     Window *m_Window;
     VkPhysicalDevice m_PhysicalDevice;

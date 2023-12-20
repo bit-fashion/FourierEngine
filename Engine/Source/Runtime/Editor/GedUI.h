@@ -27,13 +27,16 @@
 #define _SPORTS_ENGINE_EDITOR_H_
 
 #include <imgui/imgui.h>
+#include <imgui/backends/imgui_impl_glfw.h>
+#include <imgui/backends/imgui_impl_vulkan.h>
 #include "Window/Window.h"
 #include "Render/Drivers/Vulkan/VulkanContext.h"
+#include <Debug.h>
 
 /**
  * Game Editor
  */
-class GameEditor {
+class GedUI {
 public:
     //
     // 公共函数
@@ -42,6 +45,7 @@ public:
     static void Destroy();
     static void BeginNewFrame();
     static void EndNewFrame();
+    static void DrawTexture2D(VkTexture2D *pTexture2D, const ImVec2 &size);
 
 private:
     struct State {
@@ -49,8 +53,8 @@ private:
     };
 
 private:
-    GameEditor(const Window *window, VulkanContext *context);
-    ~GameEditor();
+    GedUI(const Window *window, VulkanContext *context);
+    ~GedUI();
     void InitGameEditorContext(const Window *window, VulkanContext *context);
 
     //

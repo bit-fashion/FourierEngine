@@ -37,7 +37,7 @@ VulkanContext::~VulkanContext() {
     vkDestroyCommandPool(m_Device, m_CommandPool, VulkanUtils::Allocator);
     vkDestroySemaphore(m_Device, m_WindowContext.renderFinishedSemaphore, VulkanUtils::Allocator);
     vkDestroySemaphore(m_Device, m_WindowContext.imageAvailableSemaphore, VulkanUtils::Allocator);
-    DestroySwapchainContextKHR(&m_SwapchainContext);
+    DestroySwapchainContextKHR(&m_MainSwapchainContext);
     vkDestroyDevice(m_Device, VulkanUtils::Allocator);
     vkDestroySurfaceKHR(m_Instance, m_SurfaceKHR, VulkanUtils::Allocator);
     vkDestroyInstance(m_Instance, VulkanUtils::Allocator);
@@ -46,21 +46,21 @@ VulkanContext::~VulkanContext() {
 void VulkanContext::_CreateSwapcahinAboutComponents(VkSwapchainContextKHR *pSwapchainContext) {
     VkSwapchainCreateInfoKHR swapchainCreateInfoKHR = {};
     swapchainCreateInfoKHR.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    swapchainCreateInfoKHR.surface = m_SwapchainContext.winctx->surface;
-    swapchainCreateInfoKHR.minImageCount = m_SwapchainContext.minImageCount;
-    swapchainCreateInfoKHR.imageFormat = m_SwapchainContext.format;
-    swapchainCreateInfoKHR.imageColorSpace = m_SwapchainContext.colorSpace;
-    swapchainCreateInfoKHR.imageExtent = { m_SwapchainContext.width, m_SwapchainContext.height };
+    swapchainCreateInfoKHR.surface = m_MainSwapchainContext.winctx->surface;
+    swapchainCreateInfoKHR.minImageCount = m_MainSwapchainContext.minImageCount;
+    swapchainCreateInfoKHR.imageFormat = m_MainSwapchainContext.format;
+    swapchainCreateInfoKHR.imageColorSpace = m_MainSwapchainContext.colorSpace;
+    swapchainCreateInfoKHR.imageExtent = { m_MainSwapchainContext.width, m_MainSwapchainContext.height };
     swapchainCreateInfoKHR.imageArrayLayers = 1;
     swapchainCreateInfoKHR.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    swapchainCreateInfoKHR.preTransform = m_SwapchainContext.capabilities.currentTransform;
+    swapchainCreateInfoKHR.preTransform = m_MainSwapchainContext.capabilities.currentTransform;
     swapchainCreateInfoKHR.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    swapchainCreateInfoKHR.presentMode = m_SwapchainContext.presentMode;
+    swapchainCreateInfoKHR.presentMode = m_MainSwapchainContext.presentMode;
     swapchainCreateInfoKHR.clipped = VK_TRUE;
     swapchainCreateInfoKHR.oldSwapchain = null;
 
     vkCreateSwapchainKHR(m_Device, &swapchainCreateInfoKHR, VulkanUtils::Allocator,
-                         &m_SwapchainContext.swapchain);
+                         &m_MainSwapchainContext.swapchain);
 
     vkGetSwapchainImagesKHR(m_Device, pSwapchainContext->swapchain, &pSwapchainContext->minImageCount, null);
     pSwapchainContext->images.resize(pSwapchainContext->minImageCount);
@@ -143,13 +143,13 @@ void VulkanContext::_CreateRenderpass(VkSwapchainContextKHR *pSwapchainContext) 
 }
 
 void VulkanContext::_ConfigurationSwapchainContext(VkSwapchainContextKHR *pSwapchainContext) {
-    VulkanUtils::ConfigurationVulkanSwapchainContextDetail(&m_WindowContext, &m_SwapchainContext);
+    VulkanUtils::ConfigurationVulkanSwapchainContextDetail(&m_WindowContext, &m_MainSwapchainContext);
 }
 
 void VulkanContext::_ConfigurationWindowResizeableEventCallback() {
     m_Window->AddWindowResizeableCallback([](Window *window, int width, int height){
         VulkanContext *context = (VulkanContext *) window->GetWindowUserPointer("VulkanContext");
-        context->RecreateSwapchainContextKHR(&context->m_SwapchainContext, width, height);
+        context->RecreateSwapchainContextKHR(&context->m_MainSwapchainContext, width, height);
     });
 }
 
@@ -247,7 +247,7 @@ void VulkanContext::BeginRenderPass(VkRenderPass renderPass) {
     renderPassBeginInfo.renderPass = renderPass;
     renderPassBeginInfo.framebuffer = m_FrameContext.framebuffer;
     renderPassBeginInfo.renderArea.offset = {0, 0};
-    renderPassBeginInfo.renderArea.extent = { m_SwapchainContext.width, m_SwapchainContext.height };
+    renderPassBeginInfo.renderArea.extent = { m_MainSwapchainContext.width, m_MainSwapchainContext.height };
 
     VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
     renderPassBeginInfo.clearValueCount = 1;
@@ -266,13 +266,13 @@ void VulkanContext::QueueWaitIdle(VkQueue queue) {
 
 void VulkanContext::BeginRender(VkFrameContext **ppFrameContext) {
     uint32_t index;
-    vkAcquireNextImageKHR(m_Device, m_SwapchainContext.swapchain, std::numeric_limits<uint64_t>::max(),
+    vkAcquireNextImageKHR(m_Device, m_MainSwapchainContext.swapchain, std::numeric_limits<uint64_t>::max(),
                           m_WindowContext.imageAvailableSemaphore, null, &index);
     m_FrameContext.index = index;
-    m_FrameContext.framebuffer = m_SwapchainContext.framebuffers[m_FrameContext.index];
+    m_FrameContext.framebuffer = m_MainSwapchainContext.framebuffers[m_FrameContext.index];
     m_FrameContext.commandBuffer = m_CommandBuffers[m_FrameContext.index];
-    m_FrameContext.image = m_SwapchainContext.images[index];
-    m_FrameContext.imageView = m_SwapchainContext.imageViews[index];
+    m_FrameContext.image = m_MainSwapchainContext.images[index];
+    m_FrameContext.imageView = m_MainSwapchainContext.imageViews[index];
 
     if (ppFrameContext != null)
         GetFrameContext(ppFrameContext);
@@ -299,7 +299,7 @@ void VulkanContext::EndRender() {
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphores;
 
-    VkSwapchainKHR swapChains[] = { m_SwapchainContext.swapchain };
+    VkSwapchainKHR swapChains[] = { m_MainSwapchainContext.swapchain };
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
     presentInfo.pImageIndices = &m_FrameContext.index;
@@ -312,8 +312,8 @@ void VulkanContext::EndRender() {
 void VulkanContext::BindRenderPipeline(VkRenderPipeline &pipeline) {
     vkCmdBindPipeline(m_FrameContext.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
     // 动态视口
-    float w = m_SwapchainContext.width;
-    float h = m_SwapchainContext.height;
+    float w = m_MainSwapchainContext.width;
+    float h = m_MainSwapchainContext.height;
     VkViewport viewport = { 0.0f, 0.0f, w, h, 0.0f, 1.0f };
     vkCmdSetViewport(m_FrameContext.commandBuffer, 0, 1, &viewport);
 
@@ -657,14 +657,14 @@ void VulkanContext::CreateRenderPipeline(const String &shaderfolder, const Strin
     VkViewport viewport;
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = (float) m_SwapchainContext.width;
-    viewport.height = (float) m_SwapchainContext.width;
+    viewport.width = (float) m_MainSwapchainContext.width;
+    viewport.height = (float) m_MainSwapchainContext.width;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
     VkRect2D scissor;
     scissor.offset = {0, 0};
-    scissor.extent = { m_SwapchainContext.width, m_SwapchainContext.width };
+    scissor.extent = { m_MainSwapchainContext.width, m_MainSwapchainContext.width };
 
     /* 视口裁剪 */
     VkPipelineViewportStateCreateInfo pipelineViewportStateCrateInfo = {};
@@ -845,11 +845,11 @@ void VulkanContext::InitVulkanDriverContext() {
     m_RenderContext.Device = m_Device;
     m_RenderContext.GraphicsQueue = m_GraphicsQueue;
     m_RenderContext.GraphicsQueueFamily = m_GraphicsQueueFamily;
-    m_RenderContext.Swapchain = m_SwapchainContext.swapchain;
+    m_RenderContext.Swapchain = m_MainSwapchainContext.swapchain;
     m_RenderContext.RenderPass = m_WindowContext.renderpass;
     m_RenderContext.CommandPool = m_CommandPool;
     m_RenderContext.DescriptorPool = m_DescriptorPool;
-    m_RenderContext.MinImageCount = m_SwapchainContext.minImageCount;
+    m_RenderContext.MinImageCount = m_MainSwapchainContext.minImageCount;
     m_RenderContext.FrameContext = &m_FrameContext;
 }
 
@@ -942,12 +942,12 @@ void VulkanContext::_InitVulkanContextCommandPool() {
 
 void VulkanContext::_InitVulkanContextMainSwapchain() {
     /* Create swapchain */
-    CreateSwapchainContextKHR(&m_SwapchainContext);
+    CreateSwapchainContextKHR(&m_MainSwapchainContext);
 }
 
 void VulkanContext::_InitVulkanContextCommandBuffers() {
     /* allocate */
-    m_CommandBuffers.resize(m_SwapchainContext.minImageCount);
+    m_CommandBuffers.resize(m_MainSwapchainContext.minImageCount);
     AllocateCommandBuffer(std::size(m_CommandBuffers), std::data(m_CommandBuffers));
 }
 

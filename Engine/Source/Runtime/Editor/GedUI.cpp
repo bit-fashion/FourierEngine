@@ -23,14 +23,12 @@
    @author bit-fashion
  ===============================
 */
-#include "GameEditor.h"
-#include <imgui/backends/imgui_impl_glfw.h>
-#include <imgui/backends/imgui_impl_vulkan.h>
+#include "GedUI.h"
 
 static VkRenderContext *s_RenderContext = null;
-GameEditor *_GECTX = null;
+GedUI *_GECTX = null;
 
-GameEditor::GameEditor(const Window *window, VulkanContext *context) {
+GedUI::GedUI(const Window *window, VulkanContext *context) {
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -53,13 +51,13 @@ GameEditor::GameEditor(const Window *window, VulkanContext *context) {
     //IM_ASSERT(font != nullptr);
 }
 
-GameEditor::~GameEditor() {
+GedUI::~GedUI() {
     ImGui_ImplVulkan_DestroyFontsTexture();
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
 }
 
-void GameEditor::InitGameEditorContext(const Window *window, VulkanContext *context) {
+void GedUI::InitGameEditorContext(const Window *window, VulkanContext *context) {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
@@ -105,7 +103,7 @@ void GameEditor::InitGameEditorContext(const Window *window, VulkanContext *cont
     ImGui_ImplVulkan_Init(&init_info, s_RenderContext->RenderPass);
 }
 
-void GameEditor::BeginGameEditorFrame() {
+void GedUI::BeginGameEditorFrame() {
     // Start the Dear ImGui frame
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -115,7 +113,7 @@ void GameEditor::BeginGameEditorFrame() {
     ImGui::DockSpaceOverViewport(NULL, ImGuiDockNodeFlags_PassthruCentralNode);
 }
 
-void GameEditor::EndGameEditorFrame() {
+void GedUI::EndGameEditorFrame() {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
     // Rendering
@@ -131,7 +129,7 @@ void GameEditor::EndGameEditorFrame() {
     }
 }
 
-void GameEditor::_MenuItemShowDemoWindow() {
+void GedUI::_MenuItemShowDemoWindow() {
     if (this->state.ShowDemoWindowFlag) {
         if (ImGui::MenuItem("关闭 ImGui Demo 窗口"))
             this->state.ShowDemoWindowFlag = false;
@@ -141,7 +139,7 @@ void GameEditor::_MenuItemShowDemoWindow() {
     }
 }
 
-void GameEditor::_ThemeEmbraceTheDarkness() {
+void GedUI::_ThemeEmbraceTheDarkness() {
     ImVec4* colors = ImGui::GetStyle().Colors;
     colors[ImGuiCol_Text]                   = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     colors[ImGuiCol_TextDisabled]           = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
@@ -227,15 +225,15 @@ void GameEditor::_ThemeEmbraceTheDarkness() {
 //
 // GameEditor
 //
-void GameEditor::Init(const Window *window, VulkanContext *context) {
-    _GECTX = new GameEditor(window, context);
+void GedUI::Init(const Window *window, VulkanContext *context) {
+    _GECTX = new GedUI(window, context);
 }
 
-void GameEditor::Destroy() {
+void GedUI::Destroy() {
     delete _GECTX;
 }
 
-void GameEditor::BeginNewFrame() {
+void GedUI::BeginNewFrame() {
     _GECTX->BeginGameEditorFrame();
 
     if (ImGui::BeginMainMenuBar()) {
@@ -251,6 +249,12 @@ void GameEditor::BeginNewFrame() {
         ImGui::ShowDemoWindow(&_GECTX->state.ShowDemoWindowFlag);
 }
 
-void GameEditor::EndNewFrame() {
+void GedUI::EndNewFrame() {
     _GECTX->EndGameEditorFrame();
+}
+
+void GedUI::DrawTexture2D(VkTexture2D *pTexture2D, const ImVec2 &size) {
+    ImTextureID imTexture2D = (ImTextureID)
+            ImGui_ImplVulkan_AddTexture(pTexture2D->sampler, pTexture2D->imageView, pTexture2D->layout);
+    ImGui::Image(imTexture2D, size);
 }
