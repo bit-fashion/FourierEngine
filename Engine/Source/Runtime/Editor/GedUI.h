@@ -23,8 +23,7 @@
    @author bit-fashion
  ===============================
 */
-#ifndef _SPORTS_ENGINE_EDITOR_H_
-#define _SPORTS_ENGINE_EDITOR_H_
+#pragma once
 
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_glfw.h>
@@ -72,5 +71,3 @@ private:
 private:
     State state;
 };
-
-#endif /* _SPORTS_ENGINE_EDITOR_H_ */
