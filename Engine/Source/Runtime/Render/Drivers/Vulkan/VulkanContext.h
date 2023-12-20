@@ -62,6 +62,8 @@ struct VkFrameContext {
     uint32_t index;
     VkCommandBuffer commandBuffer;
     VkFramebuffer framebuffer;
+    VkImage image;
+    VkImageView imageView;
 };
 
 struct VkRenderPipeline {
@@ -148,6 +150,7 @@ public:
     void CopyTextureBuffer(VkDeviceBuffer &buffer, VkTexture2D &texture, uint32_t width, uint32_t height);
     void CreateTexture2D(const String &path, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                          VkMemoryPropertyFlags properties, VkTexture2D *pTexture2D);
+    void CreateTextureSampler2D(VkSampler *pSampler);
     void CreateSemaphore(VkSemaphore *semaphore);
     void CreateDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> &bindings, VkDescriptorSetLayoutCreateFlags flags,
                                    VkDescriptorSetLayout *pDescriptorSetLayout);

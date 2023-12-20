@@ -246,6 +246,7 @@ void GameEditor::BeginNewFrame() {
         ImGui::EndMainMenuBar();
     }
 
+    /* 显示 Demo 窗口 */
     if (_GECTX->state.ShowDemoWindowFlag)
         ImGui::ShowDemoWindow(&_GECTX->state.ShowDemoWindowFlag);
 }

@@ -272,6 +272,8 @@ void VulkanContext::BeginRender(VkFrameContext **ppFrameContext) {
     m_FrameContext.index = index;
     m_FrameContext.framebuffer = m_SwapchainContext.framebuffers[m_FrameContext.index];
     m_FrameContext.commandBuffer = m_CommandBuffers[m_FrameContext.index];
+    m_FrameContext.image = m_SwapchainContext.images[index];
+    m_FrameContext.imageView = m_SwapchainContext.imageViews[index];
 
     if (ppFrameContext != null)
         GetFrameContext(ppFrameContext);
@@ -552,7 +554,19 @@ void VulkanContext::CreateTexture2D(const String &path, VkFormat format, VkImage
 
     vkCreateImageView(m_Device, &viewInfo, nullptr, &pTexture2D->imageView);
 
-    /* create texture  sampler */
+    /* create sampler */
+    CreateTextureSampler2D(&pTexture2D->sampler);
+
+    /* copy buffer to image */
+    TransitionTextureLayout(pTexture2D, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    CopyTextureBuffer(stagingBuffer, *pTexture2D, texWidth, texHeight);
+    TransitionTextureLayout(pTexture2D, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    FreeBuffer(stagingBuffer);
+}
+
+void VulkanContext::CreateTextureSampler2D(VkSampler *pSampler) {
+    /* create texture sampler */
     VkSamplerCreateInfo samplerInfo = {};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -571,14 +585,7 @@ void VulkanContext::CreateTexture2D(const String &path, VkFormat format, VkImage
     samplerInfo.minLod = 0.0f;
     samplerInfo.maxLod = 0.0f;
 
-    vkCreateSampler(m_Device, &samplerInfo, VK_NULL_HANDLE, &pTexture2D->sampler);
-
-    /* copy buffer to image */
-    TransitionTextureLayout(pTexture2D, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    CopyTextureBuffer(stagingBuffer, *pTexture2D, texWidth, texHeight);
-    TransitionTextureLayout(pTexture2D, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-    FreeBuffer(stagingBuffer);
+    vkCreateSampler(m_Device, &samplerInfo, VK_NULL_HANDLE, pSampler);
 }
 
 void VulkanContext::CreateSemaphore(VkSemaphore *pSemaphore) {
