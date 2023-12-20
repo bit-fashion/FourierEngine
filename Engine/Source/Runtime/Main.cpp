@@ -118,10 +118,6 @@ int main(int argc, const char **argv) {
             vulkanContext->DrawIndexed(std::size(indices));
 
             GameEditor::BeginNewFrame();
-            {
-                static bool showDemoWindow = true;
-                ImGui::ShowDemoWindow(&showDemoWindow);
-            }
             GameEditor::EndNewFrame();
         }
         vulkanContext->EndRender();

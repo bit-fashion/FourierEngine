@@ -28,7 +28,7 @@
 #include <imgui/backends/imgui_impl_vulkan.h>
 
 static VkRenderContext *s_RenderContext = null;
-GameEditor *s_GameEditorContext = null;
+GameEditor *_GECTX = null;
 
 GameEditor::GameEditor(const Window *window, VulkanContext *context) {
     // Setup Dear ImGui context
@@ -131,6 +131,16 @@ void GameEditor::EndGameEditorFrame() {
     }
 }
 
+void GameEditor::_MenuItemShowDemoWindow() {
+    if (this->state.ShowDemoWindowFlag) {
+        if (ImGui::MenuItem("关闭 ImGui Demo 窗口"))
+            this->state.ShowDemoWindowFlag = false;
+    } else {
+        if (ImGui::MenuItem("显示 ImGui Demo 窗口"))
+            this->state.ShowDemoWindowFlag = true;
+    }
+}
+
 void GameEditor::_ThemeEmbraceTheDarkness() {
     ImVec4* colors = ImGui::GetStyle().Colors;
     colors[ImGuiCol_Text]                   = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
@@ -218,17 +228,28 @@ void GameEditor::_ThemeEmbraceTheDarkness() {
 // GameEditor
 //
 void GameEditor::Init(const Window *window, VulkanContext *context) {
-    s_GameEditorContext = new GameEditor(window, context);
+    _GECTX = new GameEditor(window, context);
 }
 
 void GameEditor::Destroy() {
-    delete s_GameEditorContext;
+    delete _GECTX;
 }
 
 void GameEditor::BeginNewFrame() {
-    s_GameEditorContext->BeginGameEditorFrame();
+    _GECTX->BeginGameEditorFrame();
+
+    if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("帮助")) {
+            _GECTX->_MenuItemShowDemoWindow();
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
+
+    if (_GECTX->state.ShowDemoWindowFlag)
+        ImGui::ShowDemoWindow(&_GECTX->state.ShowDemoWindowFlag);
 }
 
 void GameEditor::EndNewFrame() {
-    s_GameEditorContext->EndGameEditorFrame();
+    _GECTX->EndGameEditorFrame();
 }

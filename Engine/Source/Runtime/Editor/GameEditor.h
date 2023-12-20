@@ -44,6 +44,11 @@ public:
     static void EndNewFrame();
 
 private:
+    struct State {
+        bool ShowDemoWindowFlag = false;
+    };
+
+private:
     GameEditor(const Window *window, VulkanContext *context);
     ~GameEditor();
     void InitGameEditorContext(const Window *window, VulkanContext *context);
@@ -54,8 +59,14 @@ private:
     void BeginGameEditorFrame();
     void EndGameEditorFrame();
 
+    //
+    // 组件
+    //
+    void _MenuItemShowDemoWindow();
+    void _ThemeEmbraceTheDarkness(); /* 设置主题 */
+
 private:
-    void _ThemeEmbraceTheDarkness();
+    State state;
 };
 
 #endif /* _SPORTS_ENGINE_EDITOR_H_ */
