@@ -32,6 +32,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <Debug.h>
+#include <engcnf.h>
+
 struct UniformBufferObject {
     glm::mat4 m;
     glm::mat4 v;

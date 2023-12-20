@@ -27,6 +27,8 @@
 #define _SPORTS_TYPEDEF_H_
 
 #include <vector>
+#include <list>
+#include <set>
 #include <unordered_map>
 #include <string>
 #include <format>
@@ -42,7 +44,15 @@
 
 #define pointer_t void *
 
-template <typename T> using Vector = std::vector<T>;
+template<typename T>
+class Vector : public std::vector<T> {
+public:
+    using std::vector<T>::vector;
+    inline void remove(size_t index) { this->erase(this->begin() + index); }
+};
+
+template <typename T> using List = std::list<T>;
+template <typename T> using Set = std::set<T>;
 template <typename T, std::size_t N> using Array = std::array<T, N>;
 template <typename K, typename V> using HashMap = std::unordered_map<K, V>;
 typedef std::string String;
