@@ -107,6 +107,8 @@ struct VkOffScreenRenderContext {
     VkTexture2D texture;
     VkFramebuffer framebuffer;
     VkCommandBuffer commandBuffer;
+    uint32_t width;
+    uint32_t height;
 };
 
 /**
@@ -141,14 +143,14 @@ public:
     void EndOnceTimeCommandBufferSubmit();
     void BeginRecordCommandBuffer(VkCommandBuffer commandBuffer);
     void EndRecordCommandBuffer(VkCommandBuffer commandBuffer);
-    void BeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer framebuffer);
+    void BeginRenderPass(VkCommandBuffer commandBuffer, uint32_t w, uint32_t h, VkRenderPass renderPass, VkFramebuffer framebuffer);
     void EndRenderPass(VkCommandBuffer commandBuffer);
     void QueueWaitIdle(VkQueue queue);
 
     void BeginRender(VkFrameContext **ppFrameContext = null);
     void EndRender();
 
-    void BeginOffScreenRender(VkCommandBuffer *pCommandBuffer = null);
+    void BeginOffScreenRender(VkCommandBuffer *pCommandBuffer, uint32_t width, uint32_t height);
     void EndOffScreenRender();
     void RecreateOffScreenRenderContext(uint32_t width, uint32_t height);
     void AcquireOffScreenRenderTexture2D(VkTexture2D **ppTexture2D);
@@ -156,7 +158,7 @@ public:
     //
     // Bind
     //
-    void BindRenderPipeline(VkCommandBuffer commandBuffer, VkRenderPipeline &pipeline);
+    void BindRenderPipeline(VkCommandBuffer commandBuffer, uint32_t width, uint32_t height, VkRenderPipeline &pipeline);
     void BindDescriptorSets(VkCommandBuffer commandBuffer, VkRenderPipeline &pipeline, uint32_t count, VkDescriptorSet *pDescriptorSets);
     void WriteDescriptorSet(VkDeviceBuffer &buffer, VkTexture2D &texture, VkDescriptorSet descriptorSet);
     void DrawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCount);
@@ -210,8 +212,7 @@ private:
     void _InitVulkanContextMainSwapchain();
     void _InitVulkanContextCommandBuffers();
     void _InitVulkanContextDescriptorPool();
-
-    void _InitVulkanContextOffscreentRenderContext();
+    void _InitVulkanContextOffScreenRenderContext();
 
 private:
     void _CreateSwapcahinAboutComponents(VkSwapchainContextKHR *pSwapchainContext);

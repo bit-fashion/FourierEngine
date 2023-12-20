@@ -46,6 +46,7 @@ public:
     static void EndNewFrame();
     static ImTextureID AddTexture2D(VkTexture2D &texture);
     static void RemoveTexture2D(const ImTextureID &texture);
+    static ImVec2 GetWindowSize();
     static void DrawTexture2D(const ImTextureID &texture, const ImVec2 &size);
 
 private:

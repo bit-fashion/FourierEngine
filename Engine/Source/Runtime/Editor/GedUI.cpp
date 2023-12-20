@@ -261,6 +261,10 @@ void GedUI::RemoveTexture2D(const ImTextureID &texture) {
     ImGui_ImplVulkan_RemoveTexture((VkDescriptorSet) texture);
 }
 
+ImVec2 GedUI::GetWindowSize() {
+    return ImGui::GetWindowSize();
+}
+
 void GedUI::DrawTexture2D(const ImTextureID &texture, const ImVec2 &size) {
     ImGui::Image(texture, size);
 }

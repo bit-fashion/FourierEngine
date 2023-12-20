@@ -86,10 +86,11 @@ int main(int argc, const char **argv) {
                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &uniformBuffer);
 
     GedUI::Init(&window, vulkanContext.get());
+    ImVec2 wsize(1, 1);
 
     while (!window.is_close()) {
         VkCommandBuffer commandBuffer;
-        vulkanContext->BeginOffScreenRender(&commandBuffer);
+        vulkanContext->BeginOffScreenRender(&commandBuffer, wsize.x, wsize.y);
         {
             static auto startTime = std::chrono::high_resolution_clock::now();
             auto currentTime = std::chrono::high_resolution_clock::now();
@@ -105,7 +106,7 @@ int main(int argc, const char **argv) {
             memcpy(data, &ubo, sizeof(ubo));
             vulkanContext->UnmapMemory(uniformBuffer);
 
-            vulkanContext->BindRenderPipeline(commandBuffer, pipeline);
+            vulkanContext->BindRenderPipeline(commandBuffer, wsize.x, wsize.y, pipeline);
             vulkanContext->BindDescriptorSets(commandBuffer, pipeline, 1, &descriptorSet);
             vulkanContext->WriteDescriptorSet(uniformBuffer, texture2D, descriptorSet);
 
@@ -128,7 +129,12 @@ int main(int argc, const char **argv) {
         {
             GedUI::BeginNewFrame();
             {
-                GedUI::DrawTexture2D(offScreenTextureId, ImVec2(400, 400));
+                ImGui::Begin("视口");
+                {
+                    wsize = GedUI::GetWindowSize();
+                    GedUI::DrawTexture2D(offScreenTextureId, wsize);
+                }
+                ImGui::End();
             }
             GedUI::EndNewFrame();
         }
