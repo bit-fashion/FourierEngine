@@ -26,7 +26,7 @@
 #ifndef _SPORTS_VULKAN_UTILS_H_
 #define _SPORTS_VULKAN_UTILS_H_
 
-#include <Utils/IOUtils.h>
+#include "Utils/IOUtils.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
@@ -335,7 +335,7 @@ namespace VulkanUtils {
         vkCreateShaderModule(device, &shaderModuleCreateInfo, VK_NULL_HANDLE, &shader);
 
         /* free binaries buf. */
-        IOUtils::FreeBuffer(buf);
+        IOUtils::Free(buf);
 
         return shader;
     }

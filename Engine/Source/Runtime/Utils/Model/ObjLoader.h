@@ -23,24 +23,8 @@
    @author bit-fashion
  ===============================
 */
-#ifndef _SPORTS_ENGINE_GAMEMODEL_H_
-#define _SPORTS_ENGINE_GAMEMODEL_H_
+#pragma once
 
-#include <Typedef.h>
-// glm
-#include <glm/glm.hpp>
+namespace Loader {
 
-struct Vertex {
-    glm::vec3 position;
-    glm::vec3 color;
-    glm::vec2 texCoord;
-};
-
-struct GameModel {
-    Vector<Vertex> vertices;
-    Vector<uint32_t> indices;
-    const String texture;
-    glm::mat4 transform;
-};
-
-#endif /* _SPORTS_ENGINE_GAMEMODEL_H_ */
+}

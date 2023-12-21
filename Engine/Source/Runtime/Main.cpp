@@ -34,6 +34,8 @@
 
 #include <Debug.h>
 
+#include <Python.h>
+
 struct UniformBufferObject {
     glm::mat4 m;
     glm::mat4 v;
@@ -42,6 +44,10 @@ struct UniformBufferObject {
 };
 
 int main(int argc, const char **argv) {
+    Py_Initialize();
+    PyRun_SimpleString("print('Hello World -- FROM Python3')");
+    Py_Finalize();
+
     Window window("SportsEngine", 1280, 1200);
     std::unique_ptr<VulkanContext> vulkanContext = std::make_unique<VulkanContext>(&window);
     window.SetWindowHintVisible(true);

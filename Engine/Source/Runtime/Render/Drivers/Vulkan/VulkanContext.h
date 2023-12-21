@@ -30,7 +30,7 @@
 #include <Typedef.h>
 #include <Engine.h>
 #include <stdexcept>
-#include "Render/GameModel.h"
+#include <Math.h>
 
 class Window;
 
@@ -111,6 +111,12 @@ struct VkRTTFrameContext {
     VkCommandBuffer commandBuffer;
     uint32_t width;
     uint32_t height;
+};
+
+struct Vertex {
+    glm::vec3 position;
+    glm::vec3 color;
+    glm::vec2 texCoord;
 };
 
 /**

@@ -23,35 +23,7 @@
    @author bit-fashion
  ===============================
 */
-#ifndef _SPORTS_ENGINE_IOUTILS_H_
-#define _SPORTS_ENGINE_IOUTILS_H_
+#ifndef SPORTSENGINE_GAMEMODEL_H
+#define SPORTSENGINE_GAMEMODEL_H
 
-#include <malloc.h>
-#include <fstream>
-#include <vector>
-#include <stdexcept>
-
-namespace IOUtils {
-
-    static char *Read(const String &path, size_t *size) {
-        std::ifstream file(path, std::ios::ate | std::ios::binary);
-        if (!file.is_open())
-            throw std::runtime_error("Error: open file failed!");
-        *size = file.tellg();
-        file.seekg(0);
-
-        /* malloc buffer */
-        char *buf = (char *) malloc(*size);
-        file.read(buf, *size);
-        file.close();
-
-        return buf;
-    }
-
-    static void FreeBuffer(char *binaries) {
-        free(binaries);
-    }
-
-}
-
-#endif /* _SPORTS_ENGINE_IOUTILS_H_ */
+#endif //SPORTSENGINE_GAMEMODEL_H
