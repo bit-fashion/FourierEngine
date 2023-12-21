@@ -55,6 +55,7 @@ public:
 private:
     struct State {
         bool ShowDemoWindowFlag = false;
+        bool ShowDebugWatchWindowFlag = false;
     };
 
 private:
@@ -72,6 +73,8 @@ private:
     // 组件
     //
     void _MenuItemShowDemoWindow();
+    void _MenuItemShowDemoWatchWindow();
+    void _ShowDebugWatchWindow();
     void _ThemeEmbraceTheDarkness(); /* 设置主题 */
 
 private:

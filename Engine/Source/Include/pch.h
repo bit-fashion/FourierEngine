@@ -30,5 +30,6 @@
 #include <Typedef.h>
 #include <System.h>
 #include <Math.h>
+#include <Debug.h>
 
 #endif /* _SPORTS_ENGINE_PCH_H_ */

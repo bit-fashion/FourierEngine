@@ -33,4 +33,13 @@
 //
 #define ENABLE_VULKAN_VALIDATION_LAYER
 
+//
+// 开启引擎调试
+//
+#define ENGINE_CONFIG_ENABLE_DEBUG
+
+#ifdef ENGINE_CONFIG_ENABLE_DEBUG
+#  include <Debug.h>
+#endif
+
 #endif /* _SPORTS_ENGINE_H_ */

@@ -46,34 +46,35 @@ enum SportsDebugWatchType {
  */
 struct SportsDebugWatchInfo {
     String name;
-    SportsDebugWatchType valueType;
+    SportsDebugWatchType type;
     const pointer_t value; /* value pointer */
     bool editable; /* 是否可编辑 */
 };
 
+typedef void (*PFN_DebugWatchMapIteration)(const SportsDebugWatchInfo &watch);
+
 /** 全局列表，存放调试数据结构 */
-static Vector<SportsDebugWatchInfo> _GLOBAL_DEBUG_WATCHER;
+extern HashMap<String, SportsDebugWatchInfo> __gdwp__;
 
 /**
  * 推送一个调试数据到监听器
  */
 inline
-static void NatureDebugAddWatch(const String &name, SportsDebugWatchType type, pointer_t ptr,
+static void SportsDebugAddWatch(const String &name, SportsDebugWatchType type, pointer_t ptr,
                                 bool editable = false) {
-    _GLOBAL_DEBUG_WATCHER.push_back({name, type, ptr, editable});
+    __gdwp__[name] = {name, type, ptr, editable};
 }
 
 /**
  * 推送一个调试数据到监听器
  */
-static void NatureDebugRemoveWatch(const String &name) {
-    size_t index = -1;
-    size_t len = std::size(_GLOBAL_DEBUG_WATCHER);
+inline
+static void SportsDebugRemoveWatch(const String &name) {
+    __gdwp__.erase(name);
+}
 
-    for (int i = 0; i < len; i++)
-        if (_GLOBAL_DEBUG_WATCHER[(index = i)].name == name)
-            break;
-
-    if (index != -1)
-        _GLOBAL_DEBUG_WATCHER.remove(index);
+inline
+static void SportsDebugWatchIteration(PFN_DebugWatchMapIteration fn) {
+    for (const auto &item: __gdwp__)
+        fn(item.second);
 }

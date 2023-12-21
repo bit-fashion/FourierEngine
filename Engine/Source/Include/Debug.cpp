@@ -23,10 +23,6 @@
    @author bit-fashion
  ===============================
 */
-#ifndef _SPORTS_ENGINE_ENGCNF_H_
-#define _SPORTS_ENGINE_ENGCNF_H_
+#include <Debug.h>
 
-/* 开启引擎调试 */
-#define ENGINE_CONFIG_ENABLE_DEBUG
-
-#endif /* _SPORTS_ENGINE_ENGCNF_H_ */
+HashMap<String, SportsDebugWatchInfo> __gdwp__;

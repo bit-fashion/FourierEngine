@@ -33,7 +33,6 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <Debug.h>
-#include <engcnf.h>
 
 struct UniformBufferObject {
     glm::mat4 m;

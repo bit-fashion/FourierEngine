@@ -131,12 +131,39 @@ void GedUI::EndGameEditorFrame() {
 
 void GedUI::_MenuItemShowDemoWindow() {
     if (this->state.ShowDemoWindowFlag) {
-        if (ImGui::MenuItem("关闭 ImGui Demo 窗口"))
+        if (ImGui::MenuItem("关闭 ImGui Demo"))
             this->state.ShowDemoWindowFlag = false;
     } else {
-        if (ImGui::MenuItem("显示 ImGui Demo 窗口"))
+        if (ImGui::MenuItem("显示 ImGui Demo"))
             this->state.ShowDemoWindowFlag = true;
     }
+}
+
+void GedUI::_MenuItemShowDemoWatchWindow() {
+    if (this->state.ShowDebugWatchWindowFlag) {
+        if (ImGui::MenuItem("关闭开发者调试器"))
+            this->state.ShowDebugWatchWindowFlag = false;
+    } else {
+        if (ImGui::MenuItem("显示开发者调试器"))
+            this->state.ShowDebugWatchWindowFlag = true;
+    }
+}
+
+void GedUI::_ShowDebugWatchWindow() {
+    ImGui::Begin("开发者调试器");
+    {
+        SportsDebugWatchIteration([](const SportsDebugWatchInfo &watch) {
+            switch (watch.type) {
+                case SPORTS_DEBUG_WATCH_TYPE_UINT32:
+                    ImGui::Text("%s: %u", _chars(watch.name), *((uint32_t *) watch.value));
+                    break;
+                case SPORTS_DEBUG_WATCH_TYPE_POINTER:
+                    ImGui::Text("%s: %p", _chars(watch.name), watch.value);
+                    break;
+            }
+        });
+    }
+    ImGui::End();
 }
 
 void GedUI::_ThemeEmbraceTheDarkness() {
@@ -239,6 +266,7 @@ void GedUI::BeginNewFrame() {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("帮助")) {
             _GECTX->_MenuItemShowDemoWindow();
+            _GECTX->_MenuItemShowDemoWatchWindow();
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
@@ -247,6 +275,10 @@ void GedUI::BeginNewFrame() {
     /* 显示 Demo 窗口 */
     if (_GECTX->state.ShowDemoWindowFlag)
         ImGui::ShowDemoWindow(&_GECTX->state.ShowDemoWindowFlag);
+
+    /* 显示 Debug 窗口 */
+    if (_GECTX->state.ShowDebugWatchWindowFlag)
+        _GECTX->_ShowDebugWatchWindow();
 }
 
 void GedUI::EndNewFrame() {
