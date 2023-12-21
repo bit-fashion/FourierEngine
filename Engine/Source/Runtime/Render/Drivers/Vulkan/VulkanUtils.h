@@ -340,6 +340,10 @@ namespace VulkanUtils {
         return shader;
     }
 
+    static bool CheckInvalidSize(int w, int h) {
+        return w > 0 || h > 0;
+    }
+
 }
 
 #endif /* _SPORTS_VULKAN_UTILS_H_ */

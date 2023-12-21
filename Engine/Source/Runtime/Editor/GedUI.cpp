@@ -268,3 +268,22 @@ ImVec2 GedUI::GetWindowSize() {
 void GedUI::DrawTexture2D(const ImTextureID &texture, const ImVec2 &size) {
     ImGui::Image(texture, size);
 }
+
+void GedUI::DrawTexture2DFill(const ImTextureID &texture, int *width, int *height) {
+    ImVec2 windowSize = ImGui::GetContentRegionAvail();
+    if (width != null)
+        *width = windowSize.x;
+    if (height != null)
+        *height = windowSize.y;
+    ImGui::Image(texture, ImVec2(*width, *height));
+}
+
+void GedUI::BeginViewport(const char *name) {
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImGui::Begin(name);
+}
+
+void GedUI::EndViewport() {
+    ImGui::End();
+    ImGui::PopStyleVar();
+}

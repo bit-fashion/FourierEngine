@@ -282,10 +282,10 @@ void VulkanContext::EndOffScreenRender() {
 }
 
 void VulkanContext::RecreateOffScreenRenderContext(uint32_t width, uint32_t height) {
-    if (width <= 0 || height <= 0)
-        return;
-    DestroyOffScreenRenderContext(m_OffScreenRenderContext);
-    CreateOffScreenRenderContext(width, height, &m_OffScreenRenderContext);
+    if (VulkanUtils::CheckInvalidSize(width, height)) {
+        DestroyOffScreenRenderContext(m_OffScreenRenderContext);
+        CreateOffScreenRenderContext(width, height, &m_OffScreenRenderContext);
+    }
 }
 
 void VulkanContext::AcquireOffScreenRenderTexture2D(VkTexture2D **ppTexture2D) {
@@ -295,14 +295,12 @@ void VulkanContext::AcquireOffScreenRenderTexture2D(VkTexture2D **ppTexture2D) {
 void VulkanContext::BindRenderPipeline(VkCommandBuffer commandBuffer, uint32_t width, uint32_t height, VkRenderPipeline &pipeline) {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
     // 动态视口
-    float w = width;
-    float h = height;
-    VkViewport viewport = { 0.0f, 0.0f, w, h, 0.0f, 1.0f };
+    float w = width, h = height;
+    VkViewport viewport = {0.0f, 0.0f, w, h, 0.0f, 1.0f};
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
     VkRect2D scissor;
     scissor.offset = {0, 0};
-    scissor.extent = { (uint32_t) w, (uint32_t) h };
+    scissor.extent = {(uint32_t) w, (uint32_t) h};
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
