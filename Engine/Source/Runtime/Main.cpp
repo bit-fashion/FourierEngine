@@ -63,7 +63,7 @@ int main(int argc, const char **argv) {
 
     Vector<VkDescriptorSetLayout> layouts = { descriptorSetLayout };
     vulkanContext->AllocateDescriptorSet(layouts, &descriptorSet);
-    vulkanContext->CreateRenderPipeline("../Engine/Binaries", "simple_shader", vulkanContext->GetOffScreenRenderPass(), descriptorSetLayout, &pipeline);
+    vulkanContext->CreateRenderPipeline("../Engine/Binaries", "simple_shader", vulkanContext->GetRTTRenderPass(), descriptorSetLayout, &pipeline);
 
     const std::vector<Vertex> vertices = {
             {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
@@ -90,7 +90,7 @@ int main(int argc, const char **argv) {
 
     while (!window.is_close()) {
         VkCommandBuffer commandBuffer;
-        vulkanContext->BeginOffScreenRender(&commandBuffer, w, h);
+        vulkanContext->BeginRTTRender(&commandBuffer, w, h);
         {
             static auto startTime = std::chrono::high_resolution_clock::now();
             auto currentTime = std::chrono::high_resolution_clock::now();
@@ -118,28 +118,28 @@ int main(int argc, const char **argv) {
             /* draw call */
             vulkanContext->DrawIndexed(commandBuffer, std::size(indices));
         }
-        vulkanContext->EndOffScreenRender();
+        vulkanContext->EndRTTRender();
 
         VkTexture2D *texture;
-        vulkanContext->AcquireOffScreenRenderTexture2D(&texture);
-        ImTextureID offScreenTextureId = GedUI::AddTexture2D(*texture);
+        vulkanContext->AcquireRTTRenderTexture2D(&texture);
+        ImTextureID RTTTextureId = GedUI::AddTexture2D(*texture);
 
-        VkFrameContext *frameContext;
-        vulkanContext->BeginRender(&frameContext);
+        VkGraphicsFrameContext *frameContext;
+        vulkanContext->BeginGraphicsRender(&frameContext);
         {
             GedUI::BeginNewFrame();
             {
                 GedUI::BeginViewport("视口");
                 {
-                    GedUI::DrawTexture2DFill(offScreenTextureId, &w, &h);
+                    GedUI::DrawTexture2DFill(RTTTextureId, &w, &h);
                 }
                 GedUI::EndViewport();
             }
             GedUI::EndNewFrame();
         }
-        vulkanContext->EndRender();
+        vulkanContext->EndGraphicsRender();
 
-        GedUI::RemoveTexture2D(offScreenTextureId);
+        GedUI::RemoveTexture2D(RTTTextureId);
         Window::PollEvents();
     }
 

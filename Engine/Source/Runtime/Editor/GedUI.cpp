@@ -25,7 +25,7 @@
 */
 #include "GedUI.h"
 
-static VkRenderContext *s_RenderContext = null;
+static VkApplicationContext *s_DriverApplicationContext = null;
 GedUI *_GECTX = null;
 
 GedUI::GedUI(const Window *window, VulkanContext *context) {
@@ -85,22 +85,22 @@ void GedUI::InitGameEditorContext(const Window *window, VulkanContext *context) 
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForVulkan(window->GetWindowPointer(), true);
 
-    context->GetRenderContext(&s_RenderContext);
+    context->GetApplicationContext(&s_DriverApplicationContext);
     ImGui_ImplVulkan_InitInfo init_info = {};
-    init_info.Instance = s_RenderContext->Instance;
-    init_info.PhysicalDevice = s_RenderContext->PhysicalDevice;
-    init_info.Device = s_RenderContext->Device;
-    init_info.QueueFamily = s_RenderContext->GraphicsQueueFamily;
-    init_info.Queue = s_RenderContext->GraphicsQueue;
+    init_info.Instance = s_DriverApplicationContext->Instance;
+    init_info.PhysicalDevice = s_DriverApplicationContext->PhysicalDevice;
+    init_info.Device = s_DriverApplicationContext->Device;
+    init_info.QueueFamily = s_DriverApplicationContext->GraphicsQueueFamily;
+    init_info.Queue = s_DriverApplicationContext->GraphicsQueue;
     init_info.PipelineCache = VK_NULL_HANDLE;
-    init_info.DescriptorPool = s_RenderContext->DescriptorPool;
+    init_info.DescriptorPool = s_DriverApplicationContext->DescriptorPool;
     init_info.Subpass = 0;
-    init_info.MinImageCount = s_RenderContext->MinImageCount;
-    init_info.ImageCount = s_RenderContext->MinImageCount;
+    init_info.MinImageCount = s_DriverApplicationContext->MinImageCount;
+    init_info.ImageCount = s_DriverApplicationContext->MinImageCount;
     init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
     init_info.Allocator = VK_NULL_HANDLE;
     init_info.CheckVkResultFn = VK_NULL_HANDLE;
-    ImGui_ImplVulkan_Init(&init_info, s_RenderContext->RenderPass);
+    ImGui_ImplVulkan_Init(&init_info, s_DriverApplicationContext->RenderPass);
 }
 
 void GedUI::BeginGameEditorFrame() {
@@ -119,7 +119,7 @@ void GedUI::EndGameEditorFrame() {
     // Rendering
     ImGui::Render();
     ImDrawData* main_draw_data = ImGui::GetDrawData();
-    ImGui_ImplVulkan_RenderDrawData(main_draw_data, s_RenderContext->FrameContext->commandBuffer);
+    ImGui_ImplVulkan_RenderDrawData(main_draw_data, s_DriverApplicationContext->FrameContext->commandBuffer);
 
     // Update and Render additional Platform Windows
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)

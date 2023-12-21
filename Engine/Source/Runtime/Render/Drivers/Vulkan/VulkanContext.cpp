@@ -32,7 +32,7 @@ VulkanContext::VulkanContext(Window *window) : m_Window(window) {
 }
 
 VulkanContext::~VulkanContext() {
-    DestroyOffScreenRenderContext(m_OffScreenRenderContext);
+    DestroyRTTRenderContext(m_RFCTX);
     vkDestroyDescriptorPool(m_Device, m_DescriptorPool, VulkanUtils::Allocator);
     FreeCommandBuffer(std::size(m_CommandBuffers), std::data(m_CommandBuffers));
     vkDestroyCommandPool(m_Device, m_CommandPool, VulkanUtils::Allocator);
@@ -216,32 +216,32 @@ void VulkanContext::QueueWaitIdle(VkQueue queue) {
     vkQueueWaitIdle(queue);
 }
 
-void VulkanContext::BeginRender(VkFrameContext **ppFrameContext) {
+void VulkanContext::BeginGraphicsRender(VkGraphicsFrameContext **ppFrameContext) {
     uint32_t index;
     vkAcquireNextImageKHR(m_Device, m_MainSwapchainContext.swapchain, std::numeric_limits<uint64_t>::max(),
                           m_WindowContext.imageAvailableSemaphore, null, &index);
-    m_FrameContext.index = index;
-    m_FrameContext.framebuffer = m_MainSwapchainContext.framebuffers[m_FrameContext.index];
-    m_FrameContext.commandBuffer = m_CommandBuffers[m_FrameContext.index];
-    m_FrameContext.image = m_MainSwapchainContext.images[index];
-    m_FrameContext.imageView = m_MainSwapchainContext.imageViews[index];
+    m_GFCTX.index = index;
+    m_GFCTX.framebuffer = m_MainSwapchainContext.framebuffers[m_GFCTX.index];
+    m_GFCTX.commandBuffer = m_CommandBuffers[m_GFCTX.index];
+    m_GFCTX.image = m_MainSwapchainContext.images[index];
+    m_GFCTX.imageView = m_MainSwapchainContext.imageViews[index];
 
     if (ppFrameContext != null)
         GetFrameContext(ppFrameContext);
 
-    BeginRecordCommandBuffer(m_FrameContext.commandBuffer);
-    BeginRenderPass(m_FrameContext.commandBuffer, m_MainSwapchainContext.width, m_MainSwapchainContext.height, m_WindowContext.renderpass, m_FrameContext.framebuffer);
+    BeginRecordCommandBuffer(m_GFCTX.commandBuffer);
+    BeginRenderPass(m_GFCTX.commandBuffer, m_MainSwapchainContext.width, m_MainSwapchainContext.height, m_WindowContext.renderpass, m_GFCTX.framebuffer);
 }
 
-void VulkanContext::EndRender() {
-    EndRenderPass(m_FrameContext.commandBuffer);
-    EndRecordCommandBuffer(m_FrameContext.commandBuffer);
+void VulkanContext::EndGraphicsRender() {
+    EndRenderPass(m_GFCTX.commandBuffer);
+    EndRecordCommandBuffer(m_GFCTX.commandBuffer);
     /* final submit */
     VkSemaphore waitSemaphores[] = { m_WindowContext.imageAvailableSemaphore };
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     VkSemaphore signalSemaphores[] = { m_WindowContext.renderFinishedSemaphore };
 
-    SyncSubmitQueueWithSubmitInfo(1, &m_FrameContext.commandBuffer,
+    SyncSubmitQueueWithSubmitInfo(1, &m_GFCTX.commandBuffer,
                                   1, waitSemaphores,
                                   1, signalSemaphores,
                                   waitStages);
@@ -254,42 +254,42 @@ void VulkanContext::EndRender() {
     VkSwapchainKHR swapChains[] = { m_MainSwapchainContext.swapchain };
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
-    presentInfo.pImageIndices = &m_FrameContext.index;
+    presentInfo.pImageIndices = &m_GFCTX.index;
     presentInfo.pResults = nullptr; // Optional
 
     vkQueuePresentKHR(m_PresentQueue, &presentInfo);
     QueueWaitIdle(m_PresentQueue);
 }
 
-void VulkanContext::BeginOffScreenRender(VkCommandBuffer *pCommandBuffer, uint32_t width, uint32_t height)
+void VulkanContext::BeginRTTRender(VkCommandBuffer *pCommandBuffer, uint32_t width, uint32_t height)
 {
-    if (width != m_OffScreenRenderContext.width || height != m_OffScreenRenderContext.height)
-        RecreateOffScreenRenderContext(width, height);
+    if (width != m_RFCTX.width || height != m_RFCTX.height)
+        RecreateRTTRenderContext(width, height);
 
     if (pCommandBuffer != null)
-        *pCommandBuffer = m_OffScreenRenderContext.commandBuffer;
+        *pCommandBuffer = m_RFCTX.commandBuffer;
 
-    BeginRecordCommandBuffer(m_OffScreenRenderContext.commandBuffer);
-    BeginRenderPass(m_OffScreenRenderContext.commandBuffer, m_OffScreenRenderContext.width, m_OffScreenRenderContext.height,
-                    m_OffScreenRenderContext.renderpass, m_OffScreenRenderContext.framebuffer);
+    BeginRecordCommandBuffer(m_RFCTX.commandBuffer);
+    BeginRenderPass(m_RFCTX.commandBuffer, m_RFCTX.width, m_RFCTX.height,
+                    m_RFCTX.renderpass, m_RFCTX.framebuffer);
 }
 
-void VulkanContext::EndOffScreenRender() {
-    EndRenderPass(m_OffScreenRenderContext.commandBuffer);
-    EndRecordCommandBuffer(m_OffScreenRenderContext.commandBuffer);
-    SyncSubmitQueueWithSubmitInfo(1, &m_OffScreenRenderContext.commandBuffer,
+void VulkanContext::EndRTTRender() {
+    EndRenderPass(m_RFCTX.commandBuffer);
+    EndRecordCommandBuffer(m_RFCTX.commandBuffer);
+    SyncSubmitQueueWithSubmitInfo(1, &m_RFCTX.commandBuffer,
                                   0, null, 0, null, null);
 }
 
-void VulkanContext::RecreateOffScreenRenderContext(uint32_t width, uint32_t height) {
+void VulkanContext::RecreateRTTRenderContext(uint32_t width, uint32_t height) {
     if (VulkanUtils::CheckInvalidSize(width, height)) {
-        DestroyOffScreenRenderContext(m_OffScreenRenderContext);
-        CreateOffScreenRenderContext(width, height, &m_OffScreenRenderContext);
+        DestroyRTTRenderContext(m_RFCTX);
+        CreateRTTRenderContext(width, height, &m_RFCTX);
     }
 }
 
-void VulkanContext::AcquireOffScreenRenderTexture2D(VkTexture2D **ppTexture2D) {
-    *ppTexture2D = &m_OffScreenRenderContext.texture;
+void VulkanContext::AcquireRTTRenderTexture2D(VkTexture2D **ppTexture2D) {
+    *ppTexture2D = &m_RFCTX.texture;
 }
 
 void VulkanContext::BindRenderPipeline(VkCommandBuffer commandBuffer, uint32_t width, uint32_t height, VkRenderPipeline &pipeline) {
@@ -351,16 +351,16 @@ void VulkanContext::DrawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCou
     vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
 }
 
-void VulkanContext::CreateOffScreenRenderContext(uint32_t width, uint32_t height, VkOffScreenRenderContext *pContext) {
-    CreateRenderpass(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &m_OffScreenRenderContext.renderpass);
+void VulkanContext::CreateRTTRenderContext(uint32_t width, uint32_t height, VkRTTFrameContext *pContext) {
+    CreateRenderpass(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &m_RFCTX.renderpass);
     CreateTexture2D(width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &pContext->texture);
     TransitionTextureLayout(&pContext->texture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    CreateFramebuffer(m_OffScreenRenderContext.renderpass, m_OffScreenRenderContext.texture.imageView, width, height, &pContext->framebuffer);
-    AllocateCommandBuffer(1, &m_OffScreenRenderContext.commandBuffer);
-    m_OffScreenRenderContext.width = width;
-    m_OffScreenRenderContext.height = height;
+    CreateFramebuffer(m_RFCTX.renderpass, m_RFCTX.texture.imageView, width, height, &pContext->framebuffer);
+    AllocateCommandBuffer(1, &m_RFCTX.commandBuffer);
+    m_RFCTX.width = width;
+    m_RFCTX.height = height;
 }
 
 void VulkanContext::AllocateVertexBuffer(VkDeviceSize size, const Vertex *pVertices, VkDeviceBuffer *pVertexBuffer) {
@@ -897,20 +897,20 @@ void VulkanContext::InitVulkanDriverContext() {
     _InitVulkanContextCommandBuffers();
     _InitVulkanContextDescriptorPool();
 
-    _InitVulkanContextOffScreenRenderContext();
+    _InitVulkanContextRTTRenderContext();
 
-    m_RenderContext.Instance = m_Instance;
-    m_RenderContext.Surface = m_SurfaceKHR;
-    m_RenderContext.PhysicalDevice = m_PhysicalDevice;
-    m_RenderContext.Device = m_Device;
-    m_RenderContext.GraphicsQueue = m_GraphicsQueue;
-    m_RenderContext.GraphicsQueueFamily = m_GraphicsQueueFamily;
-    m_RenderContext.Swapchain = m_MainSwapchainContext.swapchain;
-    m_RenderContext.RenderPass = m_WindowContext.renderpass;
-    m_RenderContext.CommandPool = m_CommandPool;
-    m_RenderContext.DescriptorPool = m_DescriptorPool;
-    m_RenderContext.MinImageCount = m_MainSwapchainContext.minImageCount;
-    m_RenderContext.FrameContext = &m_FrameContext;
+    m_ApplicationContext.Instance = m_Instance;
+    m_ApplicationContext.Surface = m_SurfaceKHR;
+    m_ApplicationContext.PhysicalDevice = m_PhysicalDevice;
+    m_ApplicationContext.Device = m_Device;
+    m_ApplicationContext.GraphicsQueue = m_GraphicsQueue;
+    m_ApplicationContext.GraphicsQueueFamily = m_GraphicsQueueFamily;
+    m_ApplicationContext.Swapchain = m_MainSwapchainContext.swapchain;
+    m_ApplicationContext.RenderPass = m_WindowContext.renderpass;
+    m_ApplicationContext.CommandPool = m_CommandPool;
+    m_ApplicationContext.DescriptorPool = m_DescriptorPool;
+    m_ApplicationContext.MinImageCount = m_MainSwapchainContext.minImageCount;
+    m_ApplicationContext.FrameContext = &m_GFCTX;
 }
 
 void VulkanContext::_InitVulkanContextInstance() {
@@ -1037,15 +1037,15 @@ void VulkanContext::_InitVulkanContextDescriptorPool() {
     vkCreateDescriptorPool(m_Device, &descriptorPoolCrateInfo, VulkanUtils::Allocator, &m_DescriptorPool);
 }
 
-void VulkanContext::_InitVulkanContextOffScreenRenderContext() {
-    CreateOffScreenRenderContext(m_Window->GetWidth(), m_Window->GetHeight(), &m_OffScreenRenderContext);
+void VulkanContext::_InitVulkanContextRTTRenderContext() {
+    CreateRTTRenderContext(m_Window->GetWidth(), m_Window->GetHeight(), &m_RFCTX);
 }
 
 void VulkanContext::DestroyFramebuffer(VkFramebuffer &framebuffer) {
     vkDestroyFramebuffer(m_Device, framebuffer, VulkanUtils::Allocator);
 }
 
-void VulkanContext::DestroyOffScreenRenderContext(VkOffScreenRenderContext &context) {
+void VulkanContext::DestroyRTTRenderContext(VkRTTFrameContext &context) {
     DestroyRenderPass(context.renderpass);
     DestroyTexture2D(context.texture);
     DestroyFramebuffer(context.framebuffer);
