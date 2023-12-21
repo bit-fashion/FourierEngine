@@ -486,7 +486,7 @@ void VulkanContext::CreateTexture2D(const String &path, VkFormat format, VkImage
                                     VkMemoryPropertyFlags properties, VkTexture2D *pTexture2D) {
     /* load image. */
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load(_chars(path), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load(getchr(path), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
     if (!pixels)
         throw std::runtime_error("failed to load texture image!");

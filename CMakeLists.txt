@@ -73,6 +73,8 @@ ADD_EXECUTABLE(${PROJECT_NAME}
   #[[ Render ]]
   "${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Render/Camera/OrthoCamera.cpp"
   "${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Render/Drivers/Vulkan/VulkanContext.cpp"
+  #[[ Script ]]
+  "${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Script/Python3.cpp"
   #[[ Dear ImGUI ]]
   "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/imgui.cpp"
   "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/imgui_draw.cpp"

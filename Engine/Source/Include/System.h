@@ -35,7 +35,7 @@ namespace System {
     /* define Properties type and statement global
      * properties object. */
     typedef HashMap<String, String> Properties;
-    static Properties __props__;
+    static  Properties __props__;
 
     /**
     * @return get current time million seconds.
@@ -68,9 +68,23 @@ namespace System {
         fflush(stdout);
     }
 
+    /**
+     * 打印文本到控制台，支持字符串格式化
+     */
     template<typename ...Args>
     static void ConsoleWrite(std::format_string<Args...> fmt, Args&&... args) {
         printf("%s\n", vstrfmt(fmt, args).c_str());
+    }
+
+    /**
+     * 获取程序运行时间
+     */
+    typedef void (*PFN_GetRunTimeFunc) (void);
+    inline static timestamp64_t GetRunTime(PFN_GetRunTimeFunc fn) {
+        auto start = GetTimeMillis();
+        fn();
+        auto end = GetTimeMillis();
+        return end - start;
     }
 
 }

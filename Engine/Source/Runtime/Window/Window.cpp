@@ -32,7 +32,7 @@ Window::Window(const String &title, uint32_t width, uint32_t height)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-    m_HWINDOW = glfwCreateWindow(m_WindowExtent2D.width, m_WindowExtent2D.height,_chars(m_Title), null, null);
+    m_HWINDOW = glfwCreateWindow(m_WindowExtent2D.width, m_WindowExtent2D.height, getchr(m_Title), null, null);
     if (m_HWINDOW == null)
         throw std::runtime_error("Create glfw window failed!");
 

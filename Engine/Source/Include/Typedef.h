@@ -51,13 +51,19 @@ public:
     inline void remove(size_t index) { this->erase(this->begin() + index); }
 };
 
+template<typename K, typename V>
+class HashMap : public std::unordered_map<K, V> {
+public:
+    using std::unordered_map<K, V>::unordered_map;
+};
+
 template <typename T> using List = std::list<T>;
 template <typename T> using Set = std::set<T>;
 template <typename T, std::size_t N> using Array = std::array<T, N>;
-template <typename K, typename V> using HashMap = std::unordered_map<K, V>;
 typedef std::string String;
 
-#define _chars(str) (str.c_str())
+// std::string to const char *
+#define getchr(str) (str.c_str())
 
 #define vstrfmt(_fmt, _args) std::vformat(_fmt.get(), std::make_format_args(_args...))
 
@@ -65,6 +71,8 @@ template<typename... Args>
 inline static String strfmt(std::format_string<Args...> fmt, Args&&... args) {
     return vstrfmt(fmt, args);
 }
+
+#define chrfmt(fmt, ...) ( getchr(strfmt(fmt, __VA_ARGS__)) )
 
 /* Get total byte size of array. */
 #define ARRAY_SIZE(a) (sizeof(a[0]) * std::size(a))

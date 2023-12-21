@@ -155,16 +155,16 @@ void GedUI::_ShowDebugWatchWindow() {
         SportsDebugWatchIteration([](const SportsDebugWatchInfo &watch) {
             switch (watch.type) {
                 case SPORTS_DEBUG_WATCH_TYPE_INT:
-                    ImGui::Text("%s: %d", _chars(watch.name), *((int *) watch.value));
+                    ImGui::Text("%s: %d", getchr(watch.name), *((int *) watch.value));
                     break;
                 case SPORTS_DEBUG_WATCH_TYPE_UINT32:
-                    ImGui::Text("%s: %u", _chars(watch.name), *((uint32_t *) watch.value));
+                    ImGui::Text("%s: %u", getchr(watch.name), *((uint32_t *) watch.value));
                     break;
                 case SPORTS_DEBUG_WATCH_TYPE_FLOAT:
-                    ImGui::Text("%s: %f", _chars(watch.name), *((float *) watch.value));
+                    ImGui::Text("%s: %f", getchr(watch.name), *((float *) watch.value));
                     break;
                 case SPORTS_DEBUG_WATCH_TYPE_POINTER:
-                    ImGui::Text("%s: %p", _chars(watch.name), watch.value);
+                    ImGui::Text("%s: %p", getchr(watch.name), watch.value);
                     break;
             }
         });
