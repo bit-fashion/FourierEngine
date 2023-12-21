@@ -71,6 +71,8 @@ struct VkFrameContext {
     VkFramebuffer framebuffer;
     VkImage image;
     VkImageView imageView;
+    uint32_t width;
+    uint32_t height;
 };
 
 struct VkRenderPipeline {

@@ -129,12 +129,14 @@ int main(int argc, const char **argv) {
         {
             GedUI::BeginNewFrame();
             {
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
                 ImGui::Begin("视口");
                 {
-                    wsize = GedUI::GetWindowSize();
+                    wsize = ImGui::GetContentRegionAvail();
                     GedUI::DrawTexture2D(offScreenTextureId, wsize);
                 }
                 ImGui::End();
+                ImGui::PopStyleVar();
             }
             GedUI::EndNewFrame();
         }
