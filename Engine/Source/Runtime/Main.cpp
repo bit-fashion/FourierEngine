@@ -87,6 +87,13 @@ int main(int argc, const char **argv) {
     GedUI::Init(&window, vulkanContext.get());
     int w = 32, h = 32;
 
+    int rec_frame_count = 0, final_frame_count = 0;
+    timestamp64_t rec_frame_start_time = System::GetTimeMillis();
+
+#ifdef ENGINE_CONFIG_ENABLE_DEBUG
+    SportsDebugAddWatch("fps", SPORTS_DEBUG_WATCH_TYPE_INT, &final_frame_count);
+#endif
+
     while (!window.is_close()) {
         VkCommandBuffer commandBuffer;
         vulkanContext->BeginRTTRender(&commandBuffer, w, h);
@@ -140,6 +147,16 @@ int main(int argc, const char **argv) {
 
         GedUI::RemoveTexture2D(RTTTextureId);
         Window::PollEvents();
+
+        ++rec_frame_count;
+        timestamp64_t end = System::GetTimeMillis();
+#ifdef ENGINE_CONFIG_ENABLE_DEBUG
+        if (end - rec_frame_start_time >= 1000.0) {
+            final_frame_count = rec_frame_count;
+            rec_frame_count = 0;
+            rec_frame_start_time = end;
+        }
+#endif
     }
 
     GedUI::Destroy();

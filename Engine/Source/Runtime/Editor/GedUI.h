@@ -54,8 +54,8 @@ public:
 
 private:
     struct State {
-        bool ShowDemoWindowFlag = false;
-        bool ShowDebugWatchWindowFlag = false;
+        bool ShowDemoWindowFlag = true;
+        bool ShowDebugWatchWindowFlag = true;
     };
 
 private:

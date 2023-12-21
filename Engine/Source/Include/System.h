@@ -40,9 +40,14 @@ namespace System {
     /**
     * @return get current time million seconds.
     */
-    static timestamp64_t GetNowTimeMillions() {
+    static timestamp64_t GetTimeMillis() {
         auto now = std::chrono::system_clock::now();
         return std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+    }
+
+    static timestamp64_t GetTimeNanos() {
+        auto now = std::chrono::system_clock::now();
+        return std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
     }
 
     /**

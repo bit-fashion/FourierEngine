@@ -226,11 +226,6 @@ void VulkanContext::BeginGraphicsRender(VkGraphicsFrameContext **ppFrameContext)
     m_GFCTX.image = m_MainSwapchainContext.images[index];
     m_GFCTX.imageView = m_MainSwapchainContext.imageViews[index];
 
-#ifdef ENGINE_CONFIG_ENABLE_DEBUG
-    SportsDebugAddWatch("GFCTX INDEX", SPORTS_DEBUG_WATCH_TYPE_UINT32, &m_GFCTX.index);
-    SportsDebugAddWatch("GFCTX FRAMEBUFFER", SPORTS_DEBUG_WATCH_TYPE_POINTER, &m_GFCTX.framebuffer);
-#endif
-
     if (ppFrameContext != null)
         GetFrameContext(ppFrameContext);
 
