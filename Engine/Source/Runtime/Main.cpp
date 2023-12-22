@@ -45,10 +45,13 @@
 
 int main(int argc, const char **argv) {
     Python3::Initialize();
-    Python3::AddPath("../Engine/Scripts");
-    PyObject *args = Python3_Build_Value("(ii)", 32, 64);
-    Python3::Invoke("fool", "do_eat", args);
-    Python3_Decref_Object(args);
+    Python3::AddPath("../Engine/Scripts;../Engine/Scripts/loader");
+    {
+        timestamp64_t time = System::GetRunTime([](){
+            Python3::Invoke("assets", "obj_load", "(s)", "../Engine/Assets/Models/nanosuit/nanosuit.obj");
+        });
+        System::ConsoleWrite("RunTime: {}ms", time);
+    }
     Python3::Finalize();
 
 //    Window window("SportsEngine", 1280, 1200);

@@ -58,10 +58,44 @@ namespace Python3 {
         return s_ObjectCache[name];
     }
 
-    void Invoke(const char *py_object, const char *fn, PyObject *args) {
+    PyObject *BuildValue(const char *sign, ...) {
+        PyObject *object = null;
+
+        va_list va;
+        va_start(va, sign);
+        object = VaBuildValue(sign, va);
+        va_end(va);
+
+        return object;
+    }
+
+    PyObject *VaBuildValue(const char *sign, va_list va) {
+        return Py_VaBuildValue(sign, va);
+    }
+
+    void Decref(PyObject *ref) {
+        if (ref != null && Py_REFCNT(ref) > 0)
+            Py_DECREF(ref);
+    }
+
+    PyObject *Invoke(const char *py_object, const char *fn, PyObject *args) {
         PyObject *py_module = ImportModule(py_object);
         PyObject *py_func = PyObject_GetAttrString(py_module, fn);
-        PyObject_CallObject(py_func, args);
+        return PyObject_CallObject(py_func, args);
+    }
+
+    PyObject* Invoke(const char *py_object, const char *fn, const char *sign, ...) {
+        PyObject *args = null;
+
+        va_list va;
+        va_start(va, sign);
+        args = VaBuildValue(sign, va);
+        va_end(va);
+
+        PyObject *ret = Invoke(py_object, fn, args);
+        Decref(args);
+
+        return ret;
     }
 
     void Finalize() {

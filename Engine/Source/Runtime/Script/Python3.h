@@ -27,14 +27,21 @@
 
 #include <Python.h>
 #include <Typedef.h>
+#include <stdarg.h>
 
 #define Python3_Build_Value(signature, ...) ( Py_BuildValue(signature, __VA_ARGS__) )
-#define Python3_Decref_Object(ref) ( Py_DECREF(ref) )
+#define Python3_Decref_Object(ref) \
+    Py_DECREF(ref); \
+    ref = null;
 
 namespace Python3 {
     void        Initialize();
     void        AddPath(const String &path); // 添加脚本路径
     PyObject*   ImportModule(const char *name);
-    void        Invoke(const char *py_object, const char *fn, PyObject *args = null);
+    PyObject*   BuildValue(const char *sign, ...);
+    PyObject*   VaBuildValue(const char *sign, va_list va);
+    void        Decref(PyObject *ref);
+    PyObject*   Invoke(const char *py_object, const char *fn, PyObject *args = null);
+    PyObject*   Invoke(const char *py_object, const char *fn, const char *sign, ...);
     void        Finalize();
 }
