@@ -104,7 +104,7 @@ struct VkApplicationContext {
     struct VkGraphicsFrameContext *FrameContext;
 };
 
-struct VkRTTFrameContext {
+struct VkRTTRenderContext {
     VkRenderPass renderpass;
     VkTexture2D texture;
     VkFramebuffer framebuffer;
@@ -164,10 +164,10 @@ public:
     //
     // Render to texture
     //
-    void BeginRTTRender(VkCommandBuffer *pCommandBuffer, uint32_t width, uint32_t height);
-    void EndRTTRender();
-    void RecreateRTTRenderContext(uint32_t width, uint32_t height);
-    void AcquireRTTRenderTexture2D(VkTexture2D **ppTexture2D);
+    void BeginRTTRender(VkRTTRenderContext &renderContext, uint32_t width, uint32_t height);
+    void EndRTTRender(VkRTTRenderContext &renderContext);
+    void RecreateRTTRenderContext(VkRTTRenderContext *pRenderContext, uint32_t width, uint32_t height);
+    void AcquireRTTRenderTexture2D(VkRTTRenderContext &renderContext, VkTexture2D **ppTexture2D);
 
     //
     // Bind
@@ -180,7 +180,7 @@ public:
     //
     // Allocate and create buffer etc...
     //
-    void CreateRTTRenderContext(uint32_t width, uint32_t height, VkRTTFrameContext *pContext);
+    void CreateRTTRenderContext(uint32_t width, uint32_t height, VkRTTRenderContext *pContext);
     void AllocateVertexBuffer(VkDeviceSize size, const Vertex *pVertices, VkDeviceBuffer *pVertexBuffer);
     void AllocateIndexBuffer(VkDeviceSize size, const uint32_t *pIndices, VkDeviceBuffer *pIndexBuffer);
     void TransitionTextureLayout(VkTexture2D *texture, VkImageLayout newLayout);
@@ -199,13 +199,11 @@ public:
     void CreateSwapchainContextKHR(VkSwapchainContextKHR *pSwapchainContext);
     void CreateRenderpass(VkFormat format, VkImageLayout imageLayout, VkRenderPass *pRenderPass);
 
-    VkRenderPass GetRTTRenderPass() { return m_RFCTX.renderpass; }
-
     //
     // Destroy components.
     //
     void DestroyFramebuffer(VkFramebuffer &framebuffer);
-    void DestroyRTTRenderContext(VkRTTFrameContext &context);
+    void DestroyRTTRenderContext(VkRTTRenderContext &context);
     void DestroyTexture2D(VkTexture2D &texture);
     void FreeDescriptorSets(uint32_t count, VkDescriptorSet *pDescriptorSet);
     void DestroyDescriptorSetLayout(VkDescriptorSetLayout &descriptorSetLayout);
@@ -226,7 +224,6 @@ private:
     void _InitVulkanContextMainSwapchain();
     void _InitVulkanContextCommandBuffers();
     void _InitVulkanContextDescriptorPool();
-    void _InitVulkanContextRTTRenderContext();
 
 private:
     void _CreateSwapcahinAboutComponents(VkSwapchainContextKHR *pSwapchainContext);
@@ -240,7 +237,6 @@ private:
     VkCommandPool m_CommandPool;
     Vector<VkCommandBuffer> m_CommandBuffers;
     VkSwapchainContextKHR m_MainSwapchainContext;
-    VkRTTFrameContext m_RFCTX;
 
     Window *m_Window;
     VkPhysicalDevice m_PhysicalDevice;

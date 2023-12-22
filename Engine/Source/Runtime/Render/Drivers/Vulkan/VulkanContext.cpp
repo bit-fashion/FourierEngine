@@ -32,7 +32,6 @@ VulkanContext::VulkanContext(Window *window) : m_Window(window) {
 }
 
 VulkanContext::~VulkanContext() {
-    DestroyRTTRenderContext(m_RFCTX);
     vkDestroyDescriptorPool(m_Device, m_DescriptorPool, VulkanUtils::Allocator);
     FreeCommandBuffer(std::size(m_CommandBuffers), std::data(m_CommandBuffers));
     vkDestroyCommandPool(m_Device, m_CommandPool, VulkanUtils::Allocator);
@@ -261,35 +260,31 @@ void VulkanContext::EndGraphicsRender() {
     QueueWaitIdle(m_PresentQueue);
 }
 
-void VulkanContext::BeginRTTRender(VkCommandBuffer *pCommandBuffer, uint32_t width, uint32_t height)
+void VulkanContext::BeginRTTRender(VkRTTRenderContext &renderContext, uint32_t width, uint32_t height)
 {
-    if (width != m_RFCTX.width || height != m_RFCTX.height)
-        RecreateRTTRenderContext(width, height);
+    if (width != renderContext.width || height != renderContext.height)
+        RecreateRTTRenderContext(&renderContext, width, height);
 
-    if (pCommandBuffer != null)
-        *pCommandBuffer = m_RFCTX.commandBuffer;
-
-    BeginRecordCommandBuffer(m_RFCTX.commandBuffer);
-    BeginRenderPass(m_RFCTX.commandBuffer, m_RFCTX.width, m_RFCTX.height,
-                    m_RFCTX.renderpass, m_RFCTX.framebuffer);
+    BeginRecordCommandBuffer(renderContext.commandBuffer);
+    BeginRenderPass(renderContext.commandBuffer, renderContext.width, renderContext.height, renderContext.renderpass, renderContext.framebuffer);
 }
 
-void VulkanContext::EndRTTRender() {
-    EndRenderPass(m_RFCTX.commandBuffer);
-    EndRecordCommandBuffer(m_RFCTX.commandBuffer);
-    SyncSubmitQueueWithSubmitInfo(1, &m_RFCTX.commandBuffer,
+void VulkanContext::EndRTTRender(VkRTTRenderContext &renderContext) {
+    EndRenderPass(renderContext.commandBuffer);
+    EndRecordCommandBuffer(renderContext.commandBuffer);
+    SyncSubmitQueueWithSubmitInfo(1, &renderContext.commandBuffer,
                                   0, null, 0, null, null);
 }
 
-void VulkanContext::RecreateRTTRenderContext(uint32_t width, uint32_t height) {
+void VulkanContext::RecreateRTTRenderContext(VkRTTRenderContext *pRenderContext, uint32_t width, uint32_t height) {
     if (VulkanUtils::CheckInvalidSize(width, height)) {
-        DestroyRTTRenderContext(m_RFCTX);
-        CreateRTTRenderContext(width, height, &m_RFCTX);
+        DestroyRTTRenderContext(*pRenderContext);
+        CreateRTTRenderContext(width, height, pRenderContext);
     }
 }
 
-void VulkanContext::AcquireRTTRenderTexture2D(VkTexture2D **ppTexture2D) {
-    *ppTexture2D = &m_RFCTX.texture;
+void VulkanContext::AcquireRTTRenderTexture2D(VkRTTRenderContext &renderContext, VkTexture2D **ppTexture2D) {
+    *ppTexture2D = &renderContext.texture;
 }
 
 void VulkanContext::BindRenderPipeline(VkCommandBuffer commandBuffer, uint32_t width, uint32_t height, VkRenderPipeline &pipeline) {
@@ -351,16 +346,16 @@ void VulkanContext::DrawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCou
     vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
 }
 
-void VulkanContext::CreateRTTRenderContext(uint32_t width, uint32_t height, VkRTTFrameContext *pContext) {
-    CreateRenderpass(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &m_RFCTX.renderpass);
+void VulkanContext::CreateRTTRenderContext(uint32_t width, uint32_t height, VkRTTRenderContext *pRenderContext) {
+    CreateRenderpass(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &pRenderContext->renderpass);
     CreateTexture2D(width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &pContext->texture);
-    TransitionTextureLayout(&pContext->texture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    CreateFramebuffer(m_RFCTX.renderpass, m_RFCTX.texture.imageView, width, height, &pContext->framebuffer);
-    AllocateCommandBuffer(1, &m_RFCTX.commandBuffer);
-    m_RFCTX.width = width;
-    m_RFCTX.height = height;
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &pRenderContext->texture);
+    TransitionTextureLayout(&pRenderContext->texture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    CreateFramebuffer(pRenderContext->renderpass, pRenderContext->texture.imageView, width, height, &pRenderContext->framebuffer);
+    AllocateCommandBuffer(1, &pRenderContext->commandBuffer);
+    pRenderContext->width = width;
+    pRenderContext->height = height;
 }
 
 void VulkanContext::AllocateVertexBuffer(VkDeviceSize size, const Vertex *pVertices, VkDeviceBuffer *pVertexBuffer) {
@@ -897,8 +892,6 @@ void VulkanContext::InitVulkanDriverContext() {
     _InitVulkanContextCommandBuffers();
     _InitVulkanContextDescriptorPool();
 
-    _InitVulkanContextRTTRenderContext();
-
     m_ApplicationContext.Instance = m_Instance;
     m_ApplicationContext.Surface = m_SurfaceKHR;
     m_ApplicationContext.PhysicalDevice = m_PhysicalDevice;
@@ -1037,15 +1030,11 @@ void VulkanContext::_InitVulkanContextDescriptorPool() {
     vkCreateDescriptorPool(m_Device, &descriptorPoolCrateInfo, VulkanUtils::Allocator, &m_DescriptorPool);
 }
 
-void VulkanContext::_InitVulkanContextRTTRenderContext() {
-    CreateRTTRenderContext(m_Window->GetWidth(), m_Window->GetHeight(), &m_RFCTX);
-}
-
 void VulkanContext::DestroyFramebuffer(VkFramebuffer &framebuffer) {
     vkDestroyFramebuffer(m_Device, framebuffer, VulkanUtils::Allocator);
 }
 
-void VulkanContext::DestroyRTTRenderContext(VkRTTFrameContext &context) {
+void VulkanContext::DestroyRTTRenderContext(VkRTTRenderContext &context) {
     DestroyRenderPass(context.renderpass);
     DestroyTexture2D(context.texture);
     DestroyFramebuffer(context.framebuffer);

@@ -18,14 +18,35 @@
     Creates on 2022/12/22.
 """
 
+from pywavefront import Wavefront
+
 #
 # .obj 模型加载
 #
 def obj_load(filename: str):
-    file = open(filename, "r")
-    line = file.readline()
+    # 读取 .obj 文件
+    obj_file = Wavefront(filename)
 
-    while line:
-        line = file.readline()
+    # 访问顶点数据
+    vertices = obj_file.vertices
+    print("vertices count:", len(vertices))
+    for vertex in vertices:
+        print("vertices:", vertex)
 
-    file.close()
+    # 访问法线数据
+    normals = obj_file.normals
+    print("normals count:", len(normals))
+    for normal in normals:
+        print(normals, normal)
+
+    # 访问纹理坐标数据
+    tex_coords = obj_file.texcoords
+    print("texcoord count:", len(tex_coords))
+    for tex_coord in tex_coords:
+        print("texcoord:", tex_coord)
+
+    # 访问面数据
+    faces = obj_file.faces
+    print("face count:", len(faces))
+    for face in faces:
+        print("face:", face)
