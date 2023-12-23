@@ -47,7 +47,7 @@ int main(int argc, const char **argv) {
     system("chcp 65001");
 
     Window window("VectrafluxEngine", 1280, 1200);
-    std::unique_ptr<VulkanContext> vulkanContext = std::make_unique<VulkanContext>(&window);
+    std::unique_ptr<VulkanContext> p_vctx = std::make_unique<VulkanContext>(&window);
     window.SetWindowHintVisible(true);
 
     VkRenderPipeline pipeline;
@@ -59,17 +59,17 @@ int main(int argc, const char **argv) {
     VkDeviceBuffer uniformBuffer;
     VkRTTRenderContext rttRenderContext;
 
-    vulkanContext->CreateRTTRenderContext(32, 32, &rttRenderContext);
+    p_vctx->CreateRTTRenderContext(32, 32, &rttRenderContext);
 
     std::vector<VkDescriptorSetLayoutBinding> uboDescriptorSetLayoutBinding = {
             { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, VK_NULL_HANDLE },
             { 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, VK_NULL_HANDLE },
     };
-    vulkanContext->CreateDescriptorSetLayout(uboDescriptorSetLayoutBinding, 0, &descriptorSetLayout);
+    p_vctx->CreateDescriptorSetLayout(uboDescriptorSetLayoutBinding, 0, &descriptorSetLayout);
 
     Vector<VkDescriptorSetLayout> layouts = { descriptorSetLayout };
-    vulkanContext->AllocateDescriptorSet(layouts, &descriptorSet);
-    vulkanContext->CreateRenderPipeline("../Engine/Binaries", "simple_shader", rttRenderContext.renderpass, descriptorSetLayout, &pipeline);
+    p_vctx->AllocateDescriptorSet(layouts, &descriptorSet);
+    p_vctx->CreateRenderPipeline("../Engine/Binaries", "simple_shader", rttRenderContext.renderpass, descriptorSetLayout, &pipeline);
 
     const std::vector<Vertex> vertices = {
             {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
@@ -82,16 +82,16 @@ int main(int argc, const char **argv) {
             0, 1, 2, 2, 3, 0
     };
 
-    vulkanContext->AllocateVertexBuffer(ARRAY_SIZE(vertices), std::data(vertices), &vertexBuffer);
-    vulkanContext->AllocateIndexBuffer(ARRAY_SIZE(indices), std::data(indices), &indexBuffer);
+    p_vctx->AllocateVertexBuffer(ARRAY_SIZE(vertices), std::data(vertices), &vertexBuffer);
+    p_vctx->AllocateIndexBuffer(ARRAY_SIZE(indices), std::data(indices), &indexBuffer);
     /* 创建 Texture */
-    vulkanContext->CreateTexture2D("../Engine/Resource/VulkanHomePage.png", VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
+    p_vctx->CreateTexture2D("../Engine/Resource/VulkanHomePage.png", VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
                                    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &texture2D);
     /* 创建 Uniform buffer */
-    vulkanContext->AllocateBuffer(sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+    p_vctx->AllocateBuffer(sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &uniformBuffer);
 
-    GedUI::Init(&window, vulkanContext.get());
+    GedUI::Init(&window, p_vctx.get());
     int w = 32, h = 32;
 
     int rec_frame_count = 0, final_frame_count = 0;
@@ -102,7 +102,7 @@ int main(int argc, const char **argv) {
 #endif
 
     while (!window.is_close()) {
-        vulkanContext->BeginRTTRender(rttRenderContext, w, h);
+        p_vctx->BeginRTTRender(rttRenderContext, w, h);
         {
             static auto startTime = std::chrono::high_resolution_clock::now();
             auto currentTime = std::chrono::high_resolution_clock::now();
@@ -114,13 +114,13 @@ int main(int argc, const char **argv) {
             ubo.p[1][1] *= -1;
             ubo.t = (float) glfwGetTime();
             void* data;
-            vulkanContext->MapMemory(uniformBuffer, 0, sizeof(ubo), 0, &data);
+            p_vctx->MapMemory(uniformBuffer, 0, sizeof(ubo), 0, &data);
             memcpy(data, &ubo, sizeof(ubo));
-            vulkanContext->UnmapMemory(uniformBuffer);
+            p_vctx->UnmapMemory(uniformBuffer);
 
-            vulkanContext->BindRenderPipeline(rttRenderContext.commandBuffer, w, h, pipeline);
-            vulkanContext->BindDescriptorSets(rttRenderContext.commandBuffer, pipeline, 1, &descriptorSet);
-            vulkanContext->WriteDescriptorSet(uniformBuffer, texture2D, descriptorSet);
+            p_vctx->BindRenderPipeline(rttRenderContext.commandBuffer, w, h, pipeline);
+            p_vctx->BindDescriptorSets(rttRenderContext.commandBuffer, pipeline, 1, &descriptorSet);
+            p_vctx->WriteDescriptorSet(uniformBuffer, texture2D, descriptorSet);
 
             /* bind vertex buffer */
             VkBuffer buffers[] = {vertexBuffer.buffer};
@@ -128,16 +128,16 @@ int main(int argc, const char **argv) {
             vkCmdBindVertexBuffers(rttRenderContext.commandBuffer, 0, 1, buffers, offsets);
             vkCmdBindIndexBuffer(rttRenderContext.commandBuffer, indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
             /* draw call */
-            vulkanContext->DrawIndexed(rttRenderContext.commandBuffer, std::size(indices));
+            p_vctx->DrawIndexed(rttRenderContext.commandBuffer, std::size(indices));
         }
-        vulkanContext->EndRTTRender(rttRenderContext);
+        p_vctx->EndRTTRender(rttRenderContext);
 
         VkTexture2D *texture;
-        vulkanContext->AcquireRTTRenderTexture2D(rttRenderContext, &texture);
+        p_vctx->AcquireRTTRenderTexture2D(rttRenderContext, &texture);
         ImTextureID RTTTextureId = GedUI::AddTexture2D(*texture);
 
         VkGraphicsFrameContext *frameContext;
-        vulkanContext->BeginGraphicsRender(&frameContext);
+        p_vctx->BeginGraphicsRender(&frameContext);
         {
             GedUI::BeginNewFrame();
             {
@@ -149,7 +149,7 @@ int main(int argc, const char **argv) {
             }
             GedUI::EndNewFrame();
         }
-        vulkanContext->EndGraphicsRender();
+        p_vctx->EndGraphicsRender();
 
         GedUI::RemoveTexture2D(RTTTextureId);
         Window::PollEvents();
@@ -167,12 +167,12 @@ int main(int argc, const char **argv) {
 
     GedUI::Destroy();
 
-    vulkanContext->FreeBuffer(uniformBuffer);
-    vulkanContext->DestroyTexture2D(texture2D);
-    vulkanContext->FreeBuffer(indexBuffer);
-    vulkanContext->FreeBuffer(vertexBuffer);
-    vulkanContext->FreeDescriptorSets(1, &descriptorSet);
-    vulkanContext->DestroyDescriptorSetLayout(descriptorSetLayout);
-    vulkanContext->DestroyRenderPipeline(pipeline);
-    vulkanContext->DestroyRTTRenderContext(rttRenderContext);
+    p_vctx->FreeBuffer(uniformBuffer);
+    p_vctx->DestroyTexture2D(texture2D);
+    p_vctx->FreeBuffer(indexBuffer);
+    p_vctx->FreeBuffer(vertexBuffer);
+    p_vctx->FreeDescriptorSets(1, &descriptorSet);
+    p_vctx->DestroyDescriptorSetLayout(descriptorSetLayout);
+    p_vctx->DestroyRenderPipeline(pipeline);
+    p_vctx->DestroyRTTRenderContext(rttRenderContext);
 }
