@@ -944,7 +944,7 @@ void VulkanContext::_InitVulkanContextDevice() {
     VulkanUtils::GetVulkanMostPreferredPhysicalDevice(m_Instance, &m_PhysicalDevice, &m_PhysicalDeviceProperties,
                                                       &m_PhysicalDeviceFeature);
 #ifdef ENGINE_CONFIG_ENABLE_DEBUG
-    Vectraflux::AddDebugWatch("物理设备", Vectraflux::DEBUG_WATCH_TYPE_STRING, m_PhysicalDeviceProperties.deviceName);
+    Vectraflux::AddDebugWatch("物理设备", VFLUX_DEBUG_WATCH_TYPE_STRING, m_PhysicalDeviceProperties.deviceName);
 #endif
     Vector<VkDeviceQueueCreateInfo> deviceQueueCreateInfos;
     VulkanUtils::QueueFamilyIndices queueFamilyIndices =

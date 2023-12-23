@@ -98,7 +98,7 @@ int main(int argc, const char **argv) {
     timestamp64_t rec_frame_start_time = System::GetTimeMillis();
 
 #ifdef ENGINE_CONFIG_ENABLE_DEBUG
-    Vectraflux::AddDebugWatch("FPS", Vectraflux::DEBUG_WATCH_TYPE_INT, &final_frame_count);
+    Vectraflux::AddDebugWatch("FPS", VFLUX_DEBUG_WATCH_TYPE_INT, &final_frame_count);
 #endif
 
     while (!window.is_close()) {

@@ -170,11 +170,11 @@ void GedUI::_ShowDebugWatchWindow() {
                 ImGui::TableSetColumnIndex(0);
                 ImGui::Text("%s", getchr(watch.name));
                 switch (watch.type) {
-                    case Vectraflux::DEBUG_WATCH_TYPE_STRING: CASE_DEBUG_WATCH_TABLE_COLUMN("%s", (char *) watch.value, "const char *");
-                    case Vectraflux::DEBUG_WATCH_TYPE_INT: CASE_DEBUG_WATCH_TABLE_COLUMN("%d", *((int *) watch.value), "int");
-                    case Vectraflux::DEBUG_WATCH_TYPE_UINT32: CASE_DEBUG_WATCH_TABLE_COLUMN("%u", *((uint32_t *) watch.value), "uint32_t");
-                    case Vectraflux::DEBUG_WATCH_TYPE_FLOAT: CASE_DEBUG_WATCH_TABLE_COLUMN("%f", *((float *) watch.value), "float");
-                    case Vectraflux::DEBUG_WATCH_TYPE_POINTER: CASE_DEBUG_WATCH_TABLE_COLUMN("%p", watch.value, "ptr");
+                    case VFLUX_DEBUG_WATCH_TYPE_STRING: CASE_DEBUG_WATCH_TABLE_COLUMN("%s", (char *) watch.value, "const char *");
+                    case VFLUX_DEBUG_WATCH_TYPE_INT: CASE_DEBUG_WATCH_TABLE_COLUMN("%d", *((int *) watch.value), "int");
+                    case VFLUX_DEBUG_WATCH_TYPE_UINT32: CASE_DEBUG_WATCH_TABLE_COLUMN("%u", *((uint32_t *) watch.value), "uint32_t");
+                    case VFLUX_DEBUG_WATCH_TYPE_FLOAT: CASE_DEBUG_WATCH_TABLE_COLUMN("%f", *((float *) watch.value), "float");
+                    case VFLUX_DEBUG_WATCH_TYPE_POINTER: CASE_DEBUG_WATCH_TABLE_COLUMN("%p", watch.value, "ptr");
                 }
             });
         }

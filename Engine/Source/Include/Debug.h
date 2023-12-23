@@ -27,28 +27,28 @@
 
 #include <Typedef.h>
 
-namespace Vectraflux {
+/**
+ * 调试数据类型枚举
+ */
+enum VfluxDebugWatchValueType {
+    VFLUX_DEBUG_WATCH_TYPE_STRING,
+    VFLUX_DEBUG_WATCH_TYPE_POINTER,
+    VFLUX_DEBUG_WATCH_TYPE_INT,
+    VFLUX_DEBUG_WATCH_TYPE_FLOAT,
+    VFLUX_DEBUG_WATCH_TYPE_DOUBLE,
+    VFLUX_DEBUG_WATCH_TYPE_UINT32,
+    VFLUX_DEBUG_WATCH_TYPE_FLOAT2,
+    VFLUX_DEBUG_WATCH_TYPE_FLOAT3,
+};
 
-    /**
-     * 调试数据类型枚举
-     */
-    enum DebugWatchValueType {
-        DEBUG_WATCH_TYPE_STRING,
-        DEBUG_WATCH_TYPE_POINTER,
-        DEBUG_WATCH_TYPE_INT,
-        DEBUG_WATCH_TYPE_FLOAT,
-        DEBUG_WATCH_TYPE_DOUBLE,
-        DEBUG_WATCH_TYPE_UINT32,
-        DEBUG_WATCH_TYPE_FLOAT2,
-        DEBUG_WATCH_TYPE_FLOAT3,
-    };
+namespace Vectraflux {
 
     /**
      * 调试数据结构体定义
      */
     struct DebugWatchInfo {
         String name;
-        DebugWatchValueType type;
+        VfluxDebugWatchValueType type;
         const pointer_t value; /* value pointer */
         bool editable; /* 是否可编辑 */
     };
@@ -62,7 +62,7 @@ namespace Vectraflux {
      * 推送一个调试数据到监听器
      */
     inline
-    static void AddDebugWatch(const String &name, DebugWatchValueType type, pointer_t ptr,
+    static void AddDebugWatch(const String &name, VfluxDebugWatchValueType type, pointer_t ptr,
                                     bool editable = false) {
         __gdwp__[name] = {name, type, ptr, editable};
     }
