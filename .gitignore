@@ -17,7 +17,10 @@
 # ************************************************************************ #
 
 # Creates on 2022/9/14. #
-/.idea
-/cmake-build-debug
-/.vs
-/out
+.idea
+cmake-build-debug
+cmake-build-run
+.vs
+out
+__pycache__
+UpgradeLog.htm
