@@ -943,6 +943,9 @@ void VulkanContext::_InitVulkanContextDevice() {
     /* Create vulkan device. */
     VulkanUtils::GetVulkanMostPreferredPhysicalDevice(m_Instance, &m_PhysicalDevice, &m_PhysicalDeviceProperties,
                                                       &m_PhysicalDeviceFeature);
+#ifdef ENGINE_CONFIG_ENABLE_DEBUG
+    SportsDebugAddWatch("物理设备", SPORTS_DEBUG_WATCH_TYPE_STRING, m_PhysicalDeviceProperties.deviceName);
+#endif
     Vector<VkDeviceQueueCreateInfo> deviceQueueCreateInfos;
     VulkanUtils::QueueFamilyIndices queueFamilyIndices =
             VulkanUtils::GetVulkanDeviceCreateRequiredQueueFamilyAndQueueCreateInfo(m_PhysicalDevice, m_SurfaceKHR, deviceQueueCreateInfos);

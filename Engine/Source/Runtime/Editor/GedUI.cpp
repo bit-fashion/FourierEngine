@@ -28,6 +28,13 @@
 static VkApplicationContext *s_DriverApplicationContext = null;
 GedUI *_GECTX = null;
 
+#define CASE_DEBUG_WATCH_TABLE_COLUMN(fmt, value, type) \
+    ImGui::TableSetColumnIndex(1); \
+    ImGui::Text(fmt, value); \
+    ImGui::TableSetColumnIndex(2); \
+    ImGui::Text("%s", type);           \
+    break
+
 GedUI::GedUI(const Window *window, VulkanContext *context) {
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -152,22 +159,26 @@ void GedUI::_MenuItemShowDemoWatchWindow() {
 void GedUI::_ShowDebugWatchWindow() {
     ImGui::Begin("开发者调试器");
     {
-        SportsDebugWatchIteration([](const SportsDebugWatchInfo &watch) {
-            switch (watch.type) {
-                case SPORTS_DEBUG_WATCH_TYPE_INT:
-                    ImGui::Text("%s: %d", getchr(watch.name), *((int *) watch.value));
-                    break;
-                case SPORTS_DEBUG_WATCH_TYPE_UINT32:
-                    ImGui::Text("%s: %u", getchr(watch.name), *((uint32_t *) watch.value));
-                    break;
-                case SPORTS_DEBUG_WATCH_TYPE_FLOAT:
-                    ImGui::Text("%s: %f", getchr(watch.name), *((float *) watch.value));
-                    break;
-                case SPORTS_DEBUG_WATCH_TYPE_POINTER:
-                    ImGui::Text("%s: %p", getchr(watch.name), watch.value);
-                    break;
-            }
-        });
+        ImGui::BeginTable("开发者调试面板", 3, ImGuiTableFlags_Resizable);
+        {
+            ImGui::TableSetupColumn("名称");
+            ImGui::TableSetupColumn("数值");
+            ImGui::TableSetupColumn("类型");
+            ImGui::TableHeadersRow();
+            SportsDebugWatchIteration([](const SportsDebugWatchInfo &watch) {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%s", getchr(watch.name));
+                switch (watch.type) {
+                    case SPORTS_DEBUG_WATCH_TYPE_STRING: CASE_DEBUG_WATCH_TABLE_COLUMN("%s", (char *) watch.value, "const char *");
+                    case SPORTS_DEBUG_WATCH_TYPE_INT: CASE_DEBUG_WATCH_TABLE_COLUMN("%d", *((int *) watch.value), "int");
+                    case SPORTS_DEBUG_WATCH_TYPE_UINT32: CASE_DEBUG_WATCH_TABLE_COLUMN("%u", *((uint32_t *) watch.value), "uint32_t");
+                    case SPORTS_DEBUG_WATCH_TYPE_FLOAT: CASE_DEBUG_WATCH_TABLE_COLUMN("%f", *((float *) watch.value), "float");
+                    case SPORTS_DEBUG_WATCH_TYPE_POINTER: CASE_DEBUG_WATCH_TABLE_COLUMN("%p", watch.value, "ptr");
+                }
+            });
+        }
+        ImGui::EndTable();
     }
     ImGui::End();
 }

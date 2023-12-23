@@ -35,6 +35,7 @@
 #include <memory>
 #include <array>
 #include <algorithm>
+#include <stdarg.h>
 
 #if defined(VK_VERSION_1_0)
 #  define null VK_NULL_HANDLE
@@ -76,5 +77,14 @@ inline static String strfmt(std::format_string<Args...> fmt, Args&&... args) {
 
 /* Get total byte size of array. */
 #define ARRAY_SIZE(a) (sizeof(a[0]) * std::size(a))
+
+/**
+ * 获取 va_list 个数
+ */
+#define va_argc(lval, start, va, type)      \
+    {                                       \
+        while (va_arg((va), type) != NULL)  \
+            lval++;                         \
+    }
 
 #endif /* _SPORTS_TYPEDEF_H_ */

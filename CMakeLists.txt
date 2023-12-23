@@ -28,7 +28,7 @@ SET(ENGINE_RUNTIME_SOURCE_DIRECTORY "${ENGINE_SOURCE_DIRECTORY}/Runtime")
 ##
 ## Python3
 ##
-FIND_PACKAGE(Python3 REQUIRED COMPONENTS Interpreter Development)
+FIND_PACKAGE(Python3 COMPONENTS Interpreter Development)
 IF(Python3_FOUND)
     MESSAGE(STATUS "Python3 library found: ${Python3_FOUND}")
     SET(PYTHON3_INCLUDE "${Python3_INCLUDE_DIRS}")
@@ -44,7 +44,7 @@ ENDIF()
 
 #[[ Configure third party include of system ]]
 INCLUDE_DIRECTORIES(SYSTEM
-  "${PYTHON3_INCLUDE}"
+  #"${PYTHON3_INCLUDE}"
   "${ENGINE_SOURCE_DIRECTORY}/Include"
   "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}"
   "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/vulkan/include"
@@ -74,7 +74,7 @@ ADD_EXECUTABLE(${PROJECT_NAME}
   "${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Render/Camera/OrthoCamera.cpp"
   "${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Render/Drivers/Vulkan/VulkanContext.cpp"
   #[[ Script ]]
-  "${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Scripter/Python3.cpp"
+  #"${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Scripter/Python3.cpp"
   #[[ Dear ImGUI ]]
   "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/imgui.cpp"
   "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/imgui_draw.cpp"
@@ -89,5 +89,5 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
   vulkan-1
   glfw3
   imm32
-  ${PYTHON3_LIBRARIES}
+  #${PYTHON3_LIBRARIES}
 )

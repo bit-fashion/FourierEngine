@@ -34,7 +34,7 @@
 
 #include <Debug.h>
 
-#include "Scripter/Python3.h"
+//#include "Scripter/Python3.h"
 
 struct UniformBufferObject {
     glm::mat4 m;
@@ -98,7 +98,7 @@ int main(int argc, const char **argv) {
     timestamp64_t rec_frame_start_time = System::GetTimeMillis();
 
 #ifdef ENGINE_CONFIG_ENABLE_DEBUG
-    SportsDebugAddWatch("fps", SPORTS_DEBUG_WATCH_TYPE_INT, &final_frame_count);
+    SportsDebugAddWatch("FPS", SPORTS_DEBUG_WATCH_TYPE_INT, &final_frame_count);
 #endif
 
     while (!window.is_close()) {
