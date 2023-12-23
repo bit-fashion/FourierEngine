@@ -912,9 +912,9 @@ void VulkanContext::_InitVulkanContextInstance() {
     applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     applicationInfo.apiVersion = VK_VERSION_1_3;
     applicationInfo.apiVersion = VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.pApplicationName = SPORTS_ENGINE_NAME;
+    applicationInfo.pApplicationName = ENGINE_NAME;
     applicationInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.pEngineName = SPORTS_ENGINE_NAME;
+    applicationInfo.pEngineName = ENGINE_NAME;
 
     VkInstanceCreateInfo instanceCreateInfo = {};
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -944,7 +944,7 @@ void VulkanContext::_InitVulkanContextDevice() {
     VulkanUtils::GetVulkanMostPreferredPhysicalDevice(m_Instance, &m_PhysicalDevice, &m_PhysicalDeviceProperties,
                                                       &m_PhysicalDeviceFeature);
 #ifdef ENGINE_CONFIG_ENABLE_DEBUG
-    SportsDebugAddWatch("物理设备", SPORTS_DEBUG_WATCH_TYPE_STRING, m_PhysicalDeviceProperties.deviceName);
+    Vectraflux::AddDebugWatch("物理设备", Vectraflux::DEBUG_WATCH_TYPE_STRING, m_PhysicalDeviceProperties.deviceName);
 #endif
     Vector<VkDeviceQueueCreateInfo> deviceQueueCreateInfos;
     VulkanUtils::QueueFamilyIndices queueFamilyIndices =

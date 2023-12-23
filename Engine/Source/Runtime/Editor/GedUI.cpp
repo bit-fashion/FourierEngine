@@ -165,16 +165,16 @@ void GedUI::_ShowDebugWatchWindow() {
             ImGui::TableSetupColumn("数值");
             ImGui::TableSetupColumn("类型");
             ImGui::TableHeadersRow();
-            SportsDebugWatchIteration([](const SportsDebugWatchInfo &watch) {
+            Vectraflux::GetDebugWatchIterator([](const Vectraflux::DebugWatchInfo &watch) {
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
                 ImGui::Text("%s", getchr(watch.name));
                 switch (watch.type) {
-                    case SPORTS_DEBUG_WATCH_TYPE_STRING: CASE_DEBUG_WATCH_TABLE_COLUMN("%s", (char *) watch.value, "const char *");
-                    case SPORTS_DEBUG_WATCH_TYPE_INT: CASE_DEBUG_WATCH_TABLE_COLUMN("%d", *((int *) watch.value), "int");
-                    case SPORTS_DEBUG_WATCH_TYPE_UINT32: CASE_DEBUG_WATCH_TABLE_COLUMN("%u", *((uint32_t *) watch.value), "uint32_t");
-                    case SPORTS_DEBUG_WATCH_TYPE_FLOAT: CASE_DEBUG_WATCH_TABLE_COLUMN("%f", *((float *) watch.value), "float");
-                    case SPORTS_DEBUG_WATCH_TYPE_POINTER: CASE_DEBUG_WATCH_TABLE_COLUMN("%p", watch.value, "ptr");
+                    case Vectraflux::DEBUG_WATCH_TYPE_STRING: CASE_DEBUG_WATCH_TABLE_COLUMN("%s", (char *) watch.value, "const char *");
+                    case Vectraflux::DEBUG_WATCH_TYPE_INT: CASE_DEBUG_WATCH_TABLE_COLUMN("%d", *((int *) watch.value), "int");
+                    case Vectraflux::DEBUG_WATCH_TYPE_UINT32: CASE_DEBUG_WATCH_TABLE_COLUMN("%u", *((uint32_t *) watch.value), "uint32_t");
+                    case Vectraflux::DEBUG_WATCH_TYPE_FLOAT: CASE_DEBUG_WATCH_TABLE_COLUMN("%f", *((float *) watch.value), "float");
+                    case Vectraflux::DEBUG_WATCH_TYPE_POINTER: CASE_DEBUG_WATCH_TABLE_COLUMN("%p", watch.value, "ptr");
                 }
             });
         }

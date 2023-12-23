@@ -23,8 +23,8 @@
     @author bit-fashion
   ===================================
 */
-#ifndef _SPORTS_WINDOW_H_
-#define _SPORTS_WINDOW_H_
+#ifndef _VECTRAFLUX_WINDOW_H_
+#define _VECTRAFLUX_WINDOW_H_
 
 #include <GLFW/glfw3.h>
 #include <Typedef.h>
@@ -68,4 +68,4 @@ private:
     Vector<PFN_WindowResizeableEventCallback> m_WindowResizeableEventCallbacks;
 };
 
-#endif /* _SPORTS_WINDOW_H_ */
+#endif /* _VECTRAFLUX_WINDOW_H_ */

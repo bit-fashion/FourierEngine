@@ -23,10 +23,10 @@
     @author bit-fashion
   ===================================
 */
-#ifndef _SPORTS_ENGINE_H_
-#define _SPORTS_ENGINE_H_
+#ifndef _VECTRAFLUX_ENGINE_H_
+#define _VECTRAFLUX_ENGINE_H_
 
-#define SPORTS_ENGINE_NAME "SportsEngine"
+#define ENGINE_NAME "VectrafluxEngine"
 
 //
 // config
@@ -42,4 +42,4 @@
 #  include <Debug.h>
 #endif
 
-#endif /* _SPORTS_ENGINE_H_ */
+#endif /* _VECTRAFLUX_ENGINE_H_ */

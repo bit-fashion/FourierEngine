@@ -23,12 +23,12 @@
    @author bit-fashion
  ===============================
 */
-#ifndef _SPORTS_ENGINE_MATH_H_
-#define _SPORTS_ENGINE_MATH_H_
+#ifndef _VECTRAFLUX_ENGINE_MATH_H_
+#define _VECTRAFLUX_ENGINE_MATH_H_
 
 // glm
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#endif /* _SPORTS_ENGINE_MATH_H_ */
+#endif /* _VECTRAFLUX_ENGINE_MATH_H_ */

@@ -23,8 +23,8 @@
    @author bit-fashion
  ===============================
 */
-#ifndef _SPORTS_ENGINE_SYSTEM_H_
-#define _SPORTS_ENGINE_SYSTEM_H_
+#ifndef _VECTRAFLUX_ENGINE_SYSTEM_H_
+#define _VECTRAFLUX_ENGINE_SYSTEM_H_
 
 #include <chrono>
 #include <Typedef.h>
@@ -89,4 +89,4 @@ namespace System {
 
 }
 
-#endif /* _SPORTS_ENGINE_SYSTEM_H_ */
+#endif /* _VECTRAFLUX_ENGINE_SYSTEM_H_ */

@@ -23,8 +23,8 @@
     @author bit-fashion
   ===================================
 */
-#ifndef _SPORTS_VULKAN_UTILS_H_
-#define _SPORTS_VULKAN_UTILS_H_
+#ifndef _VECTRAFLUX_VULKAN_UTILS_H_
+#define _VECTRAFLUX_VULKAN_UTILS_H_
 
 #include "Utils/IOUtils.h"
 #define STB_IMAGE_IMPLEMENTATION
@@ -346,4 +346,4 @@ namespace VulkanUtils {
 
 }
 
-#endif /* _SPORTS_VULKAN_UTILS_H_ */
+#endif /* _VECTRAFLUX_VULKAN_UTILS_H_ */

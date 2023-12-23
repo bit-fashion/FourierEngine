@@ -23,8 +23,8 @@
     @author bit-fashion
   ===================================
 */
-#ifndef _SPORTS_TYPEDEF_H_
-#define _SPORTS_TYPEDEF_H_
+#ifndef _VECTRAFLUX_TYPEDEF_H_
+#define _VECTRAFLUX_TYPEDEF_H_
 
 #include <vector>
 #include <list>
@@ -87,4 +87,4 @@ inline static String strfmt(std::format_string<Args...> fmt, Args&&... args) {
             lval++;                         \
     }
 
-#endif /* _SPORTS_TYPEDEF_H_ */
+#endif /* _VECTRAFLUX_TYPEDEF_H_ */

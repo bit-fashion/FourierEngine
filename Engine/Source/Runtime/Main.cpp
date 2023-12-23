@@ -46,7 +46,7 @@ struct UniformBufferObject {
 int main(int argc, const char **argv) {
     system("chcp 65001");
 
-    Window window("SportsEngine", 1280, 1200);
+    Window window("VectrafluxEngine", 1280, 1200);
     std::unique_ptr<VulkanContext> vulkanContext = std::make_unique<VulkanContext>(&window);
     window.SetWindowHintVisible(true);
 
@@ -98,7 +98,7 @@ int main(int argc, const char **argv) {
     timestamp64_t rec_frame_start_time = System::GetTimeMillis();
 
 #ifdef ENGINE_CONFIG_ENABLE_DEBUG
-    SportsDebugAddWatch("FPS", SPORTS_DEBUG_WATCH_TYPE_INT, &final_frame_count);
+    Vectraflux::AddDebugWatch("FPS", Vectraflux::DEBUG_WATCH_TYPE_INT, &final_frame_count);
 #endif
 
     while (!window.is_close()) {

@@ -27,54 +27,58 @@
 
 #include <Typedef.h>
 
-/**
- * 调试数据类型枚举
- */
-enum SportsDebugWatchType {
-    SPORTS_DEBUG_WATCH_TYPE_STRING,
-    SPORTS_DEBUG_WATCH_TYPE_POINTER,
-    SPORTS_DEBUG_WATCH_TYPE_INT,
-    SPORTS_DEBUG_WATCH_TYPE_FLOAT,
-    SPORTS_DEBUG_WATCH_TYPE_DOUBLE,
-    SPORTS_DEBUG_WATCH_TYPE_UINT32,
-    SPORTS_DEBUG_WATCH_TYPE_FLOAT2,
-    SPORTS_DEBUG_WATCH_TYPE_FLOAT3,
-};
+namespace Vectraflux {
 
-/**
- * 调试数据结构体定义
- */
-struct SportsDebugWatchInfo {
-    String name;
-    SportsDebugWatchType type;
-    const pointer_t value; /* value pointer */
-    bool editable; /* 是否可编辑 */
-};
+    /**
+     * 调试数据类型枚举
+     */
+    enum DebugWatchValueType {
+        DEBUG_WATCH_TYPE_STRING,
+        DEBUG_WATCH_TYPE_POINTER,
+        DEBUG_WATCH_TYPE_INT,
+        DEBUG_WATCH_TYPE_FLOAT,
+        DEBUG_WATCH_TYPE_DOUBLE,
+        DEBUG_WATCH_TYPE_UINT32,
+        DEBUG_WATCH_TYPE_FLOAT2,
+        DEBUG_WATCH_TYPE_FLOAT3,
+    };
 
-typedef void (*PFN_DebugWatchMapIteration)(const SportsDebugWatchInfo &watch);
+    /**
+     * 调试数据结构体定义
+     */
+    struct DebugWatchInfo {
+        String name;
+        DebugWatchValueType type;
+        const pointer_t value; /* value pointer */
+        bool editable; /* 是否可编辑 */
+    };
 
-/** 全局列表，存放调试数据结构 */
-extern HashMap<String, SportsDebugWatchInfo> __gdwp__;
+    typedef void (*PFN_DebugWatchMapIteration)(const DebugWatchInfo &watch);
 
-/**
- * 推送一个调试数据到监听器
- */
-inline
-static void SportsDebugAddWatch(const String &name, SportsDebugWatchType type, pointer_t ptr,
-                                bool editable = false) {
-    __gdwp__[name] = {name, type, ptr, editable};
-}
+    /** 全局列表，存放调试数据结构 */
+    extern HashMap<String, DebugWatchInfo> __gdwp__;
 
-/**
- * 推送一个调试数据到监听器
- */
-inline
-static void SportsDebugRemoveWatch(const String &name) {
-    __gdwp__.erase(name);
-}
+    /**
+     * 推送一个调试数据到监听器
+     */
+    inline
+    static void AddDebugWatch(const String &name, DebugWatchValueType type, pointer_t ptr,
+                                    bool editable = false) {
+        __gdwp__[name] = {name, type, ptr, editable};
+    }
 
-inline
-static void SportsDebugWatchIteration(PFN_DebugWatchMapIteration fn) {
-    for (const auto &item: __gdwp__)
-        fn(item.second);
+    /**
+     * 推送一个调试数据到监听器
+     */
+    inline
+    static void RemoveDebugWatch(const String &name) {
+        __gdwp__.erase(name);
+    }
+
+    inline
+    static void GetDebugWatchIterator(PFN_DebugWatchMapIteration fn) {
+        for (const auto &item: __gdwp__)
+            fn(item.second);
+    }
+
 }

@@ -23,7 +23,7 @@
    @author bit-fashion
  ===============================
 */
-#ifndef SPORTSENGINE_GAMEMODEL_H
-#define SPORTSENGINE_GAMEMODEL_H
+#ifndef VECTRAFLUXENGINE_GAMEMODEL_H
+#define VECTRAFLUXENGINE_GAMEMODEL_H
 
-#endif //SPORTSENGINE_GAMEMODEL_H
+#endif //VECTRAFLUXENGINE_GAMEMODEL_H

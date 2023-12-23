@@ -23,8 +23,8 @@
    @author bit-fashion
  ===============================
 */
-#ifndef _SPORTS_ENGINE_CAMERA_H_
-#define _SPORTS_ENGINE_CAMERA_H_
+#ifndef _VECTRAFLUX_ENGINE_CAMERA_H_
+#define _VECTRAFLUX_ENGINE_CAMERA_H_
 
 #include <Typedef.h>
 // glm
@@ -44,4 +44,4 @@ protected:
     glm::mat4 m_ProjectionMatrix;
 };
 
-#endif /* _SPORTS_ENGINE_CAMERA_H_ */
+#endif /* _VECTRAFLUX_ENGINE_CAMERA_H_ */

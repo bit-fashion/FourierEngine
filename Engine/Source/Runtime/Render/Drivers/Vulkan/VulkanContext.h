@@ -23,8 +23,8 @@
     @author bit-fashion
   ===================================
 */
-#ifndef _SPORTS_VULKAN_CONTEXT_H_
-#define _SPORTS_VULKAN_CONTEXT_H_
+#ifndef _VECTRAFLUX_VULKAN_CONTEXT_H_
+#define _VECTRAFLUX_VULKAN_CONTEXT_H_
 
 #include <vulkan/vulkan.h>
 #include <Typedef.h>
@@ -253,4 +253,4 @@ private:
     VkWindowContext m_WindowContext;
 };
 
-#endif /* _SPORTS_VULKAN_CONTEXT_H_ */
+#endif /* _VECTRAFLUX_VULKAN_CONTEXT_H_ */

@@ -565,16 +565,16 @@ bool    ImGui_ImplDX12_CreateDeviceObjects()
         staticSampler.RegisterSpace = 0;
         staticSampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-        D3D12_ROOT_SIGSPORTS_DESC desc = {};
+        D3D12_ROOT_SIGVECTRAFLUX_DESC desc = {};
         desc.NumParameters = _countof(param);
         desc.pParameters = param;
         desc.NumStaticSamplers = 1;
         desc.pStaticSamplers = &staticSampler;
         desc.Flags =
-            D3D12_ROOT_SIGSPORTS_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-            D3D12_ROOT_SIGSPORTS_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-            D3D12_ROOT_SIGSPORTS_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-            D3D12_ROOT_SIGSPORTS_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
+            D3D12_ROOT_SIGVECTRAFLUX_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+            D3D12_ROOT_SIGVECTRAFLUX_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+            D3D12_ROOT_SIGVECTRAFLUX_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+            D3D12_ROOT_SIGVECTRAFLUX_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
         // Load d3d12.dll and D3D12SerializeRootSignature() function address dynamically to facilitate using with D3D12On7.
         // See if any version of d3d12.dll is already loaded in the process. If so, give preference to that.
@@ -598,12 +598,12 @@ bool    ImGui_ImplDX12_CreateDeviceObjects()
                 return false;
         }
 
-        PFN_D3D12_SERIALIZE_ROOT_SIGNATURE D3D12SerializeRootSignatureFn = (PFN_D3D12_SERIALIZE_ROOT_SIGNATURE)::GetProcAddress(d3d12_dll, "D3D12SerializeRootSignature");
+        PFN_D3D12_SERIALIZE_ROOT_SIGVECTRAFLUX D3D12SerializeRootSignatureFn = (PFN_D3D12_SERIALIZE_ROOT_SIGVECTRAFLUX)::GetProcAddress(d3d12_dll, "D3D12SerializeRootSignature");
         if (D3D12SerializeRootSignatureFn == nullptr)
             return false;
 
         ID3DBlob* blob = nullptr;
-        if (D3D12SerializeRootSignatureFn(&desc, D3D_ROOT_SIGSPORTS_VERSION_1, &blob, nullptr) != S_OK)
+        if (D3D12SerializeRootSignatureFn(&desc, D3D_ROOT_SIGVECTRAFLUX_VERSION_1, &blob, nullptr) != S_OK)
             return false;
 
         bd->pd3dDevice->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(), IID_PPV_ARGS(&bd->pRootSignature));

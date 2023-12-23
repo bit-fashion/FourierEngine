@@ -25,4 +25,4 @@
 */
 #include <Debug.h>
 
-HashMap<String, SportsDebugWatchInfo> __gdwp__;
+HashMap<String, Vectraflux::DebugWatchInfo> Vectraflux::__gdwp__;
