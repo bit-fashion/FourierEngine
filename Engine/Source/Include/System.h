@@ -74,6 +74,7 @@ namespace System {
     template<typename ...Args>
     static void ConsoleWrite(std::format_string<Args...> fmt, Args&&... args) {
         printf("%s\n", vstrfmt(fmt, args).c_str());
+        fflush(stdout);
     }
 
     /**

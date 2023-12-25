@@ -157,7 +157,7 @@ public:
     //
     void BindRenderPipeline(VkCommandBuffer commandBuffer, uint32_t width, uint32_t height, VkRenderPipeline &pipeline);
     void BindDescriptorSets(VkCommandBuffer commandBuffer, VkRenderPipeline &pipeline, uint32_t count, VkDescriptorSet *pDescriptorSets);
-    void WriteDescriptorSet(VkDeviceBuffer &buffer, VkTexture2D &texture, VkDescriptorSet descriptorSet);
+    void WriteDescriptorSet(VkDeviceBuffer *pBuffer, VkTexture2D *pTexture, VkDescriptorSet descriptorSet);
     void DrawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCount);
 
     //

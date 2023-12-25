@@ -46,26 +46,15 @@ int main(int argc, const char **argv) {
     Vectraflux::AddDebuggerWatch("FPS", VFLUX_DEBUGGER_WATCH_TYPE_INT, &final_frame_count);
 #endif
 
-    VkTexture2D texture;
-    p_vctx->CreateTexture2D("../Document/EngineEditor.png", &texture);
-
-    ImTextureID imTextureID = GedUI::AddTexture2D(texture);
-
     while (!window.is_close()) {
-
         //
         // 渲染 ImGui
         //
         VkGraphicsFrameContext *frameContext;
         p_vctx->BeginGraphicsRender(&frameContext);
             GedUI::BeginNewFrame();
-                GedUI::BeginViewport("视口");
-                    GedUI::Image(imTextureID);
-                GedUI::EndViewport();
             GedUI::EndNewFrame();
         p_vctx->EndGraphicsRender();
-
-        Window::PollEvents();
 
         ++rec_frame_count;
         timestamp64_t end = System::GetTimeMillis();
@@ -76,11 +65,12 @@ int main(int argc, const char **argv) {
             rec_frame_start_time = end;
         }
 #endif
+
+        Window::PollEvents();
     }
 
     //
     // 资源释放
     //
-    p_vctx->DestroyTexture2D(texture);
     GedUI::Destroy();
 }
