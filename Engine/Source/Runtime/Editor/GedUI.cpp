@@ -28,9 +28,9 @@
 static VkApplicationContext *s_DriverApplicationContext = null;
 GedUI *_GECTX = null;
 
-#define CASE_DEBUG_WATCH_TABLE_COLUMN(fmt, value) \
+#define CASE_DEBUG_WATCH_TABLE_COLUMN(fmt, ...) \
     ImGui::TableSetColumnIndex(1); \
-    ImGui::Text(fmt, value); \
+    ImGui::Text(fmt, __VA_ARGS__); \
     break
 
 GedUI::GedUI(const Window *window, VulkanContext *context) {
@@ -155,23 +155,26 @@ void GedUI::_MenuItemShowDemoWatchWindow() {
 }
 
 void GedUI::_ShowDebugWatchWindow() {
-    ImGui::Begin("开发者调试器");
+    ImGui::Begin("开发者调试面板");
     {
-        ImGui::BeginTable("开发者调试面板", 2, ImGuiTableFlags_Resizable);
+        ImGui::BeginTable("开发者调试面板表格", 2, ImGuiTableFlags_Resizable);
         {
             ImGui::TableSetupColumn("名称");
             ImGui::TableSetupColumn("内容");
             ImGui::TableHeadersRow();
-            Vectraflux::GetDebugWatchIterator([](const Vectraflux::DebugWatchInfo &watch) {
+            Vectraflux::IterDebuggerWatchItem([](const Vectraflux::DebugWatchInfo &watch) {
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
                 ImGui::Text("%s", getchr(watch.name));
                 switch (watch.type) {
-                    case VFLUX_DEBUG_WATCH_TYPE_STRING: CASE_DEBUG_WATCH_TABLE_COLUMN("%s", (char *) watch.value);
-                    case VFLUX_DEBUG_WATCH_TYPE_INT: CASE_DEBUG_WATCH_TABLE_COLUMN("%d", *((int *) watch.value));
-                    case VFLUX_DEBUG_WATCH_TYPE_UINT32: CASE_DEBUG_WATCH_TABLE_COLUMN("%u", *((uint32_t *) watch.value));
-                    case VFLUX_DEBUG_WATCH_TYPE_FLOAT: CASE_DEBUG_WATCH_TABLE_COLUMN("%f", *((float *) watch.value));
-                    case VFLUX_DEBUG_WATCH_TYPE_POINTER: CASE_DEBUG_WATCH_TABLE_COLUMN("%p", watch.value);
+                    case VFLUX_DEBUGGER_WATCH_TYPE_STRING: CASE_DEBUG_WATCH_TABLE_COLUMN("%s", (char *) watch.value);
+                    case VFLUX_DEBUGGER_WATCH_TYPE_INT: CASE_DEBUG_WATCH_TABLE_COLUMN("%d", *((int *) watch.value));
+                    case VFLUX_DEBUGGER_WATCH_TYPE_UINT32: CASE_DEBUG_WATCH_TABLE_COLUMN("%u", *((uint32_t *) watch.value));
+                    case VFLUX_DEBUGGER_WATCH_TYPE_FLOAT: CASE_DEBUG_WATCH_TABLE_COLUMN("%.2f", *((float *) watch.value));
+                    case VFLUX_DEBUGGER_WATCH_TYPE_DOUBLE: CASE_DEBUG_WATCH_TABLE_COLUMN("%.2lf", *((double *) watch.value));
+                    case VFLUX_DEBUGGER_WATCH_TYPE_FLOAT2: CASE_DEBUG_WATCH_TABLE_COLUMN("(%.2f, %.2f)", ((float *) watch.value)[0], ((float *) watch.value)[1]);
+                    case VFLUX_DEBUGGER_WATCH_TYPE_FLOAT3: CASE_DEBUG_WATCH_TABLE_COLUMN("(%.2f, %.2f, %.2f)", ((float *) watch.value)[0], ((float *) watch.value)[1], ((float *) watch.value)[2]);
+                    case VFLUX_DEBUGGER_WATCH_TYPE_POINTER: CASE_DEBUG_WATCH_TABLE_COLUMN("%p", watch.value);
                 }
             });
         }

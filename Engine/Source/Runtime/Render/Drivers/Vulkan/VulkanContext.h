@@ -251,6 +251,7 @@ private:
     VkDescriptorPool m_DescriptorPool;
     VkApplicationContext m_ApplicationContext;
     VkWindowContext m_WindowContext;
+    String m_ApiVersion;
 };
 
 #endif /* _VECTRAFLUX_VULKAN_CONTEXT_H_ */

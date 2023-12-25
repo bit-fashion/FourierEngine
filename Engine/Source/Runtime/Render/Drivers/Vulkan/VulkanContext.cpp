@@ -930,6 +930,20 @@ void VulkanContext::_InitVulkanContextInstance() {
     instanceCreateInfo.enabledLayerCount = std::size(requiredEnableLayersForInstance);
     instanceCreateInfo.ppEnabledLayerNames = std::data(requiredEnableLayersForInstance);
     vkCreateInstance(&instanceCreateInfo, VulkanUtils::Allocator, &m_Instance);
+
+    /* 获取 Vulkan 实例版本 */
+    uint32_t apiVersion;
+    vkEnumerateInstanceVersion(&apiVersion);
+
+    uint32_t major = VK_VERSION_MAJOR(apiVersion);
+    uint32_t minor = VK_VERSION_MINOR(apiVersion);
+    uint32_t patch = VK_VERSION_PATCH(apiVersion);
+
+    m_ApiVersion = strfmt("{}.{}.{}", major, minor, patch);
+
+#ifdef ENGINE_CONFIG_ENABLE_DEBUG
+    Vectraflux::AddDebuggerWatch("ApiVersion", VFLUX_DEBUGGER_WATCH_TYPE_STRING, m_ApiVersion.c_str());
+#endif
 }
 
 void VulkanContext::_InitVulkanContextSurface() {
@@ -944,7 +958,7 @@ void VulkanContext::_InitVulkanContextDevice() {
     VulkanUtils::GetVulkanMostPreferredPhysicalDevice(m_Instance, &m_PhysicalDevice, &m_PhysicalDeviceProperties,
                                                       &m_PhysicalDeviceFeature);
 #ifdef ENGINE_CONFIG_ENABLE_DEBUG
-    Vectraflux::AddDebugWatch("物理设备", VFLUX_DEBUG_WATCH_TYPE_STRING, m_PhysicalDeviceProperties.deviceName);
+    Vectraflux::AddDebuggerWatch("物理设备", VFLUX_DEBUGGER_WATCH_TYPE_STRING, m_PhysicalDeviceProperties.deviceName);
 #endif
     Vector<VkDeviceQueueCreateInfo> deviceQueueCreateInfos;
     VulkanUtils::QueueFamilyIndices queueFamilyIndices =
