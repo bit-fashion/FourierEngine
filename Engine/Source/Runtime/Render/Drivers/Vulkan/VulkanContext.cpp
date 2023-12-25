@@ -130,91 +130,6 @@ void VulkanContext::UnmapMemory(VkDeviceBuffer buffer) {
     vkUnmapMemory(m_Device, buffer.memory);
 }
 
-void VulkanContext::BeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags usageFlags) {
-    /* start command buffers record. */
-    vkResetCommandBuffer(commandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
-    VkCommandBufferBeginInfo commandBufferBeginInfo = {};
-    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    commandBufferBeginInfo.flags = usageFlags;
-    commandBufferBeginInfo.pInheritanceInfo = null; // Optional
-    vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
-}
-
-void VulkanContext::EndCommandBuffer(VkCommandBuffer commandBuffer) {
-    /* end command buffer record. */
-    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
-        throw std::runtime_error("failed to record command buffer!");
-}
-
-void VulkanContext::SyncSubmitQueueWithSubmitInfo(uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers,
-                                                 uint32_t waitSemaphoreCount, VkSemaphore *pWaitSemaphores,
-                                                 uint32_t signalSemaphoreCount, VkSemaphore *pSignalSemaphores,
-                                                 VkPipelineStageFlags *pWaitDstStageMask) {
-    /* submit command buffer */
-    VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    submitInfo.waitSemaphoreCount = waitSemaphoreCount;
-    submitInfo.pWaitSemaphores = pWaitSemaphores;
-    submitInfo.pWaitDstStageMask = pWaitDstStageMask;
-    submitInfo.commandBufferCount = commandBufferCount;
-    submitInfo.pCommandBuffers = pCommandBuffers;
-
-    submitInfo.signalSemaphoreCount = signalSemaphoreCount;
-    submitInfo.pSignalSemaphores = pSignalSemaphores;
-
-    if (vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
-        throw std::runtime_error("failed to submit draw command buffer!");
-
-    vkQueueWaitIdle(m_GraphicsQueue);
-}
-
-void VulkanContext::BeginOnceTimeCommandBufferSubmit(VkCommandBuffer *pCommandBuffer) {
-    AllocateCommandBuffer(1, &m_SingleTimeCommandBuffer);
-    *pCommandBuffer = m_SingleTimeCommandBuffer;
-    /* begin */
-    BeginCommandBuffer(m_SingleTimeCommandBuffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-}
-
-void VulkanContext::EndOnceTimeCommandBufferSubmit() {
-    EndCommandBuffer(m_SingleTimeCommandBuffer);
-    /* submit */
-    SyncSubmitQueueWithSubmitInfo(1, &m_SingleTimeCommandBuffer, 0, NULL, 0, NULL, NULL);
-    FreeCommandBuffer(1, &m_SingleTimeCommandBuffer);
-}
-
-void VulkanContext::BeginRecordCommandBuffer(VkCommandBuffer commandBuffer) {
-    BeginCommandBuffer(commandBuffer, VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
-}
-
-void VulkanContext::EndRecordCommandBuffer(VkCommandBuffer commandBuffer) {
-    EndCommandBuffer(commandBuffer);
-}
-
-void VulkanContext::BeginRenderPass(VkCommandBuffer commandBuffer, uint32_t w, uint32_t h, VkRenderPass renderPass, VkFramebuffer framebuffer) {
-    /* start render pass. */
-    VkRenderPassBeginInfo renderPassBeginInfo = {};
-    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.renderPass = renderPass;
-    renderPassBeginInfo.framebuffer = framebuffer;
-    renderPassBeginInfo.renderArea.offset = {0, 0};
-    renderPassBeginInfo.renderArea.extent = { w, h };
-
-    VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
-    renderPassBeginInfo.clearValueCount = 1;
-    renderPassBeginInfo.pClearValues = &clearColor;
-    vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-}
-
-void VulkanContext::EndRenderPass(VkCommandBuffer commandBuffer) {
-    /* end render pass */
-    vkCmdEndRenderPass(commandBuffer);
-}
-
-void VulkanContext::QueueWaitIdle(VkQueue queue) {
-    vkQueueWaitIdle(queue);
-}
-
 void VulkanContext::BeginGraphicsRender(VkGraphicsFrameContext **ppFrameContext) {
     uint32_t index;
     vkAcquireNextImageKHR(m_Device, m_MainSwapchainContext.swapchain, std::numeric_limits<uint64_t>::max(),
@@ -477,8 +392,7 @@ void VulkanContext::CopyTextureBuffer(VkDeviceBuffer &buffer, VkTexture2D &textu
     EndOnceTimeCommandBufferSubmit();
 }
 
-void VulkanContext::CreateTexture2D(const String &path, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-                                    VkMemoryPropertyFlags properties, VkTexture2D *pTexture2D) {
+void VulkanContext::CreateTexture2D(const String &path, VkTexture2D *pTexture2D) {
     /* load image. */
     int texWidth, texHeight, texChannels;
     stbi_uc* pixels = stbi_load(getchr(path), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -487,7 +401,14 @@ void VulkanContext::CreateTexture2D(const String &path, VkFormat format, VkImage
         throw std::runtime_error("failed to load texture image!");
 
     /* 创建图像 */
-    CreateTexture2D(texWidth, texHeight, format, tiling,usage, properties, pTexture2D);
+    CreateTexture2D(
+            texWidth,
+            texHeight,
+            VK_FORMAT_R8G8B8A8_UNORM,
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            pTexture2D);
 
     // write buffer to image
     VkDeviceBuffer stagingBuffer;
@@ -1097,4 +1018,89 @@ void VulkanContext::DestroySwapchainContextKHR(VkSwapchainContextKHR *pSwapchain
 
 void VulkanContext::DestroyRenderPass(VkRenderPass renderPass) {
     vkDestroyRenderPass(m_Device, renderPass, VulkanUtils::Allocator);
+}
+
+void VulkanContext::BeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags usageFlags) {
+    /* start command buffers record. */
+    vkResetCommandBuffer(commandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
+    VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    commandBufferBeginInfo.flags = usageFlags;
+    commandBufferBeginInfo.pInheritanceInfo = null; // Optional
+    vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+}
+
+void VulkanContext::EndCommandBuffer(VkCommandBuffer commandBuffer) {
+    /* end command buffer record. */
+    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
+        throw std::runtime_error("failed to record command buffer!");
+}
+
+void VulkanContext::SyncSubmitQueueWithSubmitInfo(uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers,
+                                                  uint32_t waitSemaphoreCount, VkSemaphore *pWaitSemaphores,
+                                                  uint32_t signalSemaphoreCount, VkSemaphore *pSignalSemaphores,
+                                                  VkPipelineStageFlags *pWaitDstStageMask) {
+    /* submit command buffer */
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    submitInfo.waitSemaphoreCount = waitSemaphoreCount;
+    submitInfo.pWaitSemaphores = pWaitSemaphores;
+    submitInfo.pWaitDstStageMask = pWaitDstStageMask;
+    submitInfo.commandBufferCount = commandBufferCount;
+    submitInfo.pCommandBuffers = pCommandBuffers;
+
+    submitInfo.signalSemaphoreCount = signalSemaphoreCount;
+    submitInfo.pSignalSemaphores = pSignalSemaphores;
+
+    if (vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+        throw std::runtime_error("failed to submit draw command buffer!");
+
+    vkQueueWaitIdle(m_GraphicsQueue);
+}
+
+void VulkanContext::BeginOnceTimeCommandBufferSubmit(VkCommandBuffer *pCommandBuffer) {
+    AllocateCommandBuffer(1, &m_SingleTimeCommandBuffer);
+    *pCommandBuffer = m_SingleTimeCommandBuffer;
+    /* begin */
+    BeginCommandBuffer(m_SingleTimeCommandBuffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+}
+
+void VulkanContext::EndOnceTimeCommandBufferSubmit() {
+    EndCommandBuffer(m_SingleTimeCommandBuffer);
+    /* submit */
+    SyncSubmitQueueWithSubmitInfo(1, &m_SingleTimeCommandBuffer, 0, NULL, 0, NULL, NULL);
+    FreeCommandBuffer(1, &m_SingleTimeCommandBuffer);
+}
+
+void VulkanContext::BeginRecordCommandBuffer(VkCommandBuffer commandBuffer) {
+    BeginCommandBuffer(commandBuffer, VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
+}
+
+void VulkanContext::EndRecordCommandBuffer(VkCommandBuffer commandBuffer) {
+    EndCommandBuffer(commandBuffer);
+}
+
+void VulkanContext::BeginRenderPass(VkCommandBuffer commandBuffer, uint32_t w, uint32_t h, VkRenderPass renderPass, VkFramebuffer framebuffer) {
+    /* start render pass. */
+    VkRenderPassBeginInfo renderPassBeginInfo = {};
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassBeginInfo.renderPass = renderPass;
+    renderPassBeginInfo.framebuffer = framebuffer;
+    renderPassBeginInfo.renderArea.offset = {0, 0};
+    renderPassBeginInfo.renderArea.extent = { w, h };
+
+    VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
+    renderPassBeginInfo.clearValueCount = 1;
+    renderPassBeginInfo.pClearValues = &clearColor;
+    vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void VulkanContext::EndRenderPass(VkCommandBuffer commandBuffer) {
+    /* end render pass */
+    vkCmdEndRenderPass(commandBuffer);
+}
+
+void VulkanContext::QueueWaitIdle(VkQueue queue) {
+    vkQueueWaitIdle(queue);
 }

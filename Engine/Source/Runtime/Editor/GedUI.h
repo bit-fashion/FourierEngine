@@ -47,8 +47,8 @@ public:
     static ImTextureID AddTexture2D(VkTexture2D &texture);
     static void RemoveTexture2D(const ImTextureID &texture);
     static ImVec2 GetWindowSize();
-    static void DrawTexture2D(const ImTextureID &texture, const ImVec2 &size);
-    static void DrawTexture2DFill(const ImTextureID &texture, int *width = null, int *height = null);
+    static void Image(const ImTextureID &texture);
+    static void Image(const ImTextureID &texture, const ImVec2 &size);
     static void BeginViewport(const char *name);
     static void EndViewport();
 

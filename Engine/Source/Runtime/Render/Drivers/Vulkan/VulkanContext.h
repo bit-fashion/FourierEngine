@@ -139,23 +139,6 @@ public:
     void UnmapMemory(VkDeviceBuffer buffer);
 
     //
-    // About vulkan command buffer.
-    //
-    void BeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags usageFlags);
-    void EndCommandBuffer(VkCommandBuffer commandBuffer);
-    void SyncSubmitQueueWithSubmitInfo(uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers,
-                                       uint32_t waitSemaphoreCount, VkSemaphore *pWaitSemaphores,
-                                       uint32_t signalSemaphoreCount, VkSemaphore *pSignalSemaphores,
-                                       VkPipelineStageFlags *pWaitDstStageMask);
-    void BeginOnceTimeCommandBufferSubmit(VkCommandBuffer *pCommandBuffer);
-    void EndOnceTimeCommandBufferSubmit();
-    void BeginRecordCommandBuffer(VkCommandBuffer commandBuffer);
-    void EndRecordCommandBuffer(VkCommandBuffer commandBuffer);
-    void BeginRenderPass(VkCommandBuffer commandBuffer, uint32_t w, uint32_t h, VkRenderPass renderPass, VkFramebuffer framebuffer);
-    void EndRenderPass(VkCommandBuffer commandBuffer);
-    void QueueWaitIdle(VkQueue queue);
-
-    //
     // Render to swapchain
     //
     void BeginGraphicsRender(VkGraphicsFrameContext **ppFrameContext = null);
@@ -185,7 +168,7 @@ public:
     void AllocateIndexBuffer(VkDeviceSize size, const uint32_t *pIndices, VkDeviceBuffer *pIndexBuffer);
     void TransitionTextureLayout(VkTexture2D *texture, VkImageLayout newLayout);
     void CopyTextureBuffer(VkDeviceBuffer &buffer, VkTexture2D &texture, uint32_t width, uint32_t height);
-    void CreateTexture2D(const String &path, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkTexture2D *pTexture2D);
+    void CreateTexture2D(const String &path, VkTexture2D *pTexture2D);
     void CreateTexture2D(int texWidth, int texHeight, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkTexture2D *pTexture2D);
     void CreateFramebuffer(VkRenderPass renderpass, VkImageView imageView, int width, int height, VkFramebuffer *pFramebuffer);
     void CreateTextureSampler2D(VkSampler *pSampler);
@@ -212,6 +195,24 @@ public:
     void FreeBuffer(VkDeviceBuffer &buffer);
     void DestroySwapchainContextKHR(VkSwapchainContextKHR *pSwapchainContext);
     void DestroyRenderPass(VkRenderPass renderPass);
+
+private:
+    //
+    // About vulkan command buffer.
+    //
+    void BeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags usageFlags);
+    void EndCommandBuffer(VkCommandBuffer commandBuffer);
+    void SyncSubmitQueueWithSubmitInfo(uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers,
+                                       uint32_t waitSemaphoreCount, VkSemaphore *pWaitSemaphores,
+                                       uint32_t signalSemaphoreCount, VkSemaphore *pSignalSemaphores,
+                                       VkPipelineStageFlags *pWaitDstStageMask);
+    void BeginOnceTimeCommandBufferSubmit(VkCommandBuffer *pCommandBuffer);
+    void EndOnceTimeCommandBufferSubmit();
+    void BeginRecordCommandBuffer(VkCommandBuffer commandBuffer);
+    void EndRecordCommandBuffer(VkCommandBuffer commandBuffer);
+    void BeginRenderPass(VkCommandBuffer commandBuffer, uint32_t w, uint32_t h, VkRenderPass renderPass, VkFramebuffer framebuffer);
+    void EndRenderPass(VkCommandBuffer commandBuffer);
+    void QueueWaitIdle(VkQueue queue);
 
 private:
     void InitVulkanDriverContext(); /* Init VulkanContext main */

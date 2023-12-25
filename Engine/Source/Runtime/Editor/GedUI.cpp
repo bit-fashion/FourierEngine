@@ -314,17 +314,12 @@ ImVec2 GedUI::GetWindowSize() {
     return ImGui::GetWindowSize();
 }
 
-void GedUI::DrawTexture2D(const ImTextureID &texture, const ImVec2 &size) {
-    ImGui::Image(texture, size);
+void GedUI::Image(const ImTextureID &texture) {
+    GedUI::Image(texture, GedUI::GetWindowSize());
 }
 
-void GedUI::DrawTexture2DFill(const ImTextureID &texture, int *width, int *height) {
-    ImVec2 windowSize = ImGui::GetContentRegionAvail();
-    if (width != null)
-        *width = windowSize.x;
-    if (height != null)
-        *height = windowSize.y;
-    ImGui::Image(texture, ImVec2(*width, *height));
+void GedUI::Image(const ImTextureID &texture, const ImVec2 &size) {
+    ImGui::Image(texture, size);
 }
 
 void GedUI::BeginViewport(const char *name) {
