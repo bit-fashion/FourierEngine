@@ -1,73 +1,53 @@
-# ************************************************************************ #
-#
-# Copyright (C) 2022 Vincent Luo All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# ************************************************************************ #
+#/ -------------------------------------------------------------------------------- \#
+#|                                                                                  |#
+#|    Copyright (C) 2023 bit-fashion                                                |#
+#|                                                                                  |#
+#|    This program is free software: you can redistribute it and/or modify          |#
+#|    it under the terms of the GNU General Public License as published by          |#
+#|    the Free Software Foundation, either version 3 of the License, or             |#
+#|    (at your option) any later version.                                           |#
+#|                                                                                  |#
+#|    This program is distributed in the hope that it will be useful,               |#
+#|    but WITHOUT ANY WARRANTY; without even the implied warranty of                |#
+#|    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                 |#
+#|    GNU General Public License for more details.                                  |#
+#|                                                                                  |#
+#|    You should have received a copy of the GNU General Public License             |#
+#|    along with this program.  If not, see <https://www.gnu.org/licenses/>.        |#
+#|                                                                                  |#
+#|    This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.    |#
+#|    This is free software, and you are welcome to redistribute it                 |#
+#|    under certain conditions; type `show c' for details.                          |#
+#|                                                                                  |#
+#\ -------------------------------------------------------------------------------- /#
 
-# Creates on 2022/9/14. #
+# //////////////////////////////////////////////////////////////////////////////////////
+# ///
+# /// File:           CMakeLists.txt
+# /// Create Time:    2023/12/27 16:47
+# /// Author:         bit-fashion
+# /// EMail:          bit-fashion@hotmail.com
+# ///
+# //////////////////////////////////////////////////////////////////////////////////////
 CMAKE_MINIMUM_REQUIRED(VERSION 3.26)
 PROJECT(VectrafluxEngine)
 
 SET(CMAKE_CXX_STANDARD 23)
-SET(ENGINE_SOURCE_DIRECTORY "${PROJECT_SOURCE_DIR}/Engine/Source")
-SET(ENGINE_THIRD_PARTY_SOURCE_DIRECTORY "${ENGINE_SOURCE_DIRECTORY}/ThirdParty")
-SET(ENGINE_RUNTIME_SOURCE_DIRECTORY "${ENGINE_SOURCE_DIRECTORY}/Runtime")
 
-#[[ Configure third party include of system ]]
 INCLUDE_DIRECTORIES(SYSTEM
-  "${ENGINE_SOURCE_DIRECTORY}/Resource"
-  "${ENGINE_SOURCE_DIRECTORY}/Include"
-  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}"
-  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/vulkan/include"
-  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/glfw/include"
-  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/glad/include"
-  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/glm"
-  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui"
+  ${PROJECT_SOURCE_DIR}/Engine/Source/Include
+  ${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty/GLFw/include
 )
 
-INCLUDE_DIRECTORIES(
-  "${ENGINE_SOURCE_DIRECTORY}/Runtime"
-)
-
-#[[ Configure link directories ]]
 LINK_DIRECTORIES(
-  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/vulkan"
-  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/glfw/lib-mingw-w64"
+  ${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty/GLFW/lib-mingw-w64
 )
 
 ADD_EXECUTABLE(${PROJECT_NAME}
-  "${ENGINE_SOURCE_DIRECTORY}/Include/vfluxpch.cpp"
-  "${ENGINE_SOURCE_DIRECTORY}/Include/Debug.cpp"
-  "${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Main.cpp"
-  "${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Editor/GedUI.cpp"
-  "${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Window/Window.cpp"
-  #[[ Render ]]
-  "${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Render/Camera/OrthoCamera.cpp"
-  "${ENGINE_RUNTIME_SOURCE_DIRECTORY}/Render/Drivers/Vulkan/VulkanContext.cpp"
-  #[[ Dear ImGUI ]]
-  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/imgui.cpp"
-  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/imgui_draw.cpp"
-  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/imgui_demo.cpp"
-  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/imgui_tables.cpp"
-  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/imgui_widgets.cpp"
-  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/backends/imgui_impl_vulkan.cpp"
-  "${ENGINE_THIRD_PARTY_SOURCE_DIRECTORY}/imgui/backends/imgui_impl_glfw.cpp"
+  # [[ Main ]]
+  ${PROJECT_SOURCE_DIR}/Engine/Source/Runtime/EngineMain.cpp
 )
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
-  vulkan-1
   glfw3
-  imm32
 )
