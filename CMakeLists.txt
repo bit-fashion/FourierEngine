@@ -45,7 +45,7 @@ LINK_DIRECTORIES(
 
 ADD_EXECUTABLE(${PROJECT_NAME}
   # [[ Main ]]
-  ${PROJECT_SOURCE_DIR}/Engine/Source/Runtime/EngineMain.cpp
+  ${PROJECT_SOURCE_DIR}/Engine/Source/Runtime/Main.cpp
 )
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
