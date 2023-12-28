@@ -30,7 +30,7 @@
 # ///
 # //////////////////////////////////////////////////////////////////////////////////////
 CMAKE_MINIMUM_REQUIRED(VERSION 3.26)
-PROJECT(VectrafluxEngine)
+PROJECT(AuroraEngine)
 
 SET(CMAKE_CXX_STANDARD 23)
 
@@ -47,7 +47,7 @@ LINK_DIRECTORIES(
 
 ADD_EXECUTABLE(${PROJECT_NAME}
   # [[ Main ]]
-  ${PROJECT_SOURCE_DIR}/Engine/Source/Runtime/Main.cpp
+        ${PROJECT_SOURCE_DIR}/Engine/Source/Runtime/AuroraMain.cpp
 )
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
