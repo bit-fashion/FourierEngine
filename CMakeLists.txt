@@ -36,11 +36,13 @@ SET(CMAKE_CXX_STANDARD 23)
 
 INCLUDE_DIRECTORIES(SYSTEM
   ${PROJECT_SOURCE_DIR}/Engine/Source/Include
-  ${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty/GLFw/include
+  ${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty/glfw/include
+  ${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty/vulkan/include
 )
 
 LINK_DIRECTORIES(
-  ${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty/GLFW/lib-mingw-w64
+  ${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty/glfw/lib-mingw-w64
+  ${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty/vulkan
 )
 
 ADD_EXECUTABLE(${PROJECT_NAME}
@@ -50,4 +52,5 @@ ADD_EXECUTABLE(${PROJECT_NAME}
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
   glfw3
+  vulkan-1
 )
