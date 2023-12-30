@@ -36,9 +36,11 @@
 
 namespace Date
 {
-    __always_inline static void Format(char *fmt, size_t size)
+    /** 日期格式化 */
+    __always_inline
+    static void Format(char *buf, const char *fmt, size_t size)
     {
         std::time_t time = std::time(NULL);
-        std::strftime(fmt, size, "%Y-%m-%d %H:%M:%S", std::localtime(&time));
+        std::strftime(buf, size, fmt, std::localtime(&time));
     }
 }

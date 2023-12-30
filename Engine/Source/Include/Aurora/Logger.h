@@ -50,7 +50,7 @@ namespace Logger
          * level
          */
         char time[32];
-        Date::Format(time, sizeof(time));
+        Date::Format(time, "%Y-%m-%d %H:%M:%S", sizeof(time));
         System::VaConsoleWrite(strifmtc("{} [{}{}{}] - {}\n",
                                         time,
                                         color,

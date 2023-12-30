@@ -42,18 +42,31 @@
 
 namespace System
 {
-    /**
-     * 以可变参数的形式传参，向控制台格式化打印输出
-     */
-    __always_inline static void VaConsoleWrite(const char *fmt, va_list va)
+    /** 获取当前时间戳（毫秒） */
+    static uint64_t GetTimeMillis()
+    {
+        auto currentTime = std::chrono::system_clock::now();
+        auto currentTimeMs = std::chrono::time_point_cast<std::chrono::milliseconds>(currentTime);
+        return currentTimeMs.time_since_epoch().count();
+    }
+
+    /** 获取当前时间戳（纳秒） */
+    static uint64_t GetTimeNanos()
+    {
+        auto currentTime = std::chrono::system_clock::now();
+        auto currentTimeNs = std::chrono::time_point_cast<std::chrono::nanoseconds>(currentTime);
+        return currentTimeNs.time_since_epoch().count();
+    }
+
+    /** 以可变参数的形式传参，向控制台格式化打印输出 */
+    __always_inline
+    static void VaConsoleWrite(const char *fmt, va_list va)
     {
         vprintf(fmt, va);
         fflush(stdout); /* 立即刷新缓冲区 */
     }
 
-    /**
-     * 向控制台格式化打印输出
-     */
+    /** 向控制台格式化打印输出 */
     static void ConsoleWrite(const char *fmt, ...)
     {
         va_list va;
