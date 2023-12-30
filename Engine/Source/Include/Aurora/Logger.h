@@ -23,7 +23,7 @@
 
 /* -------------------------------------------------------------------------------- *\
 |*                                                                                  *|
-|* File:           Typedef.h                                                        *|
+|* File:           Logger.h                                                         *|
 |* Create Time:    2023/12/30 21:07                                                 *|
 |* Author:         bit-fashion                                                      *|
 |* EMail:          bit-fashion@hotmail.com                                          *|
@@ -31,40 +31,68 @@
 \* -------------------------------------------------------------------------------- */
 #pragma once
 
-#include <vector>
-#include <unordered_map>
-#include <string>
-#include <format>
-#include <stdarg.h>
+#include "Color.h"
+#include "System.h"
+#include "Date.h"
+// std
+#include <stacktrace>
 
-/* 强制内联 */
-#ifndef __always_inline
-#  define __always_inline inline __attribute__((__always_inline__))
-#endif
-
-/** std::vector<T> 标准库封装 */
-template<typename T>
-class Vector : public std::vector<T>{
-public:
-    using std::vector<T>::vector;
-    __always_inline void remove(size_t index)
-    {
-      this->erase(this->begin() + index);
-    }
-};
-
-/** std::unordered_map<K, V> 标准库封装 */
-template<typename K, typename V>
-class HashMap : public std::unordered_map<K, V> {
-public:
-    using std::unordered_map<K, V>::unordered_map;
-};
-
-/** 字符串格式化 */
-template<typename ...Args>
-__always_inline static std::string strifmt(std::string fmt, Args&& ...args)
+namespace Logger
 {
-    return std::vformat(fmt, std::make_format_args(args...));
-}
+    __always_inline
+    static void __VaLoggerConsoleWrite(const char *level, const char *fmt, const char *color, va_list va)
+    {
+        /*
+         * color
+         * datetime
+         * function
+         * fmt
+         * level
+         */
+        char time[32];
+        Date::Format(time, sizeof(time));
+        System::VaConsoleWrite(strifmtc("{} [{}{}{}] - {}\n",
+                                        time,
+                                        color,
+                                        level,
+                                        ASCII_COLOR_RESET,
+                                        fmt), va);
 
-#define strifmtc(fmt, ...) ( strifmt(fmt, __VA_ARGS__).c_str() )
+    }
+
+    /** Info 日志打印 */
+    static void Info(const char *fmt, ...)
+    {
+        va_list va;
+        va_start(va, fmt);
+        __VaLoggerConsoleWrite("INFO ", fmt, ASCII_COLOR_BLUE, va);
+        va_end(va);
+    }
+
+    /** Debug 日志打印 */
+    static void Debug(const char *fmt, ...)
+    {
+        va_list va;
+        va_start(va, fmt);
+        __VaLoggerConsoleWrite("DEBUG", fmt, ASCII_COLOR_BLUE, va);
+        va_end(va);
+    }
+
+    /** Warning 日志打印 */
+    static void Warn(const char *fmt, ...)
+    {
+        va_list va;
+        va_start(va, fmt);
+        __VaLoggerConsoleWrite("WARN ", fmt, ASCII_COLOR_YELLOW, va);
+        va_end(va);
+    }
+
+    /** Error 日志打印 */
+    static void Error(const char *fmt, ...)
+    {
+        va_list va;
+        va_start(va, fmt);
+        __VaLoggerConsoleWrite("ERROR", fmt, ASCII_COLOR_RED, va);
+        va_end(va);
+    }
+}

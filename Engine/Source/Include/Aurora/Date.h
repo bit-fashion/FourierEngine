@@ -30,3 +30,15 @@
 |*                                                                                  *|
 \* -------------------------------------------------------------------------------- */
 #pragma once
+
+#include <time.h>
+#include "Typedef.h"
+
+namespace Date
+{
+    __always_inline static void Format(char *fmt, size_t size)
+    {
+        std::time_t time = std::time(NULL);
+        std::strftime(fmt, size, "%Y-%m-%d %H:%M:%S", std::localtime(&time));
+    }
+}

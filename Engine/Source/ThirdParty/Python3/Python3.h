@@ -26,7 +26,7 @@
 #pragma once
 
 #include <Python.h>
-#include <Typedef.h>
+#include <Aurora/Typedef.h>
 #include <stdarg.h>
 
 #define Python3_Build_Value(signature, ...) ( Py_BuildValue(signature, __VA_ARGS__) )

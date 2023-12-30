@@ -32,7 +32,7 @@
 #pragma once
 
 #include <GLFW/glfw3.h>
-#include <System.h>
+#include <Aurora/System.h>
 
 class Window {
 public:

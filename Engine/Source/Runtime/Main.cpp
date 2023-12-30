@@ -30,9 +30,12 @@
 |*                                                                                  *|
 \* -------------------------------------------------------------------------------- */
 #include "Window/Window.h"
-#include <Logger.h>
+#include <Aurora/Logger.h>
+// std
+#include <iostream>
 
 int main()
 {
+    Logger::Info("Hello~!");
     return 0;
 }

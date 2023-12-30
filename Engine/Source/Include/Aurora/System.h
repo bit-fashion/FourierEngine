@@ -31,16 +31,17 @@
 \* -------------------------------------------------------------------------------- */
 #pragma once
 
-#include <Typedef.h>
+#include "Typedef.h"
+// std
 #include <chrono>
+
+#if defined(_WIN32)
+#  include <windows.h>
+#  include <dbghelp.h>
+#endif
 
 namespace System
 {
-    static std::chrono::high_resolution_clock::rep GetTime()
-    {
-        std::chrono::high_resolution_clock::now();
-    }
-
     /**
      * 以可变参数的形式传参，向控制台格式化打印输出
      */
