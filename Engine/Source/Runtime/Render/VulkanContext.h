@@ -21,17 +21,20 @@
 |*                                                                                  *|
 \* -------------------------------------------------------------------------------- */
 
-//////////////////////////////////////////////////////////////////////////////////////
-///
-/// File:           Main.cpp
-/// Create Time:    2023/12/27 16:47
-/// Author:         bit-fashion
-/// EMail:          bit-fashion@hotmail.com
-///
-//////////////////////////////////////////////////////////////////////////////////////
-#include <iostream>
+/* -------------------------------------------------------------------------------- *\
+|*                                                                                  *|
+|* File:           VulkanContext.h                                                  *|
+|* Create Time:    2023/12/30 20:21                                                 *|
+|* Author:         bit-fashion                                                      *|
+|* EMail:          bit-fashion@hotmail.com                                          *|
+|*                                                                                  *|
+\* -------------------------------------------------------------------------------- */
+#pragma once
 
-int main() {
-    std::cout << "Hello, World!" << std::endl;
-    return 0;
-}
+#include <vulkan/vulkan.h>
+
+class VulkanContext {
+public:
+    VulkanContext();
+   ~VulkanContext();
+};
