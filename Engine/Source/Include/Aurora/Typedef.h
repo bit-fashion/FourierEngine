@@ -43,7 +43,7 @@
 #  define __always_inline inline __attribute__((__always_inline__))
 #endif
 
-/** std::vector<T> 标准库封装 */
+/* std::vector<T> 标准库封装 */
 template<typename T>
 class Vector : public std::vector<T>{
 public:
@@ -54,14 +54,14 @@ public:
     }
 };
 
-/** std::unordered_map<K, V> 标准库封装 */
+/* std::unordered_map<K, V> 标准库封装 */
 template<typename K, typename V>
 class HashMap : public std::unordered_map<K, V> {
 public:
     using std::unordered_map<K, V>::unordered_map;
 };
 
-/** 字符串格式化 */
+/* 字符串格式化 */
 template<typename ...Args>
 __always_inline static std::string strifmt(std::string fmt, Args&& ...args)
 {
@@ -69,3 +69,12 @@ __always_inline static std::string strifmt(std::string fmt, Args&& ...args)
 }
 
 #define strifmtc(fmt, ...) ( strifmt(fmt, __VA_ARGS__).c_str() )
+
+/* NULl 宏定义 */
+#ifndef null
+#  if defined(VK_VERSION_1_0)
+#    define null VK_NULL_HANDLE
+#  else
+#    define null NULL
+#  endif
+#endif

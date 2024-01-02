@@ -32,9 +32,19 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+#include <Aurora/Logger.h>
 
+/**
+ * vulkan 上下文
+ */
 class VulkanContext {
 public:
     VulkanContext();
    ~VulkanContext();
+
+private:
+    void InitVulkanContextInstance();
+
+private:
+    VkInstance m_Instance;
 };

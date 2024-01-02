@@ -23,51 +23,12 @@
 
 /* -------------------------------------------------------------------------------- *\
 |*                                                                                  *|
-|* File:           VulkanContext.cpp                                                *|
-|* Create Time:    2023/12/30 20:21                                                 *|
+|* File:           Engine.h                                                         *|
+|* Create Time:    2024/01/03 01:22                                                 *|
 |* Author:         bit-fashion                                                      *|
 |* EMail:          bit-fashion@hotmail.com                                          *|
 |*                                                                                  *|
 \* -------------------------------------------------------------------------------- */
-#include "VulkanContext.h"
-#include "VulkanUtils.h"
-// aurora
-#include <Aurora/Engine.h>
+#pragma once
 
-VulkanContext::VulkanContext()
-{
-    InitVulkanContextInstance();
-}
-
-VulkanContext::~VulkanContext()
-{
-
-}
-
-void VulkanContext::InitVulkanContextInstance()
-{
-    VkApplicationInfo applicationInfo = {};
-    applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    applicationInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.pApplicationName = AURORA_ENGINE_NAME;
-    applicationInfo.engineVersion =  VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.pEngineName = AURORA_ENGINE_NAME;
-    applicationInfo.apiVersion = VK_VERSION_1_3;
-
-    VkInstanceCreateInfo instanceCreateInfo = {};
-    instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    instanceCreateInfo.pApplicationInfo = &applicationInfo;
-
-    Vector<const char *> requiredExtensions;
-    VulkanUtils::GetVulkanContextInstanceRequiredExtensions(requiredExtensions);
-    instanceCreateInfo.enabledExtensionCount = std::size(requiredExtensions);
-    instanceCreateInfo.ppEnabledExtensionNames = std::data(requiredExtensions);
-
-    Vector<const char *> requiredLayers;
-    VulkanUtils::GetVulkanContextInstanceRequiredLayers(requiredLayers);
-    instanceCreateInfo.enabledLayerCount = std::size(requiredLayers);
-    instanceCreateInfo.ppEnabledLayerNames = std::data(requiredLayers);
-
-    vkAURACreate(Instance, &instanceCreateInfo, null, &m_Instance);
-}
-
+#define AURORA_ENGINE_NAME "AuroraEngine"

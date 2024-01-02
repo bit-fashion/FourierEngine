@@ -36,6 +36,6 @@
 
 int main()
 {
-    Logger::Info("Hello~!");
+    Logger::ThrowRuntimeError("Create %s failed!", "Instance");
     return 0;
 }

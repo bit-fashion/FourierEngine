@@ -35,7 +35,7 @@
 #include "System.h"
 #include "Date.h"
 // std
-#include <stacktrace>
+#include <stdexcept>
 
 namespace Logger
 {
@@ -93,6 +93,16 @@ namespace Logger
         va_list va;
         va_start(va, fmt);
         __VaLoggerConsoleWrite("ERROR", fmt, ASCII_COLOR_RED, va);
+        va_end(va);
+    }
+
+    static void ThrowRuntimeError(const char *fmt, ...)
+    {
+        char message[512];
+        va_list va;
+        va_start(va, fmt);
+        vsnprintf(message, sizeof(message), fmt, va);
+        throw std::runtime_error(std::string(message));
         va_end(va);
     }
 }
