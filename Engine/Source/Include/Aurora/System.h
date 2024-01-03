@@ -40,6 +40,10 @@
 #  include <dbghelp.h>
 #endif
 
+#ifndef DEBUG
+#  define DEBUG
+#endif
+
 namespace System
 {
     /** 获取当前时间戳（毫秒） */
@@ -59,19 +63,14 @@ namespace System
     }
 
     /** 以可变参数的形式传参，向控制台格式化打印输出 */
-    __always_inline
-    static void VaConsoleWrite(const char *fmt, va_list va)
+    static void VaConsoleWrite(std::string_view fmt, std::format_args args)
     {
-        vprintf(fmt, va);
-        fflush(stdout); /* 立即刷新缓冲区 */
+        std::cout << vstrifmt(fmt, args) << std::endl;
     }
 
-    /** 向控制台格式化打印输出 */
-    static void ConsoleWrite(const char *fmt, ...)
+    template<typename ...Args>
+    static void ConsoleWrite(std::string_view fmt, Args&& ...args)
     {
-        va_list va;
-        va_start(va, fmt);
-        VaConsoleWrite(fmt, va);
-        va_end(va);
+        VConsoleWrite(fmt, std::make_format_args(args...));
     }
 }

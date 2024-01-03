@@ -31,9 +31,12 @@
 \* -------------------------------------------------------------------------------- */
 #pragma once
 
+// aurora
+#include <Aurora/Engine.h>
+
 #define vkAURACreate(name, ...) \
     if (vkCreate##name(__VA_ARGS__) != VK_SUCCESS) \
-        Logger::ThrowRuntimeError("VulkanContext create vk {} object failed!", #name)
+        Logger::Error("VulkanContext create vk {} object failed!", #name)
 
 namespace VulkanUtils
 {
@@ -47,9 +50,11 @@ namespace VulkanUtils
         Vector<VkExtensionProperties> properties(count);
         vkEnumerateInstanceExtensionProperties(null, &count, std::data(properties));
 
+#ifdef DEBUG
         Logger::Debug("Vulkan instance support extensions: ");
         for (const auto &property : properties)
-            Logger::Debug("  %s", property.extensionName);
+            Logger::Debug("  {}", property.extensionName);
+#endif
     }
 
     static void GetVulkanContextInstanceRequiredLayers(Vector<const char *> &required)
@@ -59,8 +64,10 @@ namespace VulkanUtils
         Vector<VkLayerProperties> properties(count);
         vkEnumerateInstanceLayerProperties(&count, std::data(properties));
 
+#ifdef DEBUG
         Logger::Debug("Vulkan instance support layers: ");
         for (const auto &property : properties)
-            Logger::Debug("  %s", property.layerName);
+            Logger::Debug("  {}", property.layerName);
+#endif
     }
 }

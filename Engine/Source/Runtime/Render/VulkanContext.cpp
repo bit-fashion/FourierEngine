@@ -31,8 +31,6 @@
 \* -------------------------------------------------------------------------------- */
 #include "VulkanContext.h"
 #include "VulkanUtils.h"
-// aurora
-#include <Aurora/Engine.h>
 
 VulkanContext::VulkanContext(Window *p_win) : m_Window(p_win)
 {

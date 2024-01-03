@@ -38,5 +38,6 @@ int main()
 {
     Window window(600, 800, "AuroraEngine");
     VulkanContext vulkanContext(&window);
+
     return 0;
 }

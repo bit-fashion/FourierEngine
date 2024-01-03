@@ -62,10 +62,16 @@ public:
 };
 
 /* 字符串格式化 */
-template<typename ...Args>
-__always_inline static std::string strifmt(std::string fmt, Args&& ...args)
+__always_inline
+static std::string vstrifmt(std::string_view fmt, std::format_args args)
 {
-    return std::vformat(fmt, std::make_format_args(args...));
+    return std::vformat(fmt, args);
+}
+
+template<typename ...Args>
+__always_inline static std::string strifmt(std::string_view fmt, Args&& ...args)
+{
+    return vstrifmt(fmt, std::make_format_args(args...));
 }
 
 #define strifmtc(fmt, ...) ( strifmt(fmt, __VA_ARGS__).c_str() )

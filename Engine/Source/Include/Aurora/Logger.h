@@ -39,8 +39,7 @@
 
 namespace Logger
 {
-    __always_inline
-    static void __VaLoggerConsoleWrite(const char *level, const char *fmt, const char *color, va_list va)
+    static void _vprintlog(std::string_view level, std::string_view fmt, std::string_view color, std::format_args args)
     {
         /*
          * color
@@ -51,58 +50,37 @@ namespace Logger
          */
         char time[32];
         Date::Format(time, "%Y-%m-%d %H:%M:%S", sizeof(time));
-        System::VaConsoleWrite(strifmtc("{} [{}{}{}] - {}\n",
-                                        time,
-                                        color,
-                                        level,
-                                        ASCII_COLOR_RESET,
-                                        fmt), va);
-
+        std::string preprocessor = strifmtc("{} [{}{}{}] - {}",
+                                            time,
+                                            color,
+                                            level,
+                                            ASCII_COLOR_RESET,
+                                            fmt);
+        /* println */
+        System::VaConsoleWrite(preprocessor, args);
     }
 
-    /** Info 日志打印 */
-    static void Info(const char *fmt, ...)
+    template<typename ...Args>
+    static void Info(std::string_view fmt, Args&& ...args)
     {
-        va_list va;
-        va_start(va, fmt);
-        __VaLoggerConsoleWrite("INFO ", fmt, ASCII_COLOR_BLUE, va);
-        va_end(va);
+        _vprintlog("INFO ", fmt, ASCII_COLOR_BLUE, std::make_format_args(args...));
     }
 
-    /** Debug 日志打印 */
-    static void Debug(const char *fmt, ...)
+    template<typename ...Args>
+    static void Debug(std::string_view fmt, Args&& ...args)
     {
-        va_list va;
-        va_start(va, fmt);
-        __VaLoggerConsoleWrite("DEBUG", fmt, ASCII_COLOR_BLUE, va);
-        va_end(va);
+        _vprintlog("DEBUG", fmt, ASCII_COLOR_BLUE, std::make_format_args(args...));
     }
 
-    /** Warning 日志打印 */
-    static void Warn(const char *fmt, ...)
+    template<typename ...Args>
+    static void Warn(std::string_view fmt, Args&& ...args)
     {
-        va_list va;
-        va_start(va, fmt);
-        __VaLoggerConsoleWrite("WARN ", fmt, ASCII_COLOR_YELLOW, va);
-        va_end(va);
+        _vprintlog("WARN ", fmt, ASCII_COLOR_YELLOW, std::make_format_args(args...));
     }
 
-    /** Error 日志打印 */
-    static void Error(const char *fmt, ...)
+    template<typename ...Args>
+    static void Error(std::string_view fmt, Args&& ...args)
     {
-        va_list va;
-        va_start(va, fmt);
-        __VaLoggerConsoleWrite("ERROR", fmt, ASCII_COLOR_RED, va);
-        va_end(va);
-    }
-
-    static void ThrowRuntimeError(const char *fmt, ...)
-    {
-        char message[512];
-        va_list va;
-        va_start(va, fmt);
-        vsnprintf(message, sizeof(message), fmt, va);
-        throw std::runtime_error(std::string(message));
-        va_end(va);
+        _vprintlog("ERROR", fmt, ASCII_COLOR_RED, std::make_format_args(args...));
     }
 }
