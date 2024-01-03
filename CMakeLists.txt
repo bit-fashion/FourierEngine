@@ -40,6 +40,10 @@ INCLUDE_DIRECTORIES(SYSTEM
   ${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty/vulkan/include
 )
 
+INCLUDE_DIRECTORIES(
+  ${PROJECT_SOURCE_DIR}/Engine/Source/Runtime
+)
+
 LINK_DIRECTORIES(
   ${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty/glfw/lib-mingw-w64
   ${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty/vulkan

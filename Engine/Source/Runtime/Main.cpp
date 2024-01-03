@@ -29,13 +29,14 @@
 |* EMail:          bit-fashion@hotmail.com                                          *|
 |*                                                                                  *|
 \* -------------------------------------------------------------------------------- */
-#include "Window/Window.h"
+#include "Render/VulkanContext.h"
 #include <Aurora/Logger.h>
 // std
 #include <iostream>
 
 int main()
 {
-    Logger::ThrowRuntimeError("Create %s failed!", "Instance");
+    Window window(600, 800, "AuroraEngine");
+    VulkanContext vulkanContext(&window);
     return 0;
 }

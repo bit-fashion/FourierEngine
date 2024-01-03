@@ -33,18 +33,20 @@
 
 #include <vulkan/vulkan.h>
 #include <Aurora/Logger.h>
+#include "Window/Window.h"
 
 /**
  * vulkan 上下文
  */
 class VulkanContext {
 public:
-    VulkanContext();
+    VulkanContext(Window *p_win);
    ~VulkanContext();
 
 private:
     void InitVulkanContextInstance();
 
 private:
+    Window *m_Window;
     VkInstance m_Instance;
 };

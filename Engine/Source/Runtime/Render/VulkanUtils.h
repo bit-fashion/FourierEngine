@@ -37,13 +37,30 @@
 
 namespace VulkanUtils
 {
+    /* VK 分配器 */
+    static VkAllocationCallbacks *Allocator = null;
+
     static void GetVulkanContextInstanceRequiredExtensions(Vector<const char *> &required)
     {
+        uint32_t count;
+        vkEnumerateInstanceExtensionProperties(null, &count, null);
+        Vector<VkExtensionProperties> properties(count);
+        vkEnumerateInstanceExtensionProperties(null, &count, std::data(properties));
 
+        Logger::Debug("Vulkan instance support extensions: ");
+        for (const auto &property : properties)
+            Logger::Debug("  %s", property.extensionName);
     }
 
     static void GetVulkanContextInstanceRequiredLayers(Vector<const char *> &required)
     {
+        uint32_t count;
+        vkEnumerateInstanceLayerProperties(&count, null);
+        Vector<VkLayerProperties> properties(count);
+        vkEnumerateInstanceLayerProperties(&count, std::data(properties));
 
+        Logger::Debug("Vulkan instance support layers: ");
+        for (const auto &property : properties)
+            Logger::Debug("  %s", property.layerName);
     }
 }

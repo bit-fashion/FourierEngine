@@ -34,14 +34,14 @@
 // aurora
 #include <Aurora/Engine.h>
 
-VulkanContext::VulkanContext()
+VulkanContext::VulkanContext(Window *p_win) : m_Window(p_win)
 {
     InitVulkanContextInstance();
 }
 
 VulkanContext::~VulkanContext()
 {
-
+    vkDestroyInstance(m_Instance, VulkanUtils::Allocator);
 }
 
 void VulkanContext::InitVulkanContextInstance()
@@ -68,6 +68,6 @@ void VulkanContext::InitVulkanContextInstance()
     instanceCreateInfo.enabledLayerCount = std::size(requiredLayers);
     instanceCreateInfo.ppEnabledLayerNames = std::data(requiredLayers);
 
-    vkAURACreate(Instance, &instanceCreateInfo, null, &m_Instance);
+    vkAURACreate(Instance, &instanceCreateInfo, VulkanUtils::Allocator, &m_Instance);
 }
 
