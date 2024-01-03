@@ -60,29 +60,14 @@ void VulkanContext::InitVulkanContextInstance()
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instanceCreateInfo.pApplicationInfo = &applicationInfo;
 
-    Vector<VkExtensionProperties> extensionProperties;
-    VkUtils::EnumerateInstanceExtensionProperties(extensionProperties);
-
-    /* enable extension properties */
     Vector<const char *> enableExtensionProperties;
-    uint32_t glfwRequiredInstanceExtensionCount;
-
-    /* 获取 glfw 必要扩展 */
-    const char **glfwRequiredInstanceExtensions = glfwGetRequiredInstanceExtensions(&glfwRequiredInstanceExtensionCount);
-    for (int i = 0; i < glfwRequiredInstanceExtensionCount; ++i)
-        enableExtensionProperties.push_back(glfwRequiredInstanceExtensions[i]);
-
+    VkUtils::GetInstanceRequiredEnableExtensionProperties(enableExtensionProperties);
     instanceCreateInfo.enabledExtensionCount = std::size(enableExtensionProperties);
     instanceCreateInfo.ppEnabledExtensionNames = std::data(enableExtensionProperties);
 
-    Vector<VkLayerProperties> layerProperties;
-    VkUtils::EnumerateInstanceLayerProperties(layerProperties);
-
     /* enable layer properties */
     Vector<const char *> enableLayerProperties;
-#ifdef AURORA_ENGINE_ENABLE_DEBUG
-    enableLayerProperties.push_back("VK_LAYER_KHRONOS_validation");
-#endif
+    VkUtils::GetInstanceRequiredEnableLayerProperties(enableLayerProperties);
     instanceCreateInfo.enabledLayerCount = std::size(enableLayerProperties);
     instanceCreateInfo.ppEnabledLayerNames = std::data(enableLayerProperties);
 
@@ -123,20 +108,13 @@ void VulkanContext::InitVulkanContextDevice()
     static VkPhysicalDeviceFeatures features = {};
     deviceCreateInfo.pEnabledFeatures = &features;
 
-    Vector<VkExtensionProperties> deviceExtensionProperties;
-    VkUtils::EnumerateDeviceExtensionProperties(m_PhysicalDevice.device, deviceExtensionProperties);
-
     Vector<const char *> enableDeviceExtensionProperties;
+    VkUtils::GetDeviceRequiredEnableExtensionProperties(m_PhysicalDevice.device, enableDeviceExtensionProperties);
     deviceCreateInfo.enabledExtensionCount = std::size(enableDeviceExtensionProperties);
     deviceCreateInfo.ppEnabledExtensionNames = std::data(enableDeviceExtensionProperties);
 
-    Vector<VkLayerProperties> layerExtensionProperties;
-    VkUtils::EnumerateDeviceLayerProperties(m_PhysicalDevice.device, layerExtensionProperties);
-
     Vector<const char *> enableDeviceLayerProperties;
-#ifdef AURORA_ENGINE_ENABLE_DEBUG
-    enableDeviceLayerProperties.push_back("VK_LAYER_KHRONOS_validation");
-#endif
+    VkUtils::GetDeviceRequiredEnableLayerProperties(m_PhysicalDevice.device, enableDeviceLayerProperties);
     deviceCreateInfo.enabledLayerCount = std::size(enableDeviceLayerProperties);
     deviceCreateInfo.ppEnabledLayerNames = std::data(enableDeviceLayerProperties);
 

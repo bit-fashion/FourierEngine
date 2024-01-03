@@ -230,4 +230,41 @@ namespace VkUtils
         *pQueueFamilyIndices = queueFamilyIndices;
     }
 
+    static void GetInstanceRequiredEnableExtensionProperties(Vector<const char *> &required)
+    {
+        Vector<VkExtensionProperties> properties;
+        EnumerateInstanceExtensionProperties(properties);
+
+        uint32_t glfwRequiredInstanceExtensionCount;
+        const char **glfwRequiredInstanceExtensions = glfwGetRequiredInstanceExtensions(&glfwRequiredInstanceExtensionCount);
+        for (int i = 0; i < glfwRequiredInstanceExtensionCount; ++i)
+            required.push_back(glfwRequiredInstanceExtensions[i]);
+    }
+
+    static void GetInstanceRequiredEnableLayerProperties(Vector<const char *> &required)
+    {
+        Vector<VkLayerProperties> properties;
+        EnumerateInstanceLayerProperties(properties);
+
+#ifdef AURORA_ENGINE_ENABLE_DEBUG
+        required.push_back("VK_LAYER_KHRONOS_validation");
+#endif
+    }
+
+    static void GetDeviceRequiredEnableExtensionProperties(VkPhysicalDevice device, Vector<const char *> &required)
+    {
+        Vector<VkExtensionProperties> properties;
+        EnumerateDeviceExtensionProperties(device, properties);
+    }
+
+    static void GetDeviceRequiredEnableLayerProperties(VkPhysicalDevice device, Vector<const char *> &required)
+    {
+        Vector<VkLayerProperties> properties;
+        EnumerateDeviceLayerProperties(device, properties);
+
+#ifdef AURORA_ENGINE_ENABLE_DEBUG
+        required.push_back("VK_LAYER_KHRONOS_validation");
+#endif
+    }
+
 }
