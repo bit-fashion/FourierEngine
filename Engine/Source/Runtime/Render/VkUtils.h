@@ -147,29 +147,28 @@ namespace VkUtils
                           VK_VERSION_PATCH(property.specVersion));
     }
 
-    static void GetBestPerformancePhysicalDevice(VkInstance instance, VkContextPhysicalDevice *pPhysicalDevice)
+    static void GetBestPerformancePhysicalDevice(VkInstance instance, VkPhysicalDevice *pPhysicalDevice)
     {
         uint32_t count;
-        Vector<VkPhysicalDevice> tmp;
+        Vector<VkPhysicalDevice> devices;
         vkEnumeratePhysicalDevices(instance, &count, null);
-        tmp.resize(count);
-        vkEnumeratePhysicalDevices(instance, &count, std::data(tmp));
+        devices.resize(count);
+        vkEnumeratePhysicalDevices(instance, &count, std::data(devices));
 
-        Vector<VkContextPhysicalDevice> devices;
-        for (const auto &device : tmp) {
+        Logger::Debug("Vulkan available physical device properties: ");
+        for (const auto &device : devices) {
             VkPhysicalDeviceProperties properties;
             vkGetPhysicalDeviceProperties(device, &properties);
-            VkPhysicalDeviceFeatures features;
-            vkGetPhysicalDeviceFeatures(device, &features);
-            devices.emplace_back(device, properties, features);
+            Logger::Debug("  device name: {}", properties.deviceName);
         }
 
-        /* 遍历 layer 属性列表 */
-        Logger::Debug("Vulkan available physical device properties: ");
-        for (const auto &device : devices)
-            Logger::Debug("  device name: {}", device.properties.deviceName);
-
         *pPhysicalDevice = devices[0];
+    }
+
+    static void GetPhysicalDeviceProperties(VkPhysicalDevice device, VkPhysicalDeviceProperties *pProperties, VkPhysicalDeviceFeatures *pFeatures)
+    {
+        vkGetPhysicalDeviceProperties(device, pProperties);
+        vkGetPhysicalDeviceFeatures(device, pFeatures);
     }
 
     static void EnumerateDeviceExtensionProperties(VkPhysicalDevice device, Vector<VkExtensionProperties> &properties)
@@ -266,5 +265,4 @@ namespace VkUtils
         required.push_back("VK_LAYER_KHRONOS_validation");
 #endif
     }
-
 }

@@ -37,10 +37,14 @@ VulkanContext::VulkanContext(Window *p_win) : m_Window(p_win)
     InitVulkanContextInstance();
     InitVulkanContextSurface();
     InitVulkanContextDevice();
+    InitVulkanContextCommandPool();
+    InitVulkanContextDescriptorPool();
 }
 
 VulkanContext::~VulkanContext()
 {
+    vkDestroyDescriptorPool(m_Device, m_DescriptorPool, VkUtils::Allocator);
+    vkDestroyCommandPool(m_Device, m_CommandPool, VkUtils::Allocator);
     vkDestroyDevice(m_Device, VkUtils::Allocator);
     vkDestroySurfaceKHR(m_Instance, m_Surface, VkUtils::Allocator);
     vkDestroyInstance(m_Instance, VkUtils::Allocator);
@@ -82,10 +86,11 @@ void VulkanContext::InitVulkanContextSurface()
 void VulkanContext::InitVulkanContextDevice()
 {
     VkUtils::GetBestPerformancePhysicalDevice(m_Instance, &m_PhysicalDevice);
-    Logger::Debug("Vulkan context physical device using: {}", m_PhysicalDevice.properties.deviceName);
+    VkUtils::GetPhysicalDeviceProperties(m_PhysicalDevice, &m_PhysicalDeviceProperties, &m_PhysicalDeviceFeatures);
+    Logger::Debug("Vulkan context physical device using: {}", m_PhysicalDeviceProperties.deviceName);
 
     VkUtils::QueueFamilyIndices queueFamilyIndices;
-    VkUtils::FindQueueFamilyIndices(m_PhysicalDevice.device, m_Surface, &queueFamilyIndices);
+    VkUtils::FindQueueFamilyIndices(m_PhysicalDevice, m_Surface, &queueFamilyIndices);
     m_GraphicsQueueFamilyIndex = queueFamilyIndices.graphicsQueueFamily;
     m_PresentQueueFamilyIndex = queueFamilyIndices.presentQueueFamily;
 
@@ -109,18 +114,54 @@ void VulkanContext::InitVulkanContextDevice()
     deviceCreateInfo.pEnabledFeatures = &features;
 
     Vector<const char *> enableDeviceExtensionProperties;
-    VkUtils::GetDeviceRequiredEnableExtensionProperties(m_PhysicalDevice.device, enableDeviceExtensionProperties);
+    VkUtils::GetDeviceRequiredEnableExtensionProperties(m_PhysicalDevice, enableDeviceExtensionProperties);
     deviceCreateInfo.enabledExtensionCount = std::size(enableDeviceExtensionProperties);
     deviceCreateInfo.ppEnabledExtensionNames = std::data(enableDeviceExtensionProperties);
 
     Vector<const char *> enableDeviceLayerProperties;
-    VkUtils::GetDeviceRequiredEnableLayerProperties(m_PhysicalDevice.device, enableDeviceLayerProperties);
+    VkUtils::GetDeviceRequiredEnableLayerProperties(m_PhysicalDevice, enableDeviceLayerProperties);
     deviceCreateInfo.enabledLayerCount = std::size(enableDeviceLayerProperties);
     deviceCreateInfo.ppEnabledLayerNames = std::data(enableDeviceLayerProperties);
 
-    vkCheckCreate(Device, m_PhysicalDevice.device, &deviceCreateInfo, VkUtils::Allocator, &m_Device);
+    vkCheckCreate(Device, m_PhysicalDevice, &deviceCreateInfo, VkUtils::Allocator, &m_Device);
 
     /* 获取队列 */
     vkGetDeviceQueue(m_Device, m_GraphicsQueueFamilyIndex, 0, &m_GraphicsQueue);
     vkGetDeviceQueue(m_Device, m_PresentQueueFamilyIndex, 0, &m_PresentQueue);
+}
+
+void VulkanContext::InitVulkanContextCommandPool()
+{
+    VkCommandPoolCreateInfo commandPoolCreateInfo = {};
+    commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    commandPoolCreateInfo.queueFamilyIndex = m_GraphicsQueueFamilyIndex;
+    commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+    vkCheckCreate(CommandPool, m_Device, &commandPoolCreateInfo, VkUtils::Allocator, &m_CommandPool);
+}
+
+void VulkanContext::InitVulkanContextDescriptorPool()
+{
+    std::vector<VkDescriptorPoolSize> poolSizes = {
+            {VK_DESCRIPTOR_TYPE_SAMPLER,                64},
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 64},
+            {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          64},
+            {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          64},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,   64},
+            {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,   64},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         64},
+            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         64},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 64},
+            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 64},
+            {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,       64}
+    };
+
+    VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
+    descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    descriptorPoolCreateInfo.poolSizeCount = std::size(poolSizes);
+    descriptorPoolCreateInfo.pPoolSizes = std::data(poolSizes);
+    descriptorPoolCreateInfo.maxSets = 1024 * std::size(poolSizes);
+    descriptorPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+
+    vkCheckCreate(DescriptorPool, m_Device, &descriptorPoolCreateInfo, VkUtils::Allocator, &m_DescriptorPool);
 }
