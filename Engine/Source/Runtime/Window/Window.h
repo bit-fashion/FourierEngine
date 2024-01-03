@@ -37,7 +37,9 @@
 class Window {
 public:
     Window(uint32_t width, uint32_t height, const char *title);
-   ~Window() = default;
+   ~Window();
+
+   GLFWwindow *GetHWIN() const { return m_HWIN; }
 
 private:
     uint32_t m_Width;

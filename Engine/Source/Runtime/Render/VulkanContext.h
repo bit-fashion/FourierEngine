@@ -35,6 +35,12 @@
 #include <Aurora/Logger.h>
 #include "Window/Window.h"
 
+struct VkContextPhysicalDevice {
+    VkPhysicalDevice device;
+    VkPhysicalDeviceProperties properties;
+    VkPhysicalDeviceFeatures features;
+};
+
 /**
  * vulkan 上下文
  */
@@ -45,8 +51,18 @@ public:
 
 private:
     void InitVulkanContextInstance();
+    void InitVulkanContextSurface();
+    void InitVulkanContextDevice();
 
 private:
     Window *m_Window;
+    VkContextPhysicalDevice m_PhysicalDevice;
+    uint32_t m_GraphicsQueueFamilyIndex;
+    VkQueue m_GraphicsQueue;
+    uint32_t m_PresentQueueFamilyIndex;
+    VkQueue m_PresentQueue;
+
+    VkDevice m_Device;
+    VkSurfaceKHR m_Surface;
     VkInstance m_Instance;
 };

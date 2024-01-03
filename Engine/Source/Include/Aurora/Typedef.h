@@ -81,6 +81,6 @@ __always_inline static std::string strifmt(std::string_view fmt, Args&& ...args)
 #  if defined(VK_VERSION_1_0)
 #    define null VK_NULL_HANDLE
 #  else
-#    define null NULL
+#    define null nullptr
 #  endif
 #endif

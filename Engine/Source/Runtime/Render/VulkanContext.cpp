@@ -30,16 +30,20 @@
 |*                                                                                  *|
 \* -------------------------------------------------------------------------------- */
 #include "VulkanContext.h"
-#include "VulkanUtils.h"
+#include "VkUtils.h"
 
 VulkanContext::VulkanContext(Window *p_win) : m_Window(p_win)
 {
     InitVulkanContextInstance();
+    InitVulkanContextSurface();
+    InitVulkanContextDevice();
 }
 
 VulkanContext::~VulkanContext()
 {
-    vkDestroyInstance(m_Instance, VulkanUtils::Allocator);
+    vkDestroyDevice(m_Device, VkUtils::Allocator);
+    vkDestroySurfaceKHR(m_Instance, m_Surface, VkUtils::Allocator);
+    vkDestroyInstance(m_Instance, VkUtils::Allocator);
 }
 
 void VulkanContext::InitVulkanContextInstance()
@@ -56,16 +60,89 @@ void VulkanContext::InitVulkanContextInstance()
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instanceCreateInfo.pApplicationInfo = &applicationInfo;
 
-    Vector<const char *> requiredExtensions;
-    VulkanUtils::GetVulkanContextInstanceRequiredExtensions(requiredExtensions);
-    instanceCreateInfo.enabledExtensionCount = std::size(requiredExtensions);
-    instanceCreateInfo.ppEnabledExtensionNames = std::data(requiredExtensions);
+    Vector<VkExtensionProperties> extensionProperties;
+    VkUtils::EnumerateInstanceExtensionProperties(extensionProperties);
 
-    Vector<const char *> requiredLayers;
-    VulkanUtils::GetVulkanContextInstanceRequiredLayers(requiredLayers);
-    instanceCreateInfo.enabledLayerCount = std::size(requiredLayers);
-    instanceCreateInfo.ppEnabledLayerNames = std::data(requiredLayers);
+    /* enable extension properties */
+    Vector<const char *> enableExtensionProperties;
+    uint32_t glfwRequiredInstanceExtensionCount;
 
-    vkAURACreate(Instance, &instanceCreateInfo, VulkanUtils::Allocator, &m_Instance);
+    /* 获取 glfw 必要扩展 */
+    const char **glfwRequiredInstanceExtensions = glfwGetRequiredInstanceExtensions(&glfwRequiredInstanceExtensionCount);
+    for (int i = 0; i < glfwRequiredInstanceExtensionCount; ++i)
+        enableExtensionProperties.push_back(glfwRequiredInstanceExtensions[i]);
+
+    instanceCreateInfo.enabledExtensionCount = std::size(enableExtensionProperties);
+    instanceCreateInfo.ppEnabledExtensionNames = std::data(enableExtensionProperties);
+
+    Vector<VkLayerProperties> layerProperties;
+    VkUtils::EnumerateInstanceLayerProperties(layerProperties);
+
+    /* enable layer properties */
+    Vector<const char *> enableLayerProperties;
+#ifdef AURORA_ENGINE_ENABLE_DEBUG
+    enableLayerProperties.push_back("VK_LAYER_KHRONOS_validation");
+#endif
+    instanceCreateInfo.enabledLayerCount = std::size(enableLayerProperties);
+    instanceCreateInfo.ppEnabledLayerNames = std::data(enableLayerProperties);
+
+    vkCheckCreate(Instance, &instanceCreateInfo, VkUtils::Allocator, &m_Instance);
 }
 
+void VulkanContext::InitVulkanContextSurface()
+{
+    glfwCreateWindowSurface(m_Instance, m_Window->GetHWIN(), VkUtils::Allocator, &m_Surface);
+}
+
+void VulkanContext::InitVulkanContextDevice()
+{
+    VkUtils::GetBestPerformancePhysicalDevice(m_Instance, &m_PhysicalDevice);
+    Logger::Debug("Vulkan context physical device using: {}", m_PhysicalDevice.properties.deviceName);
+
+    VkUtils::QueueFamilyIndices queueFamilyIndices;
+    VkUtils::FindQueueFamilyIndices(m_PhysicalDevice.device, m_Surface, &queueFamilyIndices);
+    m_GraphicsQueueFamilyIndex = queueFamilyIndices.graphicsQueueFamily;
+    m_PresentQueueFamilyIndex = queueFamilyIndices.presentQueueFamily;
+
+    float priorities = 1.0f;
+    std::array<VkDeviceQueueCreateInfo, 2> deviceQueueCreateInfos = {};
+    deviceQueueCreateInfos[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    deviceQueueCreateInfos[0].queueCount = 1;
+    deviceQueueCreateInfos[0].queueFamilyIndex = queueFamilyIndices.graphicsQueueFamily;
+    deviceQueueCreateInfos[0].pQueuePriorities = &priorities;
+
+    deviceQueueCreateInfos[1].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    deviceQueueCreateInfos[1].queueCount = 1;
+    deviceQueueCreateInfos[1].queueFamilyIndex = queueFamilyIndices.presentQueueFamily;
+    deviceQueueCreateInfos[1].pQueuePriorities = &priorities;
+
+    VkDeviceCreateInfo deviceCreateInfo = {};
+    deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    deviceCreateInfo.queueCreateInfoCount = std::size(deviceQueueCreateInfos);
+    deviceCreateInfo.pQueueCreateInfos = std::data(deviceQueueCreateInfos);
+    static VkPhysicalDeviceFeatures features = {};
+    deviceCreateInfo.pEnabledFeatures = &features;
+
+    Vector<VkExtensionProperties> deviceExtensionProperties;
+    VkUtils::EnumerateDeviceExtensionProperties(m_PhysicalDevice.device, deviceExtensionProperties);
+
+    Vector<const char *> enableDeviceExtensionProperties;
+    deviceCreateInfo.enabledExtensionCount = std::size(enableDeviceExtensionProperties);
+    deviceCreateInfo.ppEnabledExtensionNames = std::data(enableDeviceExtensionProperties);
+
+    Vector<VkLayerProperties> layerExtensionProperties;
+    VkUtils::EnumerateDeviceLayerProperties(m_PhysicalDevice.device, layerExtensionProperties);
+
+    Vector<const char *> enableDeviceLayerProperties;
+#ifdef AURORA_ENGINE_ENABLE_DEBUG
+    enableDeviceLayerProperties.push_back("VK_LAYER_KHRONOS_validation");
+#endif
+    deviceCreateInfo.enabledLayerCount = std::size(enableDeviceLayerProperties);
+    deviceCreateInfo.ppEnabledLayerNames = std::data(enableDeviceLayerProperties);
+
+    vkCheckCreate(Device, m_PhysicalDevice.device, &deviceCreateInfo, VkUtils::Allocator, &m_Device);
+
+    /* 获取队列 */
+    vkGetDeviceQueue(m_Device, m_GraphicsQueueFamilyIndex, 0, &m_GraphicsQueue);
+    vkGetDeviceQueue(m_Device, m_PresentQueueFamilyIndex, 0, &m_PresentQueue);
+}

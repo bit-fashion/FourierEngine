@@ -32,3 +32,8 @@
 #pragma once
 
 #define AURORA_ENGINE_NAME "AuroraEngine"
+
+/* 开启引擎调试 */
+#ifndef AURORA_ENGINE_ENABLE_DEBUG
+#  define AURORA_ENGINE_ENABLE_DEBUG
+#endif

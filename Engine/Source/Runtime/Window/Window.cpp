@@ -33,5 +33,17 @@
 
 Window::Window(uint32_t width, uint32_t height, const char *title)
 {
+    glfwInit();
 
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+    m_HWIN = glfwCreateWindow(width, height, title, null, null);
+    if (m_HWIN == null)
+        throw std::runtime_error("Create glfw window failed, cause member `m_HWIN` is null!");
+}
+
+Window::~Window()
+{
+    glfwDestroyWindow(m_HWIN);
+    glfwTerminate();
 }

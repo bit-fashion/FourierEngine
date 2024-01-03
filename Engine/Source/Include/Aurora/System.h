@@ -40,10 +40,6 @@
 #  include <dbghelp.h>
 #endif
 
-#ifndef DEBUG
-#  define DEBUG
-#endif
-
 namespace System
 {
     /** 获取当前时间戳（毫秒） */
