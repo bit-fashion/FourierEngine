@@ -52,7 +52,7 @@ LINK_DIRECTORIES(
 ADD_EXECUTABLE(${PROJECT_NAME}
   ${PROJECT_SOURCE_DIR}/Engine/Source/Runtime/Main.cpp
   ${PROJECT_SOURCE_DIR}/Engine/Source/Runtime/Window/Window.cpp
-        ${PROJECT_SOURCE_DIR}/Engine/Source/Runtime/Render/VulkanContext.cpp
+        ${PROJECT_SOURCE_DIR}/Engine/Source/Runtime/Render/VkContext.cpp
   #[[ pch ]]
   ${PROJECT_SOURCE_DIR}/Engine/Source/Include/precompile.cpp
 )

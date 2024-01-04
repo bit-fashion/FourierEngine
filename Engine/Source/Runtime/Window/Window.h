@@ -39,7 +39,9 @@ public:
     Window(uint32_t width, uint32_t height, const char *title);
    ~Window();
 
-   GLFWwindow *GetHWIN() const { return m_HWIN; }
+    bool IsShouldClose() const { return glfwWindowShouldClose(m_HWIN); }
+    GLFWwindow *GetHWIN() const { return m_HWIN; }
+    static void PollEvents() { glfwPollEvents(); }
 
 private:
     uint32_t m_Width;

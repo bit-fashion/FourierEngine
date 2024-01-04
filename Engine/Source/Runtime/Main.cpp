@@ -29,15 +29,20 @@
 |* EMail:          bit-fashion@hotmail.com                                          *|
 |*                                                                                  *|
 \* -------------------------------------------------------------------------------- */
-#include "Render/VulkanContext.h"
+#include "Render/VkContext.h"
 #include <Aurora/Logger.h>
 // std
 #include <iostream>
 
 int main()
 {
-    Window window(600, 800, "AuroraEngine");
-    VulkanContext vulkanContext(&window);
+    Logger::Info("AuroraEngine application begin run...");
+    Window window(800, 600, "AuroraEngine");
+    VkContext vctx(&window);
+
+    while (!window.IsShouldClose()) {
+        Window::PollEvents();
+    }
 
     return 0;
 }

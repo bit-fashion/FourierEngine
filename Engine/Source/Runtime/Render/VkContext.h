@@ -23,7 +23,7 @@
 
 /* -------------------------------------------------------------------------------- *\
 |*                                                                                  *|
-|* File:           VulkanContext.h                                                  *|
+|* File:           VkContext.h                                                      *|
 |* Create Time:    2023/12/30 20:21                                                 *|
 |* Author:         bit-fashion                                                      *|
 |* EMail:          bit-fashion@hotmail.com                                          *|
@@ -35,25 +35,40 @@
 #include <Aurora/Logger.h>
 #include "Window/Window.h"
 
-typedef struct VctxBuffer_T {
-    VkBuffer hbuffer;
-    VkDeviceMemory hmemory;
+typedef struct VtxBuffer_T {
+    VkBuffer buffer;
+    VkDeviceMemory memory;
     VkDeviceSize size;
-} *VctxBuffer;
+} *VtxBuffer;
+
+typedef struct VtxTexture2D_T {
+    VkImage image;
+    VkImageView view;
+    VkImageLayout layout;
+} *VtxTexture2D;
 
 /**
  * vulkan 上下文
  */
-class VulkanContext {
+class VkContext {
 public:
-    VulkanContext(Window *p_win);
-   ~VulkanContext();
+    VkContext(Window *p_win);
+    ~VkContext();
 
-   /**
-    * device
-    */
-   void AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VctxBuffer *pBuffer);
-   void FreeBuffer(VctxBuffer buffer);
+    /*
+     * 创建以及分配 Vulkan 对象
+     */
+    void CreateTexture2D(VtxTexture2D *pTexture2D);
+    void DestroyTexture2D(VtxTexture2D texture2D);
+    void AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VtxBuffer *pBuffer);
+    void FreeBuffer(VtxBuffer buffer);
+    void AllocateCommandBuffer(VkCommandBuffer *pCommandBuffer);
+    void FreeCommandBuffer(VkCommandBuffer commandBuffer);
+
+    void BeginOneTimeCommandBuffer(VkCommandBuffer *pCommandBuffer);
+    void EndOneTimeCommandBuffer(VkCommandBuffer commandBuffer);
+    void BeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags flags);
+    void EndCommandBuffer(VkCommandBuffer commandBuffer);
 
 private:
     void InitVulkanContextInstance();

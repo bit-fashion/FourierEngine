@@ -23,25 +23,27 @@
 
 /* -------------------------------------------------------------------------------- *\
 |*                                                                                  *|
-|* File:           VulkanContext.cpp                                                *|
+|* File:           VkContext.cpp                                                *|
 |* Create Time:    2023/12/30 20:21                                                 *|
 |* Author:         bit-fashion                                                      *|
 |* EMail:          bit-fashion@hotmail.com                                          *|
 |*                                                                                  *|
 \* -------------------------------------------------------------------------------- */
-#include "VulkanContext.h"
+#include "VkContext.h"
 #include "VkUtils.h"
 
-VulkanContext::VulkanContext(Window *p_win) : m_Window(p_win)
+VkContext::VkContext(Window *p_win) : m_Window(p_win)
 {
+    Logger::Info("Begin initialize vulkan context");
     InitVulkanContextInstance();
     InitVulkanContextSurface();
     InitVulkanContextDevice();
     InitVulkanContextCommandPool();
     InitVulkanContextDescriptorPool();
+    Logger::Info("End initialize vulkan context");
 }
 
-VulkanContext::~VulkanContext()
+VkContext::~VkContext()
 {
     vkDestroyDescriptorPool(m_Device, m_DescriptorPool, VkUtils::Allocator);
     vkDestroyCommandPool(m_Device, m_CommandPool, VkUtils::Allocator);
@@ -50,9 +52,19 @@ VulkanContext::~VulkanContext()
     vkDestroyInstance(m_Instance, VkUtils::Allocator);
 }
 
-void VulkanContext::AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VctxBuffer *pBuffer)
+void VkContext::CreateTexture2D(VtxTexture2D *pTexture2D)
 {
-    *pBuffer = (VctxBuffer_T *) vmalloc(sizeof(VctxBuffer_T));
+
+}
+
+void VkContext::DestroyTexture2D(VtxTexture2D texture2D)
+{
+
+}
+
+void VkContext::AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VtxBuffer *pBuffer)
+{
+    *pBuffer = (VtxBuffer_T *) vmalloc(sizeof(VtxBuffer_T));
 
     /* 创建缓冲区 */
     VkBufferCreateInfo bufferCreateInfo = {};
@@ -60,28 +72,69 @@ void VulkanContext::AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, 
     bufferCreateInfo.size = size;
     bufferCreateInfo.usage = usage;
     bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    vkCheckCreate(Buffer, m_Device, &bufferCreateInfo, VkUtils::Allocator, &(*pBuffer)->hbuffer);
+    vkCheckCreate(Buffer, m_Device, &bufferCreateInfo, VkUtils::Allocator, &(*pBuffer)->buffer);
 
     /* 分配内存 */
     VkMemoryRequirements requirements;
-    vkGetBufferMemoryRequirements(m_Device, (*pBuffer)->hbuffer, &requirements);
+    vkGetBufferMemoryRequirements(m_Device, (*pBuffer)->buffer, &requirements);
 
     VkMemoryAllocateInfo memoryAllocateInfo = {};
     memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memoryAllocateInfo.allocationSize = size;
     memoryAllocateInfo.memoryTypeIndex = VkUtils::FindMemoryType(requirements.memoryTypeBits, m_PhysicalDevice, properties);
-    vkCheckAllocate(Memory, m_Device, &memoryAllocateInfo, VkUtils::Allocator, &(*pBuffer)->hmemory);
-    vkBindBufferMemory(m_Device, ((VctxBuffer_T *) *pBuffer)->hbuffer, (*pBuffer)->hmemory, 0);
+    vkCheckAllocate(Memory, m_Device, &memoryAllocateInfo, VkUtils::Allocator, &(*pBuffer)->memory);
+    vkBindBufferMemory(m_Device, ((VtxBuffer_T *) *pBuffer)->buffer, (*pBuffer)->memory, 0);
 }
 
-void VulkanContext::FreeBuffer(VctxBuffer buffer)
+void VkContext::FreeBuffer(VtxBuffer buffer)
 {
-    vkDestroyBuffer(m_Device, buffer->hbuffer, VkUtils::Allocator);
-    vkFreeMemory(m_Device, buffer->hmemory, VkUtils::Allocator);
+    vkDestroyBuffer(m_Device, buffer->buffer, VkUtils::Allocator);
+    vkFreeMemory(m_Device, buffer->memory, VkUtils::Allocator);
     vfree(buffer);
 }
 
-void VulkanContext::InitVulkanContextInstance()
+void VkContext::AllocateCommandBuffer(VkCommandBuffer *pCommandBuffer)
+{
+    VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    commandBufferAllocateInfo.commandPool = m_CommandPool;
+    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandBufferAllocateInfo.commandBufferCount = 1;
+    vkCheckAllocate(CommandBuffers, m_Device, &commandBufferAllocateInfo, pCommandBuffer);
+}
+
+void VkContext::FreeCommandBuffer(VkCommandBuffer commandBuffer)
+{
+    vkFreeCommandBuffers(m_Device, m_CommandPool, 1, &commandBuffer);
+}
+
+void VkContext::BeginOneTimeCommandBuffer(VkCommandBuffer *pCommandBuffer)
+{
+    AllocateCommandBuffer(pCommandBuffer);
+    BeginCommandBuffer(*pCommandBuffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+}
+
+void VkContext::EndOneTimeCommandBuffer(VkCommandBuffer commandBuffer)
+{
+    EndCommandBuffer(commandBuffer);
+}
+
+void VkContext::BeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags flags)
+{
+    VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    commandBufferBeginInfo.flags = flags;
+    commandBufferBeginInfo.pInheritanceInfo = null;
+
+    vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+}
+
+void VkContext::EndCommandBuffer(VkCommandBuffer commandBuffer)
+{
+    vkEndCommandBuffer(commandBuffer);
+}
+
+void VkContext::InitVulkanContextInstance()
 {
     VkApplicationInfo applicationInfo = {};
     applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -109,12 +162,12 @@ void VulkanContext::InitVulkanContextInstance()
     vkCheckCreate(Instance, &instanceCreateInfo, VkUtils::Allocator, &m_Instance);
 }
 
-void VulkanContext::InitVulkanContextSurface()
+void VkContext::InitVulkanContextSurface()
 {
     glfwCreateWindowSurface(m_Instance, m_Window->GetHWIN(), VkUtils::Allocator, &m_Surface);
 }
 
-void VulkanContext::InitVulkanContextDevice()
+void VkContext::InitVulkanContextDevice()
 {
     VkUtils::GetBestPerformancePhysicalDevice(m_Instance, &m_PhysicalDevice);
     VkUtils::GetPhysicalDeviceProperties(m_PhysicalDevice, &m_PhysicalDeviceProperties, &m_PhysicalDeviceFeatures);
@@ -161,7 +214,7 @@ void VulkanContext::InitVulkanContextDevice()
     vkGetDeviceQueue(m_Device, m_PresentQueueFamilyIndex, 0, &m_PresentQueue);
 }
 
-void VulkanContext::InitVulkanContextCommandPool()
+void VkContext::InitVulkanContextCommandPool()
 {
     VkCommandPoolCreateInfo commandPoolCreateInfo = {};
     commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -171,7 +224,7 @@ void VulkanContext::InitVulkanContextCommandPool()
     vkCheckCreate(CommandPool, m_Device, &commandPoolCreateInfo, VkUtils::Allocator, &m_CommandPool);
 }
 
-void VulkanContext::InitVulkanContextDescriptorPool()
+void VkContext::InitVulkanContextDescriptorPool()
 {
     std::vector<VkDescriptorPoolSize> poolSizes = {
             {VK_DESCRIPTOR_TYPE_SAMPLER,                64},
