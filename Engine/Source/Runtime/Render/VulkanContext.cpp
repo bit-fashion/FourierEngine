@@ -50,6 +50,37 @@ VulkanContext::~VulkanContext()
     vkDestroyInstance(m_Instance, VkUtils::Allocator);
 }
 
+void VulkanContext::AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VctxBuffer *pBuffer)
+{
+    *pBuffer = (VctxBuffer_T *) vmalloc(sizeof(VctxBuffer_T));
+
+    /* 创建缓冲区 */
+    VkBufferCreateInfo bufferCreateInfo = {};
+    bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferCreateInfo.size = size;
+    bufferCreateInfo.usage = usage;
+    bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    vkCheckCreate(Buffer, m_Device, &bufferCreateInfo, VkUtils::Allocator, &(*pBuffer)->hbuffer);
+
+    /* 分配内存 */
+    VkMemoryRequirements requirements;
+    vkGetBufferMemoryRequirements(m_Device, (*pBuffer)->hbuffer, &requirements);
+
+    VkMemoryAllocateInfo memoryAllocateInfo = {};
+    memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memoryAllocateInfo.allocationSize = size;
+    memoryAllocateInfo.memoryTypeIndex = VkUtils::FindMemoryType(requirements.memoryTypeBits, m_PhysicalDevice, properties);
+    vkCheckAllocate(Memory, m_Device, &memoryAllocateInfo, VkUtils::Allocator, &(*pBuffer)->hmemory);
+    vkBindBufferMemory(m_Device, ((VctxBuffer_T *) *pBuffer)->hbuffer, (*pBuffer)->hmemory, 0);
+}
+
+void VulkanContext::FreeBuffer(VctxBuffer buffer)
+{
+    vkDestroyBuffer(m_Device, buffer->hbuffer, VkUtils::Allocator);
+    vkFreeMemory(m_Device, buffer->hmemory, VkUtils::Allocator);
+    vfree(buffer);
+}
+
 void VulkanContext::InitVulkanContextInstance()
 {
     VkApplicationInfo applicationInfo = {};

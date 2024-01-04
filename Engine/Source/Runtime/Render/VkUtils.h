@@ -42,6 +42,14 @@
             Logger::Error("VulkanContext create vulkan {} object failed! VkResult status: {}", #name, VkUtils::GetVkResultStatusName(ret)); \
     }
 
+/* 检查 vulkan 对象是否分配成功 */
+#define vkCheckAllocate(name, ...) \
+    { \
+        VkResult ret = vkAllocate##name(__VA_ARGS__); \
+        if (ret != VK_SUCCESS) \
+            Logger::Error("VulkanContext allocate vulkan {} object failed! VkResult status: {}", #name, VkUtils::GetVkResultStatusName(ret)); \
+    }
+
 namespace VkUtils
 {
     /* VK 分配器 */
@@ -265,4 +273,17 @@ namespace VkUtils
         required.push_back("VK_LAYER_KHRONOS_validation");
 #endif
     }
+
+    static uint32_t FindMemoryType(uint32_t typeFilter, VkPhysicalDevice device, VkMemoryPropertyFlags properties)
+    {
+        VkPhysicalDeviceMemoryProperties memProperties;
+        vkGetPhysicalDeviceMemoryProperties(device, &memProperties);
+        for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+            if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+                return i;
+            }
+        }
+        throw std::runtime_error("Vulkan allocate buffer error,  Cause: cannot found suitable memory type!");
+    }
+
 }

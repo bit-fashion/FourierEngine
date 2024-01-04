@@ -83,4 +83,5 @@ namespace Logger
     {
         _vprintlog("ERROR", fmt, ASCII_COLOR_RED, std::make_format_args(args...));
     }
+
 }

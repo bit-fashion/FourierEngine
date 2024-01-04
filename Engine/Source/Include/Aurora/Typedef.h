@@ -37,6 +37,7 @@
 #include <format>
 #include <stdarg.h>
 #include <iostream>
+#include <memory>
 
 /* 强制内联 */
 #ifndef __always_inline
@@ -84,3 +85,7 @@ __always_inline static std::string strifmt(std::string_view fmt, Args&& ...args)
 #    define null nullptr
 #  endif
 #endif
+
+/* malloc */
+#define vmalloc(size) malloc(size)
+#define vfree(ptr) free(ptr)

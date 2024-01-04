@@ -35,6 +35,12 @@
 #include <Aurora/Logger.h>
 #include "Window/Window.h"
 
+typedef struct VctxBuffer_T {
+    VkBuffer hbuffer;
+    VkDeviceMemory hmemory;
+    VkDeviceSize size;
+} *VctxBuffer;
+
 /**
  * vulkan 上下文
  */
@@ -42,6 +48,12 @@ class VulkanContext {
 public:
     VulkanContext(Window *p_win);
    ~VulkanContext();
+
+   /**
+    * device
+    */
+   void AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VctxBuffer *pBuffer);
+   void FreeBuffer(VctxBuffer buffer);
 
 private:
     void InitVulkanContextInstance();
