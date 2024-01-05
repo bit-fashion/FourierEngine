@@ -23,7 +23,7 @@
 
 /* -------------------------------------------------------------------------------- *\
 |*                                                                                  *|
-|* File:           VkContext.cpp                                                *|
+|* File:           VkContext.cpp                                                    *|
 |* Create Time:    2023/12/30 20:21                                                 *|
 |* Author:         bit-fashion                                                      *|
 |* EMail:          bit-fashion@hotmail.com                                          *|
@@ -52,14 +52,85 @@ VkContext::~VkContext()
     vkDestroyInstance(m_Instance, VkUtils::Allocator);
 }
 
-void VkContext::CreateTexture2D(VtxTexture2D *pTexture2D)
+void VkContext::CreateTexture2D(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+                                VkMemoryPropertyFlags properties, VtxTexture2D *pTexture2D)
 {
+    *pTexture2D = (VtxTexture2D_T *) vmalloc(sizeof(pTexture2D));
 
+    VkImageCreateInfo imageCreateInfo = {};
+    imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageCreateInfo.format = format;
+    imageCreateInfo.extent = { width, height, 1 };
+    imageCreateInfo.mipLevels = 1;
+    imageCreateInfo.arrayLayers = 1;
+    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.tiling = tiling;
+    imageCreateInfo.usage = usage;
+    imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageCreateInfo.flags = 0;
+
+    (*pTexture2D)->format = imageCreateInfo.format;
+    (*pTexture2D)->layout = imageCreateInfo.initialLayout;
+
+    vkCheckCreate(Image, m_Device, &imageCreateInfo, VkUtils::Allocator, &(*pTexture2D)->image);
+
+    /* 分配内存 */
+    VkMemoryRequirements requirements;
+    vkGetImageMemoryRequirements(m_Device, (*pTexture2D)->image, &requirements);
+
+    VkMemoryAllocateInfo memoryAllocateInfo = {};
+    memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memoryAllocateInfo.allocationSize = requirements.size;
+    memoryAllocateInfo.memoryTypeIndex = VkUtils::FindMemoryType(requirements.memoryTypeBits, m_PhysicalDevice, properties);
+    vkCheckAllocate(Memory, m_Device, &memoryAllocateInfo, VkUtils::Allocator, &(*pTexture2D)->memory);
+
+    vkBindImageMemory(m_Device, (*pTexture2D)->image, (*pTexture2D)->memory, 0);
+
+    /* 视图 */
+    VkImageViewCreateInfo viewInfo = {};
+    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image = (*pTexture2D)->image;
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.baseMipLevel = 0;
+    viewInfo.subresourceRange.levelCount = 1;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount = 1;
+
+    vkCreateImageView(m_Device, &viewInfo, nullptr, &(*pTexture2D)->view);
+
+    /* 采样器 */
+    VkSamplerCreateInfo samplerInfo = {};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.magFilter = VK_FILTER_LINEAR;
+    samplerInfo.minFilter = VK_FILTER_LINEAR;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.anisotropyEnable = VK_FALSE;
+    samplerInfo.maxAnisotropy = 16;
+    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+    samplerInfo.compareEnable = VK_FALSE;
+    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.mipLodBias = 0.0f;
+    samplerInfo.minLod = 0.0f;
+    samplerInfo.maxLod = 0.0f;
+
+    vkCreateSampler(m_Device, &samplerInfo, VK_NULL_HANDLE, &(*pTexture2D)->sampler);
 }
 
 void VkContext::DestroyTexture2D(VtxTexture2D texture2D)
 {
-
+    vkDestroyImage(m_Device, texture2D->image, VkUtils::Allocator);
+    vkDestroyImageView(m_Device, texture2D->view, VkUtils::Allocator);
+    vkFreeMemory(m_Device, texture2D->memory, VkUtils::Allocator);
+    vkDestroySampler(m_Device, texture2D->sampler, VkUtils::Allocator);
+    vfree(texture2D);
 }
 
 void VkContext::AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VtxBuffer *pBuffer)
@@ -83,7 +154,7 @@ void VkContext::AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMe
     memoryAllocateInfo.allocationSize = size;
     memoryAllocateInfo.memoryTypeIndex = VkUtils::FindMemoryType(requirements.memoryTypeBits, m_PhysicalDevice, properties);
     vkCheckAllocate(Memory, m_Device, &memoryAllocateInfo, VkUtils::Allocator, &(*pBuffer)->memory);
-    vkBindBufferMemory(m_Device, ((VtxBuffer_T *) *pBuffer)->buffer, (*pBuffer)->memory, 0);
+    vkBindBufferMemory(m_Device, (*pBuffer)->buffer, (*pBuffer)->memory, 0);
 }
 
 void VkContext::FreeBuffer(VtxBuffer buffer)
@@ -91,6 +162,24 @@ void VkContext::FreeBuffer(VtxBuffer buffer)
     vkDestroyBuffer(m_Device, buffer->buffer, VkUtils::Allocator);
     vkFreeMemory(m_Device, buffer->memory, VkUtils::Allocator);
     vfree(buffer);
+}
+
+void VkContext::WriteMemory(VtxBuffer buffer, VkDeviceSize offset, VkDeviceSize size, void *buf)
+{
+    void *dst;
+    MapMemory(buffer, offset, size, &dst);
+    memcpy(dst, buf, size);
+    UnmapMemory(buffer);
+}
+
+void VkContext::MapMemory(VtxBuffer buffer, VkDeviceSize offset, VkDeviceSize size, void **pBuf)
+{
+    vkMapMemory(m_Device, buffer->memory, offset, size, 0, pBuf);
+}
+
+void VkContext::UnmapMemory(VtxBuffer buffer)
+{
+    vkUnmapMemory(m_Device, buffer->memory);
 }
 
 void VkContext::AllocateCommandBuffer(VkCommandBuffer *pCommandBuffer)

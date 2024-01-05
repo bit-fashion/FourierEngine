@@ -44,7 +44,10 @@ typedef struct VtxBuffer_T {
 typedef struct VtxTexture2D_T {
     VkImage image;
     VkImageView view;
+    VkDeviceMemory memory;
+    VkSampler sampler;
     VkImageLayout layout;
+    VkFormat format;
 } *VtxTexture2D;
 
 /**
@@ -58,10 +61,14 @@ public:
     /*
      * 创建以及分配 Vulkan 对象
      */
-    void CreateTexture2D(VtxTexture2D *pTexture2D);
+    void CreateTexture2D(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+                         VkMemoryPropertyFlags properties, VtxTexture2D *pTexture2D);
     void DestroyTexture2D(VtxTexture2D texture2D);
     void AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VtxBuffer *pBuffer);
     void FreeBuffer(VtxBuffer buffer);
+    void WriteMemory(VtxBuffer buffer, VkDeviceSize offset, VkDeviceSize size, void *buf);
+    void MapMemory(VtxBuffer buffer, VkDeviceSize offset, VkDeviceSize size, void **pBuf);
+    void UnmapMemory(VtxBuffer buffer);
     void AllocateCommandBuffer(VkCommandBuffer *pCommandBuffer);
     void FreeCommandBuffer(VkCommandBuffer commandBuffer);
 
