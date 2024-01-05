@@ -52,6 +52,20 @@ VkContext::~VkContext()
     vkDestroyInstance(m_Instance, VkUtils::Allocator);
 }
 
+void VkContext::AllocateDescriptorSet(VkDescriptorSet *pDescriptorSet)
+{
+    VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
+    descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    descriptorSetAllocateInfo.descriptorPool = m_DescriptorPool;
+    descriptorSetAllocateInfo.descriptorSetCount = 1;
+    descriptorSetAllocateInfo.pSetLayouts = 0;
+}
+
+void VkContext::FreeDescriptorSet(VkDescriptorSet descriptorSet)
+{
+
+}
+
 void VkContext::CreateTexture2D(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                                 VkMemoryPropertyFlags properties, VtxTexture2D *pTexture2D)
 {
@@ -162,6 +176,20 @@ void VkContext::FreeBuffer(VtxBuffer buffer)
     vkDestroyBuffer(m_Device, buffer->buffer, VkUtils::Allocator);
     vkFreeMemory(m_Device, buffer->memory, VkUtils::Allocator);
     vfree(buffer);
+}
+
+void VkContext::CopyBuffer(VtxBuffer dst, VtxBuffer src, VkDeviceSize size)
+{
+    VkCommandBuffer oneTimeCommandBuffer;
+    BeginOneTimeCommandBuffer(&oneTimeCommandBuffer);
+    {
+        VkBufferCopy region = {};
+        region.dstOffset = 0;
+        region.srcOffset = 0;
+        region.size = size;
+        vkCmdCopyBuffer(oneTimeCommandBuffer, src->buffer, dst->buffer, 1, &region);
+    }
+    EndOneTimeCommandBuffer(oneTimeCommandBuffer);
 }
 
 void VkContext::WriteMemory(VtxBuffer buffer, VkDeviceSize offset, VkDeviceSize size, void *buf)

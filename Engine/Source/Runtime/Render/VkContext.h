@@ -61,11 +61,14 @@ public:
     /*
      * 创建以及分配 Vulkan 对象
      */
+    void AllocateDescriptorSet(VkDescriptorSet *pDescriptorSet);
+    void FreeDescriptorSet(VkDescriptorSet descriptorSet);
     void CreateTexture2D(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                          VkMemoryPropertyFlags properties, VtxTexture2D *pTexture2D);
     void DestroyTexture2D(VtxTexture2D texture2D);
     void AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VtxBuffer *pBuffer);
     void FreeBuffer(VtxBuffer buffer);
+    void CopyBuffer(VtxBuffer dst, VtxBuffer src, VkDeviceSize size);
     void WriteMemory(VtxBuffer buffer, VkDeviceSize offset, VkDeviceSize size, void *buf);
     void MapMemory(VtxBuffer buffer, VkDeviceSize offset, VkDeviceSize size, void **pBuf);
     void UnmapMemory(VtxBuffer buffer);
