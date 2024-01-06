@@ -137,8 +137,7 @@ namespace VkUtils
         /* 遍历 extension 属性列表 */
         Logger::Debug("Vulkan instance support extension properties: ");
         for (const auto &property : properties)
-            Logger::Debug("  name: {}, version: {}.{}.{}", property.extensionName, VK_VERSION_MAJOR(property.specVersion),VK_VERSION_MINOR(property.specVersion),
-                          VK_VERSION_PATCH(property.specVersion));
+            Logger::Debug("  - {}", property.extensionName);
     }
 
     static void EnumerateInstanceLayerProperties(Vector<VkLayerProperties> &properties)
@@ -151,8 +150,7 @@ namespace VkUtils
         /* 遍历 layer 属性列表 */
         Logger::Debug("Vulkan instance support layer properties: ");
         for (const auto &property : properties)
-            Logger::Debug("  name: {}, version: {}.{}.{}", property.layerName, VK_VERSION_MAJOR(property.specVersion),VK_VERSION_MINOR(property.specVersion),
-                          VK_VERSION_PATCH(property.specVersion));
+            Logger::Debug("  - {}", property.layerName);
     }
 
     static void GetBestPerformancePhysicalDevice(VkInstance instance, VkPhysicalDevice *pPhysicalDevice)
@@ -167,7 +165,7 @@ namespace VkUtils
         for (const auto &device : devices) {
             VkPhysicalDeviceProperties properties;
             vkGetPhysicalDeviceProperties(device, &properties);
-            Logger::Debug("  device name: {}", properties.deviceName);
+            Logger::Debug("  - {}", properties.deviceName);
         }
 
         *pPhysicalDevice = devices[0];
@@ -189,8 +187,7 @@ namespace VkUtils
         /* 遍历 extension 属性列表 */
         Logger::Debug("Vulkan physical device support extension properties: ");
         for (const auto &property : properties)
-            Logger::Debug("  name: {}, version: {}.{}.{}", property.extensionName, VK_VERSION_MAJOR(property.specVersion),VK_VERSION_MINOR(property.specVersion),
-                          VK_VERSION_PATCH(property.specVersion));
+            Logger::Debug("  - {}", property.extensionName);
     }
 
     static void EnumerateDeviceLayerProperties(VkPhysicalDevice device, Vector<VkLayerProperties> &properties)
@@ -203,8 +200,7 @@ namespace VkUtils
         /* 遍历 layer 属性列表 */
         Logger::Debug("Vulkan physical device support layer properties: ");
         for (const auto &property : properties)
-            Logger::Debug("  name: {}, version: {}.{}.{}", property.layerName, VK_VERSION_MAJOR(property.specVersion),VK_VERSION_MINOR(property.specVersion),
-                          VK_VERSION_PATCH(property.specVersion));
+            Logger::Debug("  - {}", property.layerName);
     }
 
     static void FindQueueFamilyIndices(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, QueueFamilyIndices *pQueueFamilyIndices)
@@ -268,10 +264,6 @@ namespace VkUtils
     {
         Vector<VkLayerProperties> properties;
         EnumerateDeviceLayerProperties(device, properties);
-
-#ifdef AURORA_ENGINE_ENABLE_DEBUG
-        required.push_back("VK_LAYER_KHRONOS_validation");
-#endif
     }
 
     static uint32_t FindMemoryType(uint32_t typeFilter, VkPhysicalDevice device, VkMemoryPropertyFlags properties)

@@ -267,12 +267,18 @@ void VkContext::InitVulkanContextInstance()
 
     Vector<const char *> enableExtensionProperties;
     VkUtils::GetInstanceRequiredEnableExtensionProperties(enableExtensionProperties);
+    Logger::Info("Vulkan context instance enabled extensions:");
+    for (const auto &enableExtensionProperty : enableExtensionProperties)
+        Logger::Info("  - {}", enableExtensionProperty);
     instanceCreateInfo.enabledExtensionCount = std::size(enableExtensionProperties);
     instanceCreateInfo.ppEnabledExtensionNames = std::data(enableExtensionProperties);
 
     /* enable layer properties */
     Vector<const char *> enableLayerProperties;
     VkUtils::GetInstanceRequiredEnableLayerProperties(enableLayerProperties);
+    Logger::Info("Vulkan context instance enabled layers:");
+    for (const auto &enableLayerProperty : enableLayerProperties)
+        Logger::Info("  - {}", enableLayerProperty);
     instanceCreateInfo.enabledLayerCount = std::size(enableLayerProperties);
     instanceCreateInfo.ppEnabledLayerNames = std::data(enableLayerProperties);
 
