@@ -185,7 +185,7 @@ namespace VkUtils
         vkEnumerateDeviceExtensionProperties(device, null, &count, std::data(properties));
 
         /* 遍历 extension 属性列表 */
-        Logger::Debug("Vulkan physical device support extension properties: ");
+        Logger::Debug("Vulkan device support extension properties: ");
         for (const auto &property : properties)
             Logger::Debug("  - {}", property.extensionName);
     }
@@ -198,7 +198,7 @@ namespace VkUtils
         vkEnumerateDeviceLayerProperties(device, &count, std::data(properties));
 
         /* 遍历 layer 属性列表 */
-        Logger::Debug("Vulkan physical device support layer properties: ");
+        Logger::Debug("Vulkan device support layer properties: ");
         for (const auto &property : properties)
             Logger::Debug("  - {}", property.layerName);
     }
