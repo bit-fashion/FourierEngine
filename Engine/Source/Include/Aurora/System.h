@@ -40,8 +40,30 @@
 #  include <dbghelp.h>
 #endif
 
+enum DebuggerPropertyFlags {
+    SYSTEM_DEBUG_PROPERTY_TYPE_UNSIGNED,
+    SYSTEM_DEBUG_PROPERTY_TYPE_INT,
+    SYSTEM_DEBUG_PROPERTY_TYPE_LONG,
+    SYSTEM_DEBUG_PROPERTY_TYPE_UINT32,
+    SYSTEM_DEBUG_PROPERTY_TYPE_FLOAT,
+    SYSTEM_DEBUG_PROPERTY_TYPE_FLOAT2,
+    SYSTEM_DEBUG_PROPERTY_TYPE_FLOAT3,
+    SYSTEM_DEBUG_PROPERTY_TYPE_DOUBLE,
+    SYSTEM_DEBUG_PROPERTY_TYPE_STRING,
+};
+
 namespace System
 {
+    struct DebuggerProperty {
+        std::string name;
+        DebuggerPropertyFlags flags;
+        void *vpointer;
+    };
+
+    /* 全局对象 */
+    static HashMap<std::string, std::string> g_Properties;
+    static HashMap<std::string, DebuggerProperty> g_DebuggerProperties;
+
     /** 获取当前时间戳（毫秒） */
     static uint64_t GetTimeMillis()
     {
@@ -68,5 +90,34 @@ namespace System
     static void ConsoleWrite(std::string_view fmt, Args&& ...args)
     {
         VConsoleWrite(fmt, std::make_format_args(args...));
+    }
+
+    /** 设置全局属性 */
+    static void SetProperty(const std::string &&key, const std::string value)
+    {
+        g_Properties.insert(std::pair<std::string, std::string>(std::move(key), std::move(value)));
+    }
+
+    /** 获取全局属性 */
+    static std::string& GetProperty(const std::string &key)
+    {
+        return g_Properties[key];
+    }
+
+    /** 设置全局调试属性 */
+    static void SetDebuggerProperty(const std::string &&name, DebuggerPropertyFlags flags, void *vpointer)
+    {
+        DebuggerProperty property = {};
+        property.name = std::move(name);
+        property.flags = flags;
+        property.vpointer = vpointer;
+
+        g_DebuggerProperties.insert(std::pair<std::string, DebuggerProperty>(std::move(name), property));
+    }
+
+    /** 获取全局调试属性 */
+    static const DebuggerProperty& GetDebuggerProperty(const std::string &key)
+    {
+        return g_DebuggerProperties[key];
     }
 }
