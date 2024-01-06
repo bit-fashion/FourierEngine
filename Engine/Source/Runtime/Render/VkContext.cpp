@@ -63,7 +63,7 @@ void VkContext::AllocateDescriptorSet(VkDescriptorSet *pDescriptorSet)
 
 void VkContext::FreeDescriptorSet(VkDescriptorSet descriptorSet)
 {
-
+    vkFreeDescriptorSets(m_Device, m_DescriptorPool, 1, &descriptorSet);
 }
 
 void VkContext::CreateTexture2D(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
