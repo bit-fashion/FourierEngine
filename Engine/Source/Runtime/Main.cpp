@@ -38,7 +38,7 @@ int main()
 {
     Logger::Info("AuroraEngine application begin run...");
     Window window(800, 600, "AuroraEngine");
-    VkContext vctx(&window);
+    std::unique_ptr<VkContext> vctx = std::make_unique<VkContext>(&window);
 
     while (!window.IsShouldClose()) {
         Window::PollEvents();

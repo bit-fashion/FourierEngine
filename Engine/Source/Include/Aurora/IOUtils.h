@@ -23,35 +23,38 @@
 
 /* -------------------------------------------------------------------------------- *\
 |*                                                                                  *|
-|* File:           Window.h                                                         *|
-|* Create Time:    2023/12/30 20:44                                                 *|
+|* File:           IOUtils.h                                                        *|
+|* Create Time:    2024/01/09 10:32                                                 *|
 |* Author:         bit-fashion                                                      *|
 |* EMail:          bit-fashion@hotmail.com                                          *|
 |*                                                                                  *|
 \* -------------------------------------------------------------------------------- */
 #pragma once
 
-#include <GLFW/glfw3.h>
-#include <Aurora/System.h>
+#include <malloc.h>
+#include <fstream>
+#include <vector>
+#include <stdexcept>
 
-class Window {
-public:
-    Window(uint32_t width, uint32_t height, const char *title);
-   ~Window();
+namespace IOUtils {
 
-   /**
-    * const get/set and aux function.
-    */
-    uint32_t GetWidth() const { return m_Width; }
-    uint32_t GetHeight() const { return m_Height; }
-    bool IsShouldClose() const { return glfwWindowShouldClose(m_HWIN); }
-    GLFWwindow *GetHWIN() const { return m_HWIN; }
+    static char *ReadBuf(const char *filepath, size_t *size) {
+        std::ifstream file(filepath, std::ios::ate | std::ios::binary);
+        if (!file.is_open())
+            throw std::runtime_error("Error: open file failed!");
+        *size = file.tellg();
+        file.seekg(0);
 
-public:
-    static void PollEvents() { glfwPollEvents(); }
+        /* malloc buffer */
+        char *buf = (char *) malloc(*size);
+        file.read(buf, *size);
+        file.close();
 
-private:
-    uint32_t m_Width;
-    uint32_t m_Height;
-    GLFWwindow *m_HWIN;
-};
+        return buf;
+    }
+
+    static void FreeBuf(char *binaries) {
+        free(binaries);
+    }
+
+}

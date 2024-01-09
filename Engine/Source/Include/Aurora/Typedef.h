@@ -46,7 +46,7 @@
 
 /* std::vector<T> 标准库封装 */
 template<typename T>
-class Vector : public std::vector<T>{
+class Vector : public std::vector<T> {
 public:
     using std::vector<T>::vector;
     __always_inline void remove(size_t index)
@@ -87,5 +87,5 @@ __always_inline static std::string strifmt(std::string_view fmt, Args&& ...args)
 #endif
 
 /* malloc */
-#define vmalloc(size) malloc(size)
-#define vfree(ptr) free(ptr)
+#define MemoryMalloc(size) malloc(size)
+#define MemoryFree(ptr) free(ptr)

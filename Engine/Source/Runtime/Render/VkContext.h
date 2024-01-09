@@ -48,7 +48,17 @@ typedef struct VtxTexture2D_T {
     VkSampler sampler;
     VkImageLayout layout;
     VkFormat format;
+    size_t size;
 } *VtxTexture2D;
+
+typedef struct VtxPipeline_T {
+    VkPipeline pipeline;
+    VkPipelineLayout layout;
+} *VtxPipeline;
+
+struct VtxDescriptorSetWriteInfo {
+
+};
 
 /**
  * vulkan 上下文
@@ -58,11 +68,15 @@ public:
     VkContext(Window *p_win);
     ~VkContext();
 
-    /*
+    /**
      * 创建以及分配 Vulkan 对象
      */
+    void CreatePipeline(const char *shader_file, uint32_t width, uint32_t height, VtxPipeline *pPipeline);
+    void DestroyPipeline(VtxPipeline pipeline);
+    void WriteDescriptorSet(VtxDescriptorSetWriteInfo *pWriteInfo, VkDescriptorSet descriptorSet);
     void AllocateDescriptorSet(VkDescriptorSet *pDescriptorSet);
     void FreeDescriptorSet(VkDescriptorSet descriptorSet);
+    void WriteTexture2D(VkDeviceSize offset, VkDeviceSize size, void *buf, VtxTexture2D texture2D);
     void CreateTexture2D(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                          VkMemoryPropertyFlags properties, VtxTexture2D *pTexture2D);
     void DestroyTexture2D(VtxTexture2D texture2D);
@@ -79,6 +93,11 @@ public:
     void EndOneTimeCommandBuffer(VkCommandBuffer commandBuffer);
     void BeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags flags);
     void EndCommandBuffer(VkCommandBuffer commandBuffer);
+
+    /**
+     * Cmd
+     */
+     void CmdBindPipeline(VkCommandBuffer commandBuffer, VtxPipeline pipeline);
 
 private:
     void InitVulkanContextInstance();

@@ -31,6 +31,11 @@
 \* -------------------------------------------------------------------------------- */
 #include "VkContext.h"
 #include "VkUtils.h"
+#include <Aurora/IOUtils.h>
+
+/* malloc */
+#define VtxMemoryMalloc(object) (object) MemoryMalloc(sizeof(object##_T))
+#define VtxMemoryFree(ptr) MemoryFree(ptr)
 
 VkContext::VkContext(Window *p_win) : m_Window(p_win)
 {
@@ -52,6 +57,54 @@ VkContext::~VkContext()
     vkDestroyInstance(m_Instance, VkUtils::Allocator);
 }
 
+void VkContext::CreatePipeline(const char *shader_file_name, uint32_t width, uint32_t height, VtxPipeline *pPipeline)
+{
+    char *buf;
+    size_t size;
+    VkShaderModule vertexShaderModule;
+    VkShaderModule fragmentShaderModule;
+
+    *pPipeline = VtxMemoryMalloc(VtxPipeline);
+
+    /* 创建顶点着色器 */
+    char vertex_shader_file[255];
+    snprintf(vertex_shader_file, sizeof(vertex_shader_file), "%s.vert", shader_file_name);
+
+    buf = IOUtils::ReadBuf(vertex_shader_file, &size);
+    VkShaderModuleCreateInfo vertexShaderModuleCreateInfo = {};
+    vertexShaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    vertexShaderModuleCreateInfo.pCode = reinterpret_cast<uint32_t *>(buf);
+    vertexShaderModuleCreateInfo.codeSize = size;
+    vkCreateShaderModule(m_Device, &vertexShaderModuleCreateInfo, VkUtils::Allocator, &vertexShaderModule);
+    IOUtils::FreeBuf(buf);
+
+    /* 创建片段着色器 */
+    char fragment_shader_file[255];
+    snprintf(fragment_shader_file, sizeof(fragment_shader_file), "%s.frag", shader_file_name);
+
+    buf = IOUtils::ReadBuf(vertex_shader_file, &size);
+    VkShaderModuleCreateInfo fragmentShaderModuleCreateInfo = {};
+    fragmentShaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    fragmentShaderModuleCreateInfo.pCode = reinterpret_cast<uint32_t *>(buf);
+    fragmentShaderModuleCreateInfo.codeSize = size;
+    vkCreateShaderModule(m_Device, &fragmentShaderModuleCreateInfo, VkUtils::Allocator, &fragmentShaderModule);
+    IOUtils::FreeBuf(buf);
+
+    /* 销毁着色器模块 */
+    vkDestroyShaderModule(m_Device, vertexShaderModule, VkUtils::Allocator);
+    vkDestroyShaderModule(m_Device, fragmentShaderModule, VkUtils::Allocator);
+
+}
+
+void VkContext::DestroyPipeline(VtxPipeline pipeline)
+{
+    VtxMemoryFree(pipeline);
+}
+
+void VkContext::WriteDescriptorSet(VtxDescriptorSetWriteInfo *pWriteInfo, VkDescriptorSet descriptorSet)
+{
+}
+
 void VkContext::AllocateDescriptorSet(VkDescriptorSet *pDescriptorSet)
 {
     VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
@@ -66,10 +119,15 @@ void VkContext::FreeDescriptorSet(VkDescriptorSet descriptorSet)
     vkFreeDescriptorSets(m_Device, m_DescriptorPool, 1, &descriptorSet);
 }
 
+void VkContext::WriteTexture2D(VkDeviceSize offset, VkDeviceSize size, void *buf, VtxTexture2D texture2D)
+{
+
+}
+
 void VkContext::CreateTexture2D(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                                 VkMemoryPropertyFlags properties, VtxTexture2D *pTexture2D)
 {
-    *pTexture2D = (VtxTexture2D_T *) vmalloc(sizeof(pTexture2D));
+    *pTexture2D = VtxMemoryMalloc(VtxTexture2D);
 
     VkImageCreateInfo imageCreateInfo = {};
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -87,6 +145,7 @@ void VkContext::CreateTexture2D(uint32_t width, uint32_t height, VkFormat format
 
     (*pTexture2D)->format = imageCreateInfo.format;
     (*pTexture2D)->layout = imageCreateInfo.initialLayout;
+    (*pTexture2D)->size = width * height;
 
     vkCheckCreate(Image, m_Device, &imageCreateInfo, VkUtils::Allocator, &(*pTexture2D)->image);
 
@@ -144,12 +203,12 @@ void VkContext::DestroyTexture2D(VtxTexture2D texture2D)
     vkDestroyImageView(m_Device, texture2D->view, VkUtils::Allocator);
     vkFreeMemory(m_Device, texture2D->memory, VkUtils::Allocator);
     vkDestroySampler(m_Device, texture2D->sampler, VkUtils::Allocator);
-    vfree(texture2D);
+    VtxMemoryFree(texture2D);
 }
 
 void VkContext::AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VtxBuffer *pBuffer)
 {
-    *pBuffer = (VtxBuffer_T *) vmalloc(sizeof(VtxBuffer_T));
+    *pBuffer = VtxMemoryMalloc(VtxBuffer);
 
     /* 创建缓冲区 */
     VkBufferCreateInfo bufferCreateInfo = {};
@@ -175,7 +234,7 @@ void VkContext::FreeBuffer(VtxBuffer buffer)
 {
     vkDestroyBuffer(m_Device, buffer->buffer, VkUtils::Allocator);
     vkFreeMemory(m_Device, buffer->memory, VkUtils::Allocator);
-    vfree(buffer);
+    VtxMemoryFree(buffer);
 }
 
 void VkContext::CopyBuffer(VtxBuffer dst, VtxBuffer src, VkDeviceSize size)
@@ -249,6 +308,11 @@ void VkContext::BeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBuffe
 void VkContext::EndCommandBuffer(VkCommandBuffer commandBuffer)
 {
     vkEndCommandBuffer(commandBuffer);
+}
+
+void VkContext::CmdBindPipeline(VkCommandBuffer commandBuffer, VtxPipeline pipeline)
+{
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
 }
 
 void VkContext::InitVulkanContextInstance()
@@ -350,17 +414,17 @@ void VkContext::InitVulkanContextCommandPool()
 void VkContext::InitVulkanContextDescriptorPool()
 {
     std::vector<VkDescriptorPoolSize> poolSizes = {
-            {VK_DESCRIPTOR_TYPE_SAMPLER,                64},
-            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 64},
-            {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          64},
-            {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          64},
-            {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,   64},
-            {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,   64},
-            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         64},
-            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         64},
-            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 64},
-            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 64},
-            {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,       64}
+            { VK_DESCRIPTOR_TYPE_SAMPLER,                1024 },
+            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1024 },
+            { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          1024 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          1024 },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,   1024 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,   1024 },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         1024 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         1024 },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1024 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1024 },
+            { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,       1024 }
     };
 
     VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
