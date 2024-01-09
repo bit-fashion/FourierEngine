@@ -23,31 +23,21 @@
 
 /* -------------------------------------------------------------------------------- *\
 |*                                                                                  *|
-|* File:           Main.cpp                                                         *|
-|* Create Time:    2023/12/27 16:47                                                 *|
+|* File:           Renderable.h                                                     *|
+|* Create Time:    2024/12/30 20:21                                                 *|
 |* Author:         bit-fashion                                                      *|
 |* EMail:          bit-fashion@hotmail.com                                          *|
 |*                                                                                  *|
 \* -------------------------------------------------------------------------------- */
-#include "Render/VkContext.h"
-#include <Aurora/Logger.h>
-// std
-#include <iostream>
+#pragma once
 
-int main()
-{
-    Logger::Info("AuroraEngine application begin run...");
-    Window window(800, 600, "AuroraEngine");
-    std::unique_ptr<VkContext> vkContext = std::make_unique<VkContext>(&window);
+#include <glm/glm.hpp>
 
-    VtxPipeline pipeline;
-    VtxPipelineCreateConfiguration configuration = {};
-    vkContext->CreatePipeline(&configuration, &pipeline);
-    vkContext->DestroyPipeline(pipeline);
-
-    while (!window.IsShouldClose()) {
-        Window::PollEvents();
-    }
-
-    return 0;
-}
+/**
+ * 顶点内存定义
+ */
+struct Vertex {
+    glm::vec3 position;
+    glm::vec3 color;
+    glm::vec2 uv;
+};

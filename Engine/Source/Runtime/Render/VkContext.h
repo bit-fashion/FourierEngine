@@ -34,6 +34,7 @@
 #include <vulkan/vulkan.h>
 #include <Aurora/Logger.h>
 #include "Window/Window.h"
+#include "Renderable.h"
 
 typedef struct VtxBuffer_T {
     VkBuffer buffer;
@@ -53,11 +54,16 @@ typedef struct VtxTexture2D_T {
 
 typedef struct VtxPipeline_T {
     VkPipeline pipeline;
-    VkPipelineLayout layout;
+    VkPipelineLayout pipelineLayout;
+    VkDescriptorSetLayout descriptorSetLayout;
 } *VtxPipeline;
 
-struct VtxDescriptorSetWriteInfo {
-
+struct VtxPipelineCreateConfiguration {
+    const char *ShaderFileName;
+    uint32_t Width;
+    uint32_t Height;
+    VkRenderPass RenderPass;
+    VkDescriptorSetLayout DescriptorSetLayout;
 };
 
 /**
@@ -71,9 +77,8 @@ public:
     /**
      * 创建以及分配 Vulkan 对象
      */
-    void CreatePipeline(const char *shader_file, uint32_t width, uint32_t height, VtxPipeline *pPipeline);
+    void CreatePipeline(VtxPipelineCreateConfiguration *pConfiguration, VtxPipeline *pPipeline);
     void DestroyPipeline(VtxPipeline pipeline);
-    void WriteDescriptorSet(VtxDescriptorSetWriteInfo *pWriteInfo, VkDescriptorSet descriptorSet);
     void AllocateDescriptorSet(VkDescriptorSet *pDescriptorSet);
     void FreeDescriptorSet(VkDescriptorSet descriptorSet);
     void WriteTexture2D(VkDeviceSize offset, VkDeviceSize size, void *buf, VtxTexture2D texture2D);

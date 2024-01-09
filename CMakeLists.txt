@@ -36,6 +36,7 @@ SET(CMAKE_CXX_STANDARD 23)
 
 INCLUDE_DIRECTORIES(SYSTEM
   ${PROJECT_SOURCE_DIR}/Engine/Source/Include
+  ${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty/
   ${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty/glfw/include
   ${PROJECT_SOURCE_DIR}/Engine/Source/ThirdParty/vulkan/include
 )
