@@ -36,35 +36,11 @@
 #include "Window/Window.h"
 #include "Renderable.h"
 
-typedef struct VtxBuffer_T {
-    VkBuffer buffer;
-    VkDeviceMemory memory;
-    VkDeviceSize size;
-} *VtxBuffer;
-
-typedef struct VtxTexture2D_T {
-    VkImage image;
-    VkImageView view;
-    VkDeviceMemory memory;
-    VkSampler sampler;
-    VkImageLayout layout;
-    VkFormat format;
-    size_t size;
-} *VtxTexture2D;
-
-typedef struct VtxPipeline_T {
-    VkPipeline pipeline;
-    VkPipelineLayout pipelineLayout;
-    VkDescriptorSetLayout descriptorSetLayout;
-} *VtxPipeline;
-
-struct VtxPipelineCreateConfiguration {
-    const char *ShaderFileName;
-    uint32_t Width;
-    uint32_t Height;
-    VkRenderPass RenderPass;
-    VkDescriptorSetLayout DescriptorSetLayout;
-};
+#define VTX_DEFINE_HANDLE(object) typedef struct object##_T *object;
+VTX_DEFINE_HANDLE(VtxBuffer)
+VTX_DEFINE_HANDLE(VtxPipeline)
+VTX_DEFINE_HANDLE(VtxTexture2D)
+VTX_DEFINE_HANDLE(VtxViewport)
 
 /**
  * vulkan 上下文
@@ -77,18 +53,15 @@ public:
     /**
      * 创建以及分配 Vulkan 对象
      */
-    void CreatePipeline(VtxPipelineCreateConfiguration *pConfiguration, VtxPipeline *pPipeline);
-    void DestroyPipeline(VtxPipeline pipeline);
     void AllocateDescriptorSet(VkDescriptorSet *pDescriptorSet);
     void FreeDescriptorSet(VkDescriptorSet descriptorSet);
-    void WriteTexture2D(VkDeviceSize offset, VkDeviceSize size, void *buf, VtxTexture2D texture2D);
     void CreateTexture2D(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                          VkMemoryPropertyFlags properties, VtxTexture2D *pTexture2D);
     void DestroyTexture2D(VtxTexture2D texture2D);
     void AllocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VtxBuffer *pBuffer);
     void FreeBuffer(VtxBuffer buffer);
     void CopyBuffer(VtxBuffer dst, VtxBuffer src, VkDeviceSize size);
-    void WriteMemory(VtxBuffer buffer, VkDeviceSize offset, VkDeviceSize size, void *buf);
+    void WriteMemory(void *buf, VkDeviceSize offset, VkDeviceSize size, VtxBuffer buffer);
     void MapMemory(VtxBuffer buffer, VkDeviceSize offset, VkDeviceSize size, void **pBuf);
     void UnmapMemory(VtxBuffer buffer);
     void AllocateCommandBuffer(VkCommandBuffer *pCommandBuffer);

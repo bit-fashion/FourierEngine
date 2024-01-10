@@ -1,0 +1,235 @@
+void VkContext::CreateViewport(VtxViewport *pViewport)
+{
+
+}
+
+void VkContext::DestroyViewport(VtxViewport viewport)
+{
+
+}
+
+void VkContext::CreatePipeline(VtxPipelineCreateConfiguration *pConfiguration, VtxPipeline *pPipeline)
+{
+    char *buf;
+    size_t size;
+    VkShaderModule vertexShaderModule;
+    VkShaderModule fragmentShaderModule;
+
+    *pPipeline = VtxMemoryMalloc(VtxPipeline);
+
+    /* 创建顶点着色器 */
+    char vertex_shader_file[255];
+    snprintf(vertex_shader_file, sizeof(vertex_shader_file), "%s.vert", pConfiguration->ShaderFileName);
+
+    buf = IOUtils::ReadBuf(vertex_shader_file, &size);
+    VkShaderModuleCreateInfo vertexShaderModuleCreateInfo = {};
+    vertexShaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    vertexShaderModuleCreateInfo.pCode = reinterpret_cast<uint32_t *>(buf);
+    vertexShaderModuleCreateInfo.codeSize = size;
+    vkCreateShaderModule(m_Device, &vertexShaderModuleCreateInfo, VkUtils::Allocator, &vertexShaderModule);
+    IOUtils::FreeBuf(buf);
+
+    /* 创建片段着色器 */
+    char fragment_shader_file[255];
+    snprintf(fragment_shader_file, sizeof(fragment_shader_file), "%s.frag", pConfiguration->ShaderFileName);
+
+    buf = IOUtils::ReadBuf(vertex_shader_file, &size);
+    VkShaderModuleCreateInfo fragmentShaderModuleCreateInfo = {};
+    fragmentShaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    fragmentShaderModuleCreateInfo.pCode = reinterpret_cast<uint32_t *>(buf);
+    fragmentShaderModuleCreateInfo.codeSize = size;
+    vkCreateShaderModule(m_Device, &fragmentShaderModuleCreateInfo, VkUtils::Allocator, &fragmentShaderModule);
+    IOUtils::FreeBuf(buf);
+
+    /** Create pipeline phase of vertex and fragment shader */
+    VkPipelineShaderStageCreateInfo pipelineVertexShaderStageCreateInfo = {};
+    pipelineVertexShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    pipelineVertexShaderStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    pipelineVertexShaderStageCreateInfo.module = vertexShaderModule;
+    pipelineVertexShaderStageCreateInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo pipelineFragmentStageCreateInfo = {};
+    pipelineFragmentStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    pipelineFragmentStageCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    pipelineFragmentStageCreateInfo.module = fragmentShaderModule;
+    pipelineFragmentStageCreateInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfos[] = { pipelineVertexShaderStageCreateInfo, pipelineFragmentStageCreateInfo };
+
+    /* pipeline features */
+    VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo = {};
+    pipelineVertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
+    std::array<VkVertexInputAttributeDescription, 3> vertexInputAttributeDescription = {};
+    vertexInputAttributeDescription[0].binding  = 0;
+    vertexInputAttributeDescription[0].location = 0;
+    vertexInputAttributeDescription[0].format   = VK_FORMAT_R32G32B32_SFLOAT;
+    vertexInputAttributeDescription[0].offset   = offsetof(Vertex, position);
+
+    vertexInputAttributeDescription[1].binding  = 0;
+    vertexInputAttributeDescription[1].location = 1;
+    vertexInputAttributeDescription[1].format   = VK_FORMAT_R32G32B32_SFLOAT;
+    vertexInputAttributeDescription[1].offset   = offsetof(Vertex, color);
+
+    vertexInputAttributeDescription[2].binding  = 0;
+    vertexInputAttributeDescription[2].location = 2;
+    vertexInputAttributeDescription[2].format   = VK_FORMAT_R32G32_SFLOAT;
+    vertexInputAttributeDescription[2].offset   = offsetof(Vertex, uv);
+
+    pipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount = std::size(vertexInputAttributeDescription);
+    pipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions = std::data(vertexInputAttributeDescription);
+
+    std::array<VkVertexInputBindingDescription, 1> vertexInputBindingDescription = {};
+    vertexInputBindingDescription[0].binding = 0;
+    vertexInputBindingDescription[0].stride = sizeof(Vertex);
+    vertexInputBindingDescription[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+    pipelineVertexInputStateCreateInfo.vertexBindingDescriptionCount = std::size(vertexInputBindingDescription);
+    pipelineVertexInputStateCreateInfo.pVertexBindingDescriptions = std::data(vertexInputBindingDescription);
+
+    VkPipelineInputAssemblyStateCreateInfo pipelineInputAssembly = {};
+    pipelineInputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    pipelineInputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    pipelineInputAssembly.primitiveRestartEnable = VK_FALSE;
+
+    VkViewport viewport;
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = (float) pConfiguration->Width;
+    viewport.height = (float) pConfiguration->Height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    VkRect2D scissor;
+    scissor.offset = {0, 0};
+    scissor.extent = { pConfiguration->Width, pConfiguration->Height };
+
+    /* 视口裁剪 */
+    VkPipelineViewportStateCreateInfo pipelineViewportStateCrateInfo = {};
+    pipelineViewportStateCrateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    pipelineViewportStateCrateInfo.viewportCount = 1;
+    pipelineViewportStateCrateInfo.pViewports = &viewport;
+    pipelineViewportStateCrateInfo.scissorCount = 1;
+    pipelineViewportStateCrateInfo.pScissors = &scissor;
+
+    /* 光栅化阶段 */
+    VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo = {};
+    pipelineRasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    pipelineRasterizationStateCreateInfo.depthClampEnable = VK_FALSE;
+    pipelineRasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
+    pipelineRasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
+    pipelineRasterizationStateCreateInfo.lineWidth = 1.0f;
+    pipelineRasterizationStateCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+    pipelineRasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    pipelineRasterizationStateCreateInfo.depthBiasEnable = VK_FALSE;
+    pipelineRasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f; // Optional
+    pipelineRasterizationStateCreateInfo.depthBiasClamp = 0.0f; // Optional
+    pipelineRasterizationStateCreateInfo.depthBiasSlopeFactor = 0.0f; // Optional
+
+    /* 多重采样 */
+    VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo = {};
+    pipelineMultisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    pipelineMultisampleStateCreateInfo.sampleShadingEnable = VK_FALSE;
+    pipelineMultisampleStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    pipelineMultisampleStateCreateInfo.minSampleShading = 1.0f; // Optional
+    pipelineMultisampleStateCreateInfo.pSampleMask = nullptr; // Optional
+    pipelineMultisampleStateCreateInfo.alphaToCoverageEnable = VK_FALSE; // Optional
+    pipelineMultisampleStateCreateInfo.alphaToOneEnable = VK_FALSE; // Optional
+
+    /* 颜色混合 */
+    VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState = {};
+    pipelineColorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    pipelineColorBlendAttachmentState.blendEnable = VK_FALSE;
+    pipelineColorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+    pipelineColorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+    pipelineColorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD; // Optional
+    pipelineColorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+    pipelineColorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+    pipelineColorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
+    pipelineColorBlendAttachmentState.blendEnable = VK_TRUE;
+    pipelineColorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    pipelineColorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    pipelineColorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+    pipelineColorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    pipelineColorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    pipelineColorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+
+    /* 帧缓冲 */
+    VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo = {};
+    pipelineColorBlendStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    pipelineColorBlendStateCreateInfo.logicOpEnable = VK_FALSE;
+    pipelineColorBlendStateCreateInfo.logicOp = VK_LOGIC_OP_COPY; // Optional
+    pipelineColorBlendStateCreateInfo.attachmentCount = 1;
+    pipelineColorBlendStateCreateInfo.pAttachments = &pipelineColorBlendAttachmentState;
+    pipelineColorBlendStateCreateInfo.blendConstants[0] = 0.0f; // Optional
+    pipelineColorBlendStateCreateInfo.blendConstants[1] = 0.0f; // Optional
+    pipelineColorBlendStateCreateInfo.blendConstants[2] = 0.0f; // Optional
+    pipelineColorBlendStateCreateInfo.blendConstants[3] = 0.0f; // Optional
+
+    /* 动态修改 */
+    Vector<VkDynamicState> dynamicStates = {
+            VK_DYNAMIC_STATE_VIEWPORT,
+            VK_DYNAMIC_STATE_SCISSOR,
+            VK_DYNAMIC_STATE_LINE_WIDTH,
+    };
+
+    VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo = {};
+    pipelineDynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    pipelineDynamicStateCreateInfo.dynamicStateCount = std::size(dynamicStates);
+    pipelineDynamicStateCreateInfo.pDynamicStates = std::data(dynamicStates);
+
+    /* 管道布局 */
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &pConfiguration->DescriptorSetLayout;
+    pipelineLayoutInfo.pushConstantRangeCount = 0;
+
+    vkCreatePipelineLayout(m_Device, &pipelineLayoutInfo, VkUtils::Allocator, &(*pPipeline)->pipelineLayout);
+
+    /** Create graphics pipeline in vulkan. */
+    VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {};
+    graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    graphicsPipelineCreateInfo.stageCount = 2;
+    graphicsPipelineCreateInfo.pStages = pipelineShaderStageCreateInfos;
+    graphicsPipelineCreateInfo.pVertexInputState = &pipelineVertexInputStateCreateInfo;
+    graphicsPipelineCreateInfo.pInputAssemblyState = &pipelineInputAssembly;
+    graphicsPipelineCreateInfo.pViewportState = &pipelineViewportStateCrateInfo;
+    graphicsPipelineCreateInfo.pRasterizationState = &pipelineRasterizationStateCreateInfo;
+    graphicsPipelineCreateInfo.pMultisampleState = &pipelineMultisampleStateCreateInfo;
+    graphicsPipelineCreateInfo.pDepthStencilState = nullptr; // Optional
+    graphicsPipelineCreateInfo.pColorBlendState = &pipelineColorBlendStateCreateInfo;
+    graphicsPipelineCreateInfo.pDynamicState = &pipelineDynamicStateCreateInfo; // Optional
+    graphicsPipelineCreateInfo.layout = (*pPipeline)->pipelineLayout;
+    graphicsPipelineCreateInfo.renderPass = pConfiguration->RenderPass;
+    graphicsPipelineCreateInfo.subpass = 0;
+    graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
+    graphicsPipelineCreateInfo.basePipelineIndex = -1; // Optional
+
+    vkCreateGraphicsPipelines(m_Device, null, 1, &graphicsPipelineCreateInfo,
+                              VkUtils::Allocator, &(*pPipeline)->pipeline);
+
+    /* 销毁着色器模块 */
+    vkDestroyShaderModule(m_Device, vertexShaderModule, VkUtils::Allocator);
+    vkDestroyShaderModule(m_Device, fragmentShaderModule, VkUtils::Allocator);
+
+}
+
+void VkContext::DestroyPipeline(VtxPipeline pipeline)
+{
+    vkDestroyPipelineLayout(m_Device, pipeline->pipelineLayout, VkUtils::Allocator);
+    vkDestroyPipeline(m_Device, pipeline->pipeline, VkUtils::Allocator);
+    VtxMemoryFree(pipeline);
+}
+
+void VkContext::CreateRenderPass(VkRenderPass *pRenderPass)
+{
+    VkRenderPassCreateInfo renderPassCreateInfo = {};
+    renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    vkCheckCreate(RenderPass, m_Device, &renderPassCreateInfo, VkUtils::Allocator, pRenderPass);
+}
+
+void VkContext::DestroyRenderPass(VkRenderPass renderPass)
+{
+
+}

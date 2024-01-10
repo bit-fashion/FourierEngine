@@ -23,26 +23,51 @@
 
 /* -------------------------------------------------------------------------------- *\
 |*                                                                                  *|
-|* File:           Main.cpp                                                         *|
-|* Create Time:    2023/12/27 16:47                                                 *|
+|* File:           VkDefineHandle.h                                                 *|
+|* Create Time:    2024/01/03 01:35                                                 *|
 |* Author:         bit-fashion                                                      *|
 |* EMail:          bit-fashion@hotmail.com                                          *|
 |*                                                                                  *|
 \* -------------------------------------------------------------------------------- */
-#include "Render/VkContext.h"
-#include <Aurora/Logger.h>
-// std
-#include <iostream>
+#pragma once
 
-int main()
-{
-    Logger::Info("AuroraEngine application begin run...");
-    Window window(800, 600, "AuroraEngine");
-    std::unique_ptr<VkContext> vkContext = std::make_unique<VkContext>(&window);
+struct VtxBuffer_T {
+    VkBuffer buffer;
+    VkDeviceMemory memory;
+    VkDeviceSize offset;
+    VkDeviceSize size;
+};
 
-    while (!window.IsShouldClose()) {
-        Window::PollEvents();
-    }
+struct VtxTexture2D_T {
+    VkImage image;
+    VkImageView view;
+    VkDeviceMemory memory;
+    VkDeviceSize offset;
+    VkDeviceSize size;
+    VkSampler sampler;
+    VkImageLayout layout;
+    VkFormat format;
+};
 
-    return 0;
-}
+struct VtxPipeline_T {
+    VkPipeline pipeline;
+    VkPipelineLayout pipelineLayout;
+    VkDescriptorSetLayout descriptorSetLayout;
+};
+
+/**
+ * 视口对象，这个对象是在 Vulkan 概念之外新封装的对象。这个对象可以简单的理解
+ * 为帧缓冲区（Framebuffer）因为 Viewport 是图像最终展示图像的对象。每当一帧
+ * 图像被渲染完成后会将图像写入到 Viewport 对象。
+ *
+ * 然后其他操作可以从 Viewport 中拿到渲染好的图像做后处理。同时也可以理解为
+ * 增强版的交换链（Swapchain）
+ */
+struct VtxViewport_T {
+    uint32_t width;
+    uint32_t height;
+};
+
+/* malloc */
+#define VtxMemoryMalloc(object) (object##_T *) malloc(sizeof(object##_T))
+#define VtxMemoryFree(ptr) free(ptr)
